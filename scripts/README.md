@@ -9,12 +9,20 @@
 | `check_dataset.py` | Day 1 | 数据集完整性检查 | — |
 | `offline_inference.py` | Day 1 | NoMaD 离线推理基线 | 预训练权重 |
 | `ddim_experiment.py` | Day 2 | DDIM 加速采样对比实验 | `offline_inference.py` |
+| `ddim_stat_experiment.py` | Day 2 | DDIM 多次重复统计实验 | `nomad_eval_common.py` |
 | `realtime_inference.py` | Day 2 | 实时摄像头推理 | `offline_inference.py` |
 | `cfg_experiment.py` | Day 3 | CFG 目标引导实验 | `offline_inference.py` |
+| `cfg_stat_experiment.py` | Day 3 | CFG 多次重复统计实验 | `nomad_eval_common.py` |
 | `gait_shake_robustness.py` | Day 3 | 步态抖动鲁棒性实验 | `offline_inference.py` |
 | `nomad_vint_dinov2.py` | Day 4 | DINOv2 视觉编码器适配模块 | `timm` |
 | `train_dinov2.py` | Day 4 | DINOv2 独立训练脚本 | `nomad_vint_dinov2.py` |
+| `nomad_vint_backbone_suite.py` | Day 4 | 多视觉编码器统一封装 | `timm` |
+| `train_backbone_suite.py` | Day 4 | ConvNeXt / ResNet / DINOv2 训练入口 | `nomad_vint_backbone_suite.py` |
+| `encoder_comparison_experiment.py` | Day 4 | 多视觉编码器导航对比实验 | `nomad_eval_common.py` |
 | `lite3_sim.py` | Day 5 | PyBullet 仿真 + 轮式 vs 足式对比 | `pybullet`（仿真机） |
+| `nomad_mujoco_lite3_nav.py` | Day 6 | NoMaD + Lite3 + MuJoCo + RL 联合导航 | `mujoco` `onnxruntime` |
+| `nomad_mujoco_tron1_nav.py` | Day 6 | Tron1 MuJoCo 适配入口与资产检查 | `mujoco`（后续接入） |
+| `nomad_real_deployment_checklist.py` | Day 7 | Lite3 / Tron1 真机部署清单生成 | — |
 
 ## 统一运行方式
 
@@ -50,10 +58,13 @@ pip install -r scripts/requirements.txt
 results/
 ├── day1/YYYYMMDD_HHMMSS_offline_inference/
 ├── day2/YYYYMMDD_HHMMSS_ddim_experiment/
+├── day2/YYYYMMDD_HHMMSS_ddim_stat_experiment/
 ├── realtime/YYYYMMDD_HHMMSS_realtime/
 ├── day3/YYYYMMDD_HHMMSS_cfg_experiment/
+├── day3/YYYYMMDD_HHMMSS_cfg_stat_experiment/
 ├── day3/YYYYMMDD_HHMMSS_gait_shake/
-├── day4/  (DINOv2 训练日志在 train/logs/)
+├── day4/YYYYMMDD_HHMMSS_encoder_comparison_experiment/
+├── day4/  (DINOv2 与多编码器训练日志在 train/logs/)
 ├── day5/  (仿真结果)
 └── day6/  (消融实验汇总)
 ```
