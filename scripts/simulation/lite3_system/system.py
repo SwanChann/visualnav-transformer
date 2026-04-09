@@ -29,6 +29,7 @@ class Lite3System:
         self.high_level = Lite3HighLevelNoMaD(
             scheduler_kind=args.scheduler,
             ddim_steps=args.ddim_steps,
+            cfg_weight=getattr(args, "cfg_weight", 0.0),
             waypoint_index=args.waypoint,
             radius=args.radius,
             close_threshold=args.close_threshold,

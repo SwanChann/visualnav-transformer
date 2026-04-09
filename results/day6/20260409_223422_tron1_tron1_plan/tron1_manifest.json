@@ -1,0 +1,93 @@
+{
+  "robot": "tron1",
+  "generated_at": "2026-04-09T22:34:22",
+  "asset_checks": [
+    {
+      "name": "nomad_weights",
+      "path": "/home/swanchan/visualnav-transformer/deployment/model_weights/nomad.pth",
+      "exists": true,
+      "required": true,
+      "note": "Shared NoMaD checkpoint used by the high-level navigation policy."
+    },
+    {
+      "name": "tron1_mujoco_model",
+      "path": "/home/swanchan/visualnav-transformer/assets/tron1/mujoco/tron1.xml",
+      "exists": false,
+      "required": true,
+      "note": "MuJoCo XML or MJCF model for the Tron1 wheel-legged robot."
+    },
+    {
+      "name": "tron1_policy",
+      "path": "/home/swanchan/visualnav-transformer/assets/tron1/policy/policy.onnx",
+      "exists": false,
+      "required": false,
+      "note": "Optional low-level wheel-legged locomotion policy exported to ONNX."
+    },
+    {
+      "name": "tron1_camera_config",
+      "path": "/home/swanchan/visualnav-transformer/assets/tron1/config/camera.yaml",
+      "exists": false,
+      "required": false,
+      "note": "Optional camera intrinsics/extrinsics for the MuJoCo or real robot bridge."
+    },
+    {
+      "name": "tron1_bridge_notes",
+      "path": "/home/swanchan/visualnav-transformer/assets/tron1/README.md",
+      "exists": false,
+      "required": false,
+      "note": "Recommended place to document wheel, leg, and controller topic mappings."
+    }
+  ],
+  "stages": [
+    {
+      "stage": "stage_1_assets",
+      "goal": "Prepare the Tron1 MuJoCo model, camera settings, and NoMaD checkpoint.",
+      "outputs": [
+        "assets/tron1/mujoco/tron1.xml",
+        "assets/tron1/config/camera.yaml"
+      ]
+    },
+    {
+      "stage": "stage_2_perception",
+      "goal": "Render the onboard RGB view and align it with the NoMaD observation transform.",
+      "outputs": [
+        "RGB frame stream at 4 Hz",
+        "goal or topomap image loader"
+      ]
+    },
+    {
+      "stage": "stage_3_navigation",
+      "goal": "Run NoMaD localization, goal matching, and DDPM or DDIM action sampling.",
+      "outputs": [
+        "sampled trajectories",
+        "selected waypoint"
+      ]
+    },
+    {
+      "stage": "stage_4_bridge",
+      "goal": "Convert the selected waypoint into wheel-legged chassis commands and safety-constrained references.",
+      "outputs": [
+        "forward velocity command",
+        "yaw rate command",
+        "wheel-leg mode switch or guard rails"
+      ]
+    },
+    {
+      "stage": "stage_5_execution",
+      "goal": "Connect the high-level command bridge to Tron1 locomotion control in MuJoCo.",
+      "outputs": [
+        "wheel speed interface",
+        "leg posture or stabilizer interface"
+      ]
+    },
+    {
+      "stage": "stage_6_evaluation",
+      "goal": "Export navigation logs for thesis figures, comparison tables, and deployment readiness review.",
+      "outputs": [
+        "trajectory.txt",
+        "summary.txt",
+        "platform comparison notes"
+      ]
+    }
+  ]
+}

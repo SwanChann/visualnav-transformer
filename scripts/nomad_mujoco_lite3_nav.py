@@ -870,22 +870,33 @@ def diffusion_inference(
     scheduler_kind="ddpm",
     num_steps=NUM_DIFFUSION_ITERS,
     num_samples=NUM_SAMPLES,
+    guidance_scale=None,
+    uncond=None,
 ):
     """DDPM/DDIM 扩散推理，返回反归一化的路径点 [N, 8, 2]。
 
     Args:
         scheduler_kind: 'ddpm' 或 'ddim'
         num_steps: 去噪步数（DDIM 可用更少步数加速）
+        guidance_scale: CFG 引导强度。None 或 0.0 表示不使用 CFG。
+        uncond: 无条件编码（goal masked），用于 CFG。
     """
     scheduler = make_scheduler(scheduler_kind, num_train_timesteps=NUM_DIFFUSION_ITERS)
     cond = obs_cond.repeat(num_samples, 1)
+    uncond_rep = None if uncond is None else uncond.repeat(num_samples, 1)
     naction = torch.randn((num_samples, LEN_TRAJ_PRED, 2), device=device)
     scheduler.set_timesteps(num_steps)
+    use_cfg = guidance_scale is not None and guidance_scale != 0.0 and uncond_rep is not None
     with torch.no_grad():
         for k in scheduler.timesteps:
             noise_pred = model(
                 "noise_pred_net", sample=naction, timestep=k, global_cond=cond
             )
+            if use_cfg:
+                noise_uncond = model(
+                    "noise_pred_net", sample=naction, timestep=k, global_cond=uncond_rep
+                )
+                noise_pred = (1.0 + guidance_scale) * noise_pred - guidance_scale * noise_uncond
             naction = scheduler.step(
                 model_output=noise_pred, timestep=k, sample=naction
             ).prev_sample
@@ -1521,10 +1532,24 @@ def run_navigate(args):
                      len(obsgoal_cond) - 1)
         obs_cond = obsgoal_cond[sg_idx].unsqueeze(0)
 
+        # CFG: 计算无条件编码（goal masked）
+        uncond_cond = None
+        if args.cfg_weight and args.cfg_weight != 0.0:
+            mask_explore = torch.ones(1).long().to(device)
+            with torch.no_grad():
+                uncond_cond = model(
+                    "vision_encoder",
+                    obs_img=obs_tensor,
+                    goal_img=goal_batch[sg_idx:sg_idx+1],
+                    input_goal_mask=mask_explore,
+                )
+
         sched = args.scheduler
         n_steps = args.ddim_steps if sched == "ddim" else NUM_DIFFUSION_ITERS
         actions = diffusion_inference(model, obs_cond, device,
-                                      scheduler_kind=sched, num_steps=n_steps)
+                                      scheduler_kind=sched, num_steps=n_steps,
+                                      guidance_scale=args.cfg_weight if args.cfg_weight else None,
+                                      uncond=uncond_cond)
         mean_action = actions.mean(axis=0)
         wp_idx = min(args.waypoint, LEN_TRAJ_PRED - 1)
         chosen_wp = mean_action[wp_idx]
@@ -1671,6 +1696,8 @@ def main():
                         help="扩散推理调度器: ddpm(默认 10步) / ddim(可加速)")
     parser.add_argument("--ddim-steps", type=int, default=10,
                         help="DDIM 去噪步数 (默认 10, 可设 5/3/2/1 加速)")
+    parser.add_argument("--cfg-weight", type=float, default=0.0,
+                        help="CFG 引导强度 (0.0=不使用, 1.0=标准引导, 2.0=强引导)")
 
     # 随机模式
     parser.add_argument("--random", action="store_true",

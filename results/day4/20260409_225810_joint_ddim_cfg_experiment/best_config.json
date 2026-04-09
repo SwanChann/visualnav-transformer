@@ -1,0 +1,11 @@
+{
+  "config_name": "ddim2_w0.0",
+  "scheduler": "ddim",
+  "num_steps": 2,
+  "guidance_scale": 0.0,
+  "composite_score": 5.6477,
+  "latency_ms": 6.177605661475146,
+  "forward_progress": 8.088916790982088,
+  "smoothness": 0.12366901167357962,
+  "diversity": 0.38970090448856354
+}

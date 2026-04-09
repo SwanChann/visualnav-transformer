@@ -40,6 +40,7 @@ class Lite3HighLevelNoMaD:
         waypoint_index: int,
         radius: int,
         close_threshold: float,
+        cfg_weight: float = 0.0,
         device: str | None = None,
     ) -> None:
         self.legacy = load_legacy()
@@ -50,11 +51,12 @@ class Lite3HighLevelNoMaD:
         self.waypoint_index = waypoint_index
         self.radius = radius
         self.close_threshold = close_threshold
+        self.cfg_weight = cfg_weight
 
     def _build_obs_tensor(self, frame_buffer: Deque[torch.Tensor]) -> torch.Tensor:
         return self.legacy.build_obs_tensor(frame_buffer).to(self.device)
 
-    def _sample_actions(self, obs_cond: torch.Tensor) -> np.ndarray:
+    def _sample_actions(self, obs_cond: torch.Tensor, uncond: torch.Tensor | None = None) -> np.ndarray:
         num_steps = self.ddim_steps if self.scheduler_kind == "ddim" else self.legacy.NUM_DIFFUSION_ITERS
         return self.legacy.diffusion_inference(
             self.model,
@@ -62,6 +64,8 @@ class Lite3HighLevelNoMaD:
             self.device,
             scheduler_kind=self.scheduler_kind,
             num_steps=num_steps,
+            guidance_scale=self.cfg_weight if self.cfg_weight else None,
+            uncond=uncond,
         )
 
     def predict_exploration(self, frame_buffer: Deque[torch.Tensor]) -> ExplorationResult:
@@ -117,7 +121,19 @@ class Lite3HighLevelNoMaD:
         selected_index = min(local_index + int(distances[min_index] < self.close_threshold), len(obsgoal_cond) - 1)
         obs_cond = obsgoal_cond[selected_index].unsqueeze(0)
 
-        sampled_actions = self._sample_actions(obs_cond)
+        # CFG: 计算无条件编码
+        uncond_cond = None
+        if self.cfg_weight and self.cfg_weight != 0.0:
+            mask_explore = torch.ones(1, dtype=torch.long, device=self.device)
+            with torch.no_grad():
+                uncond_cond = self.model(
+                    "vision_encoder",
+                    obs_img=obs_tensor,
+                    goal_img=goal_batch[selected_index:selected_index+1],
+                    input_goal_mask=mask_explore,
+                )
+
+        sampled_actions = self._sample_actions(obs_cond, uncond=uncond_cond)
         mean_action = sampled_actions.mean(axis=0)
         chosen_waypoint = mean_action[min(self.waypoint_index, self.legacy.LEN_TRAJ_PRED - 1)]
         return NavigationResult(

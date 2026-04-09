@@ -31,6 +31,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--close-threshold", type=float, default=3.0)
     parser.add_argument("--scheduler", choices=["ddpm", "ddim"], default="ddpm")
     parser.add_argument("--ddim-steps", type=int, default=10)
+    parser.add_argument("--cfg-weight", type=float, default=0.0,
+                        help="CFG 引导强度 (0.0=不使用)")
     parser.add_argument("--random", action="store_true")
     parser.add_argument("--mission-topomap", action="append", default=None)
     parser.add_argument("--mission-dataset-traj", action="append", default=None)

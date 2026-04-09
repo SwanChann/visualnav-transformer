@@ -1,0 +1,3 @@
+Mode: walk_test
+Steps: 48
+Total distance: 7.094 m

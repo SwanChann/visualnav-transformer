@@ -1,0 +1,3 @@
+Mode: explore_mujoco
+Steps: 100
+Total distance: 8.671 m
