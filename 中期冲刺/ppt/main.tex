@@ -1,0 +1,657 @@
+% !TEX program = xelatex
+\documentclass[aspectratio=169,10pt]{beamer}
+
+% ========== 中文支持 ==========
+\usepackage[UTF8]{ctex}
+\usepackage{fontspec}
+
+% ========== 主题与颜色 ==========
+\usetheme{Madrid}
+\usecolortheme{whale}
+\definecolor{sjtuBlue}{RGB}{0,64,152}
+\definecolor{sjtuRed}{RGB}{167,25,48}
+\definecolor{sjtuGold}{RGB}{181,137,0}
+\definecolor{lightBg}{RGB}{245,245,250}
+\setbeamercolor{structure}{fg=sjtuBlue}
+\setbeamercolor{frametitle}{bg=sjtuBlue,fg=white}
+\setbeamercolor{title}{fg=white,bg=sjtuBlue}
+\setbeamercolor{block title}{bg=sjtuBlue,fg=white}
+\setbeamercolor{block body}{bg=lightBg}
+\setbeamercolor{block title alerted}{bg=sjtuRed,fg=white}
+\setbeamercolor{block title example}{bg=sjtuGold,fg=white}
+
+% ========== 常用包 ==========
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{multicol}
+\usepackage{hyperref}
+\usepackage{pifont}
+\usepackage{array}
+\usepackage{colortbl}
+\usepackage{multimedia}  % Beamer 内置多媒体包
+
+% ========== 设置 ==========
+\graphicspath{{figures/}}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{footline}[frame number]
+\setbeamersize{text margin left=8mm, text margin right=8mm}
+
+% 表格字号
+\newcommand{\smalltable}{\fontsize{7.5}{10}\selectfont}
+\newcommand{\tinytable}{\fontsize{6.5}{8.5}\selectfont}
+
+% ========== 封面信息 ==========
+\title[中期汇报]{基于动作扩散策略的足式机器人\\通用导航与探索研究}
+\subtitle{毕业设计（论文）中期汇报}
+\author[陈样]{汇报人：陈样}
+\institute[SJTU]{上海交通大学}
+\date{2026 年 3 月}
+
+% ================================================================
+\begin{document}
+
+% ==================== 封面 ====================
+{
+\setbeamertemplate{footline}{}
+\begin{frame}
+\begin{center}
+\vspace{5mm}
+{\Large\bfseries 上海交通大学}\\[3mm]
+{\large 毕业设计中期汇报}\\[8mm]
+\hrule
+\vspace{5mm}
+{\LARGE\bfseries\color{sjtuBlue} 基于动作扩散策略的足式机器人\\[2mm]通用导航与探索研究}\\[5mm]
+\hrule
+\vspace{6mm}
+{\large 汇报人：陈样}\\[2mm]
+{\normalsize 2026 年 3 月 31 日}
+\end{center}
+\end{frame}
+}
+
+% ==================== 目录 ====================
+\begin{frame}{汇报提纲}
+\tableofcontents
+\end{frame}
+
+% ================================================================
+\section{研究背景与问题}
+% ================================================================
+
+% ---------- 1.1 研究背景（文字页） ----------
+\begin{frame}{研究背景}
+\begin{block}{具身智能与视觉导航}
+\begin{itemize}
+\item 具身智能要求智能体在\textbf{物理环境}中感知、决策、行动
+\item 视觉导航：仅依靠\textbf{RGB 图像}实现端到端导航
+\item 传统方法：SLAM + 路径规划（需精确地图）
+\item \textbf{学习方法}：端到端策略直接从图像到动作
+\end{itemize}
+\end{block}
+\pause
+\begin{alertblock}{扩散模型的优势}
+\begin{itemize}
+\item 生成\textbf{多模态}动作分布（vs 回归方法的单峰输出）
+\item 天然支持\textbf{探索行为}（高 Diversity）
+\item NoMaD：首个将 DDPM 应用于视觉导航的框架
+\end{itemize}
+\end{alertblock}
+\end{frame}
+
+% ---------- 1.2 NoMaD 架构图（图片独占页，放大） ----------
+\begin{frame}{NoMaD 系统架构}
+\begin{figure}
+\centering
+\includegraphics[width=0.85\linewidth]{nomad.png}
+\caption{NoMaD 架构：视觉编码器 + 扩散策略头 + 距离预测器}
+\end{figure}
+\end{frame}
+
+% ---------- 1.3 文献空白（表格独占页） ----------
+\begin{frame}{文献空白分析}
+\begin{block}{现有视觉导航工作对比}
+\smalltable
+\centering
+\begin{tabular}{lllll}
+\toprule
+\textbf{项目} & \textbf{策略类型} & \textbf{动作空间} & \textbf{已验证平台} & \textbf{足式验证} \\
+\midrule
+GNM (Shah 2023) & 回归 & 离散 waypoint & LoCoBot & \textcolor{red}{\ding{55}} \\
+ViNT (Shah 2023) & 回归 & 离散 waypoint & LoCoBot & \textcolor{red}{\ding{55}} \\
+\rowcolor{sjtuBlue!10}
+\textbf{NoMaD} (Sridhar 2024) & \textbf{DDPM 扩散} & \textbf{连续 8$\times$(x,y)} & \textbf{LoCoBot} & \textcolor{red}{\ding{55}} \\
+NaVILA (Cheng 2025) & VLA 大模型 & 离散 4 选 1 & Go2, G1, H1 & \textcolor{green!60!black}{\ding{51}} 但非扩散 \\
+VP-Nav (Shah 2022) & 经典规划 & 速度指令 & Unitree A1 & \textcolor{green!60!black}{\ding{51}} 但非学习 \\
+\bottomrule
+\end{tabular}
+\end{block}
+\vspace{4mm}
+\begin{alertblock}{核心空白}
+\centering
+\textbf{尚无工作在足式平台上验证连续 waypoint 扩散导航策略}——亟需填补的研究空白
+\end{alertblock}
+\end{frame}
+
+% ---------- 1.4 科研问题（结构化列表） ----------
+\begin{frame}{核心科研问题}
+\begin{block}{五个待回答的关键问题}
+\begin{enumerate}
+\item \textbf{连续 waypoint 扩散策略从未在足式平台验证}
+\item \textbf{轮式训练 → 足式零样本迁移效果未知}
+\item \textbf{扩散采样频率能否满足足式实时性？}
+\item \textbf{步态抖动对视觉导航的影响未量化}
+\item \textbf{编码器对形态差异的鲁棒性未知}
+\end{enumerate}
+\end{block}
+\end{frame}
+
+% ================================================================
+\section{NoMaD 框架复现}
+% ================================================================
+
+% ---------- 2.1 NoMaD 三大模块（文字页） ----------
+\begin{frame}{NoMaD 三大核心模块}
+\begin{block}{模块组成}
+\begin{enumerate}
+\item \textbf{视觉编码器}（EfficientNet-B0）：3 帧历史观察 + 目标图像 → 256 维条件向量
+\item \textbf{扩散策略头}（ConditionalUnet1D）：DDPM 10 步去噪 → 8$\times$(x,y) 轨迹
+\item \textbf{距离预测器}（DenseNetwork）：预测到目标的归一化距离
+\end{enumerate}
+\end{block}
+\pause
+\begin{exampleblock}{Goal Masking 关键机制}
+\begin{itemize}
+\item 训练时 \textbf{50\% 概率}遮蔽目标图像
+\item mask=0 → 目标导航模式\quad|\quad mask=1 → 无目标探索模式
+\item 单一模型同时学会导航与探索
+\end{itemize}
+\end{exampleblock}
+\end{frame}
+
+% ---------- 2.2 数据集信息（文字页） ----------
+\begin{frame}{训练数据集：GoStanford2}
+\begin{block}{数据集概况}
+\begin{itemize}
+\item \textbf{采集环境}：斯坦福大学室内环境（走廊、办公室）
+\item \textbf{采集平台}：LoCoBot 轮式机器人
+\item \textbf{数据规模}：\textbf{3696 条}轨迹
+\item \textbf{图像规格}：96$\times$96 RGB，每条轨迹 1--200 帧
+\item \textbf{标注数据}：位置 (x,y,z) + 偏航角 yaw（traj\_data.pkl）
+\item \textbf{完整性验证}：采样 5 条轨迹全部通过，position/yaw/images 长度一致
+\end{itemize}
+\end{block}
+\pause
+\begin{block}{轨迹可视化说明}
+{\small
+后续可视化图为三栏布局：\textbf{左}=当前观测帧\;|\;\textbf{中}=目标帧\;|\;\textbf{右}=生成轨迹\\[1mm]
+模型\textbf{并行采样 8 条}轨迹（各含 8 个 waypoint），以不同颜色的 {\normalfont\texttt{o-}} 折线绘于 x-y 坐标系\\[1mm]
+\textcolor{red}{$\bigstar$}\;红色星号 = 机器人当前位置（坐标原点）
+}
+\end{block}
+\end{frame}
+
+% ---------- 2.3 导航轨迹可视化（图片独占页） ----------
+\begin{frame}{基线轨迹可视化——导航模式}
+\begin{figure}
+\centering
+\includegraphics[width=0.78\linewidth]{baseline_trajectories.png}
+\caption{导航模式（mask=0）：8 条并行采样轨迹（各 8 个 waypoint），目标引导下朝目标方向聚集}
+\end{figure}
+\end{frame}
+
+% ---------- 2.4 探索轨迹可视化（图片独占页） ----------
+\begin{frame}{基线轨迹可视化——探索模式}
+\begin{figure}
+\centering
+\includegraphics[width=0.78\linewidth]{explore_trajectories.png}
+\caption{探索模式（mask=1）：8 条并行采样轨迹（各 8 个 waypoint），无目标引导时均匀发散覆盖多方向}
+\end{figure}
+\end{frame}
+
+% ---------- 2.5 基线性能（表格+结论，上下结构） ----------
+\begin{frame}{基线推理验证}
+\begin{block}{NoMaD 基线性能（端到端全流程）}
+\centering
+\begin{tabular}{lc}
+\toprule
+\textbf{指标} & \textbf{实测值} \\
+\midrule
+模型参数量 & 19,049,675 \\
+DDPM-10 推理时间（端到端） & 78.0 ms \\
+推理频率 & 12.8 Hz \\
+并行采样轨迹数 & 8 条 \\
+每条轨迹路径点数 & 8 个 (x,y) \\
+预测距离 & 10.258（归一化） \\
+\bottomrule
+\end{tabular}
+\end{block}
+\vspace{3mm}
+\begin{alertblock}{关键发现}
+\centering
+推理频率 \textbf{12.8 Hz} $<$ 足式导航需求 \textbf{$\geq$15 Hz} → 需要 DDIM 加速采样！\\[1mm]
+{\footnotesize 注：78 ms 为视觉编码 + 扩散采样 + 后处理的端到端时间；后续 DDIM 表中仅计扩散采样部分}
+\end{alertblock}
+\end{frame}
+
+% ================================================================
+\section{面向足式部署的三项优化}
+% ================================================================
+
+% ---------- 3.1 DDIM 动机（文字+小表格） ----------
+\begin{frame}{优化一：DDIM 加速采样——研究动机}
+\begin{block}{控制频率适配需求}
+\centering
+\begin{tabular}{lcc}
+\toprule
+\textbf{控制场景} & \textbf{最低频率需求} & \textbf{最大延迟} \\
+\midrule
+轮式底盘导航 & 4--10 Hz & 100--250 ms \\
+\rowcolor{sjtuRed!10}
+\textbf{四足高层导航} & \textbf{$\geq$15 Hz} & \textbf{$\leq$67 ms} \\
+四足关节控制 & 100--1000 Hz & 由步态控制器处理 \\
+\bottomrule
+\end{tabular}
+\end{block}
+\vspace{3mm}
+\begin{block}{DDIM 核心原理}
+\begin{itemize}
+\item DDPM 需 10 步迭代去噪，每步一次网络前向传播
+\item DDIM \textbf{直接复用 DDPM 已训练好的权重}，无需重新训练模型
+\item 推理时将 DDPM 的随机逆扩散过程替换为\textbf{确定性跳步过程}，\\
+可用远少于原始步数完成等效质量的采样
+\item 是足式部署的\textbf{必要条件}而非单纯的性能优化
+\end{itemize}
+\end{block}
+\end{frame}
+
+% ---------- 3.2 DDIM 实验数据（表格独占页） ----------
+\begin{frame}{DDIM 加速采样——实验数据}
+\begin{block}{DDIM 配置对比（仅扩散采样耗时，每组重复 10 次取均值）}
+\centering
+\begin{tabular}{lccccc}
+\toprule
+\textbf{配置} & \textbf{时间 (ms)} & \textbf{MSE} & \textbf{Diversity} & \textbf{步数} & \textbf{加速比} \\
+\midrule
+DDPM-10 (baseline) & 29.47 & 0.000047 & 0.0279 & 10 & 1.00$\times$ \\
+DDIM-10 & 29.52 & 0.000032 & 0.0389 & 10 & 1.00$\times$ \\
+\rowcolor{green!10}
+\textbf{DDIM-5} & \textbf{15.16} & \textbf{0.000033} & \textbf{0.0274} & \textbf{5} & \textbf{1.94$\times$} \\
+DDIM-3 & 7.87 & 0.000033 & 0.0298 & 3 & 3.75$\times$ \\
+DDIM-2 & 6.24 & 0.000024 & 0.0367 & 2 & 4.73$\times$ \\
+\rowcolor{red!10}
+DDIM-1 & 3.00 & 0.003936 & 0.5808 & 1 & 9.82$\times$ \\
+\bottomrule
+\end{tabular}
+\end{block}
+\vspace{3mm}
+\begin{alertblock}{关键结论}
+\centering
+\textbf{DDIM-5}：扩散采样 15.16 ms，\textbf{端到端约 63.7 ms（$\sim$15.7 Hz）}，满足 $\geq$15 Hz\\[1mm]
+\textbf{DDIM-1}：MSE 暴增 83.7$\times$，完全失效 \quad|\quad
+\textbf{断崖点}：步数 2→1
+\end{alertblock}
+\end{frame}
+
+% ---------- 3.3 DDIM 可视化（图片独占页） ----------
+\begin{frame}{DDIM 加速采样——可视化对比}
+\begin{figure}
+\centering
+\includegraphics[width=0.88\linewidth]{ddim_comparison.png}
+\caption{DDIM 各配置推理时间、MSE 与轨迹质量对比}
+\end{figure}
+\end{frame}
+
+% ---------- 3.4 CFG 原理（文字页） ----------
+\begin{frame}{优化二：CFG 目标引导增强——原理}
+\begin{block}{Classifier-Free Guidance 公式}
+利用 Goal Masking 训练机制，组合条件/无条件噪声预测增强目标方向信号：
+\[
+\epsilon_{\text{final}} = (1+w)\,\epsilon_{\text{cond}} - w\,\epsilon_{\text{uncond}}
+\]
+\end{block}
+\vspace{2mm}
+\begin{block}{引导强度 $w$ 含义}
+\centering
+\begin{tabular}{ccp{6cm}}
+\toprule
+$w$ & $s=1+w$ & \textbf{物理含义} \\
+\midrule
+$-1$ & 0 & 纯探索模式 \\
+0 & 1 & 标准条件生成 \\
+$0<w\leq 2$ & $1<s\leq 3$ & 引导增强 \\
+$w>2$ & $s>3$ & 可能过度引导 \\
+\bottomrule
+\end{tabular}
+\end{block}
+\end{frame}
+
+% ---------- 3.5 CFG 实验数据（表格独占页） ----------
+\begin{frame}{CFG 引导——实验数据}
+\begin{block}{6 个引导强度对比}
+\centering
+\begin{tabular}{cccc}
+\toprule
+$w$（引导强度） & \textbf{Diversity} & \textbf{Mean Displacement} & \textbf{推理时间 (ms)} \\
+\midrule
+$-1.0$（纯探索） & 0.0259 & 0.0735 & 267.3 \\
+0.0（标准条件） & 0.0201 & 0.0333 & \textbf{30.9} \\
+0.5 & 0.0220 & 0.0448 & 47.4 \\
+\rowcolor{green!10}
+\textbf{1.0} & \textbf{0.0265} & 0.0371 & 46.8 \\
+2.0 & 0.0236 & 0.0637 & 46.8 \\
+\rowcolor{red!10}
+4.0 & 0.0139 & 0.0929 & 46.6 \\
+\bottomrule
+\end{tabular}
+\end{block}
+\vspace{3mm}
+\begin{alertblock}{核心发现}
+\centering
+$w{=}1.0$：Diversity \textbf{最高}  \quad|\quad
+CFG 开销仅 1.52$\times$，仍满足 15 Hz\\[1mm]
+$w{=}4.0$：过度引导致多样性崩塌至 0.0139 \quad|\quad
+\textbf{$w{=}1.0$ 为推荐引导强度}
+\end{alertblock}
+\end{frame}
+
+
+% ---------- 3.8 DINOv2 动机（文字页） ----------
+\begin{frame}{优化三：DINOv2 视觉编码器升级——动机}
+\begin{block}{编码器对比}
+\centering
+\begin{tabular}{lccc}
+\toprule
+\textbf{编码器} & \textbf{参数量} & \textbf{预训练方式} & \textbf{输入尺寸} \\
+\midrule
+EfficientNet-B0（原版） & 5.3 M & ImageNet 监督 & 96$\times$96 \\
+DINOv2-Small & 21 M & 自监督 & 98$\times$98 \\
+\bottomrule
+\end{tabular}
+\end{block}
+\vspace{4mm}
+\begin{exampleblock}{为什么选择 DINOv2？}
+\begin{itemize}
+\item EfficientNet 对\textbf{外观/纹理敏感}，视角变化不鲁棒
+\item DINOv2 自监督特征关注\textbf{结构信息}（轮廓、空间关系）
+\item 更适合\textbf{跨形态迁移}场景（视高 0.4m→0.32m、不同视野角度）
+\end{itemize}
+\end{exampleblock}
+\end{frame}
+
+% ---------- 3.9 DINOv2 训练结果（表格 + 损失曲线，上下结构） ----------
+\begin{frame}{DINOv2 训练对比结果}
+\begin{block}{训练对比数据}
+\centering
+\begin{tabular}{lccc}
+\toprule
+\textbf{配置} & \textbf{test\_loss} & \textbf{训练时间} & \textbf{训练轮数} \\
+\midrule
+EfficientNet-B0（原版） & \textbf{0.00851} & 7h 9m & 100 epoch \\
+DINOv2-Small（冻结） & 0.03141 & $\sim$3h & 20 epoch \\
+DINOv2-Small（解冻末 2 层） & 0.01062 & $\sim$4h & 20 epoch \\
+\bottomrule
+\end{tabular}
+\end{block}
+\vspace{1mm}
+\begin{figure}
+\centering
+\includegraphics[width=0.48\linewidth]{train_loss.png}
+\hfill
+\includegraphics[width=0.48\linewidth]{test_loss.png}
+\end{figure}
+\end{frame}
+
+% ================================================================
+\section{轮式到足式迁移验证}
+% ================================================================
+
+% ---------- 4.1 必要性（表格独占页） ----------
+\begin{frame}{迁移的必要性：地形通过性优势}
+\begin{block}{足式 vs 轮式平台地形对比}
+\centering
+\begin{tabular}{lccc}
+\toprule
+\textbf{地形类型} & \textbf{轮式平台} & \textbf{足式平台} & \textbf{应用场景} \\
+\midrule
+平坦地面 &  高效 &  可通行 & 室内导航 \\
+台阶/楼梯 &  不可通行 &  可攀爬 & 多楼层建筑 \\
+碎石/草地 &  受限 &  适应性强 & 室外探索 \\
+不平整地面 &  有限 &  自适应 & 救灾巡检 \\
+狭窄空间 &  受限 &  灵活 & 工厂仓库 \\
+\bottomrule
+\end{tabular}
+\end{block}
+\vspace{4mm}
+\begin{alertblock}{核心论点}
+\centering
+视觉导航策略仅在轮式平台运行 → 应用范围极大受限\\[1mm]
+将 NoMaD 扩散策略迁移至足式平台，是释放其在\textbf{复杂真实环境}中潜力的\textbf{必要条件}
+\end{alertblock}
+\end{frame}
+
+% ---------- 4.2 迁移挑战（表格独占页） ----------
+\begin{frame}{迁移的核心挑战}
+\begin{block}{轮式 → 足式五大挑战}
+\centering
+\smalltable
+\begin{tabular}{p{1.5cm}p{2.8cm}p{2.8cm}p{4.8cm}}
+\toprule
+\textbf{维度} & \textbf{轮式 (LoCoBot)} & \textbf{足式 (Lite3)} & \textbf{对 NoMaD 的挑战} \\
+\midrule
+运动学 & 差速驱动 $(v,\omega)$ & 12 DoF 关节空间 & PD 控制器需中间步态层 \\
+相机稳定 & 平稳无抖动 & 步态周期 $\pm 3^{\circ}$ & 编码器需抗运动模糊 \\
+控制频率 & 10--50 Hz & 100--1000 Hz & 扩散采样需 $\geq$15 Hz \\
+地形 & 仅平面 & 台阶/斜坡/碎石 & 2D waypoint 需高程扩展 \\
+视角 & $\sim$0.4 m & $\sim$0.32 m & 训练数据视角 mismatch \\
+\bottomrule
+\end{tabular}
+\end{block}
+\end{frame}
+
+% ---------- 4.3 仿真架构（文字页） ----------
+\begin{frame}{MuJoCo 仿真跨形态验证}
+\begin{block}{仿真控制链路}
+\begin{enumerate}
+\item NoMaD 策略输出 8$\times$(x,y) waypoint 轨迹
+\item PD 控制层：选取最近 waypoint，转换为线速度 $v$ + 角速度 $\omega$
+\item 云深处 Lite3 的 sdk\_deploy 接口 → 四足机器人执行
+\end{enumerate}
+\end{block}
+\pause
+\begin{exampleblock}{为什么真实数据训练 → 仿真测试可行？}
+\begin{itemize}
+\item 策略输出为\textbf{抽象 waypoint}（非像素级指令），天然跨场景迁移
+\item 视觉编码器学到\textbf{通用空间结构}特征，非特定纹理
+\item Goal Masking 的 50\% 遮蔽训练增强了\textbf{视觉域差异容忍度}
+\end{itemize}
+\end{exampleblock}
+\pause
+\begin{block}{测试配置}
+3 种场景 $\times$ 2 种采样 = 6 组实验 \quad
+{\small 场景：简单 / 中等 / 困难 \quad 采样：DDPM-10 步 / DDIM-5 步}
+\end{block}
+\end{frame}
+
+% ---------- 4.4 仿真视频 DDPM（视频嵌入页） ----------
+\begin{frame}{仿真导航演示——DDPM-10 步}
+\begin{columns}[c]
+\begin{column}{0.32\textwidth}
+\centering
+\movie[externalviewer]{%
+\begin{tikzpicture}
+\node[draw=sjtuBlue,fill=sjtuBlue!10,minimum width=4cm,minimum height=3cm,align=center,font=\large]{\textcolor{sjtuBlue}{\ding{213}}\\[2mm]\footnotesize 点击播放};
+\end{tikzpicture}%
+}{figures/ddpm-easy.mp4}\\[2mm]
+{\small\textbf{简单场景}}
+\end{column}
+\begin{column}{0.32\textwidth}
+\centering
+\movie[externalviewer]{%
+\begin{tikzpicture}
+\node[draw=sjtuBlue,fill=sjtuBlue!10,minimum width=4cm,minimum height=3cm,align=center,font=\large]{\textcolor{sjtuBlue}{\ding{213}}\\[2mm]\footnotesize 点击播放};
+\end{tikzpicture}%
+}{figures/ddpm-mid.mp4}\\[2mm]
+{\small\textbf{中等场景}}
+\end{column}
+\begin{column}{0.32\textwidth}
+\centering
+\movie[externalviewer]{%
+\begin{tikzpicture}
+\node[draw=sjtuBlue,fill=sjtuBlue!10,minimum width=4cm,minimum height=3cm,align=center,font=\large]{\textcolor{sjtuBlue}{\ding{213}}\\[2mm]\footnotesize 点击播放};
+\end{tikzpicture}%
+}{figures/ddpm-hard.mp4}\\[2mm]
+{\small\textbf{困难场景}}
+\end{column}
+\end{columns}
+\vspace{5mm}
+\centering
+\end{frame}
+
+% ---------- 4.5 仿真视频 DDIM（视频嵌入页） ----------
+\begin{frame}{仿真导航演示——DDIM-5 步}
+\begin{columns}[c]
+\begin{column}{0.32\textwidth}
+\centering
+\movie[externalviewer]{%
+\begin{tikzpicture}
+\node[draw=sjtuGold,fill=sjtuGold!10,minimum width=4cm,minimum height=3cm,align=center,font=\large]{\textcolor{sjtuGold}{\ding{213}}\\[2mm]\footnotesize 点击播放};
+\end{tikzpicture}%
+}{figures/ddim-easy.mp4}\\[2mm]
+{\small\textbf{简单场景}}
+\end{column}
+\begin{column}{0.32\textwidth}
+\centering
+\movie[externalviewer]{%
+\begin{tikzpicture}
+\node[draw=sjtuGold,fill=sjtuGold!10,minimum width=4cm,minimum height=3cm,align=center,font=\large]{\textcolor{sjtuGold}{\ding{213}}\\[2mm]\footnotesize 点击播放};
+\end{tikzpicture}%
+}{figures/ddim-mid.mp4}\\[2mm]
+{\small\textbf{中等场景}}
+\end{column}
+\begin{column}{0.32\textwidth}
+\centering
+\movie[externalviewer]{%
+\begin{tikzpicture}
+\node[draw=sjtuGold,fill=sjtuGold!10,minimum width=4cm,minimum height=3cm,align=center,font=\large]{\textcolor{sjtuGold}{\ding{213}}\\[2mm]\footnotesize 点击播放};
+\end{tikzpicture}%
+}{figures/ddim-hard.mp4}\\[2mm]
+{\small\textbf{困难场景}}
+\end{column}
+\end{columns}
+\vspace{5mm}
+\centering
+\end{frame}
+
+% ---------- 4.6 仿真问题与方案（文字页） ----------
+\begin{frame}{仿真中发现的问题}
+\begin{alertblock}{当前问题：视觉编码器感知误差导致碰撞}
+\begin{itemize}
+\item 模型每步生成 8 个 waypoint 轨迹，PD 控制器\textbf{仅执行第一个 waypoint}
+\item 执行后重新感知、重新生成新轨迹（逐步推进式重规划）
+\item 尽管已有逐步重规划，机器人仍\textbf{偶发碰撞}障碍物
+\end{itemize}
+\end{alertblock}
+\pause
+\begin{exampleblock}{碰撞根本原因：视觉编码器感知误差}
+\begin{itemize}
+\item \textbf{域差距}：训练于斯坦福采集的室内场景，测试于 MuJoCo 渲染场景，视觉外观差异
+\item \textbf{视高不匹配}：LoCoBot 相机 $\sim$0.4 m → Lite3 $\sim$0.32 m，透视关系与深度估计偏差
+\item \textbf{步态抖动}：四足行走引起周期性相机晃动，产生运动模糊，降低编码器特征精度
+\end{itemize}
+\end{exampleblock}
+\pause
+\begin{block}{下一步：开环 → 闭环优化}
+引入持续障碍物检测与实时反馈机制，在 waypoint 执行过程中动态修正轨迹\\
+→ 实现真正的\textbf{闭环感知-规划-执行}循环
+\end{block}
+\end{frame}
+
+% ================================================================
+\section{创新点与阶段性成果}
+% ================================================================
+
+% ---------- 5.1 创新点（文字页） ----------
+\begin{frame}{创新点总结}
+\begin{enumerate}
+\item \textbf{首次在足式平台验证连续 waypoint 扩散导航策略}
+\begin{itemize}
+\item 填补了文献空白：NoMaD 从未在足式机器人上系统性验证
+\end{itemize}
+\pause
+\item \textbf{DDIM + CFG 联合优化方案}
+\begin{itemize}
+\item DDIM-5 端到端 $\sim$15.7 Hz，满足 $\geq$15 Hz；CFG $w{=}1.0$ 提升导航质量
+\end{itemize}
+\pause
+\item \textbf{跨形态零样本迁移验证}
+\begin{itemize}
+\item 轮式数据训练 → 足式仿真直接部署，验证动作空间抽象性优势
+\end{itemize}
+\pause
+\item \textbf{DINOv2 自监督编码器探索}
+\begin{itemize}
+\item 验证自监督视觉特征在导航任务的可行性，为跨视角泛化提供新方向
+\end{itemize}
+\end{enumerate}
+\end{frame}
+
+% ---------- 5.2 阶段性成果汇总（表格独占页） ----------
+\begin{frame}{阶段性成果汇总}
+\begin{block}{定量成果}
+\centering
+\begin{tabular}{lcc}
+\toprule
+\textbf{指标} & \textbf{基线值} & \textbf{优化后} \\
+\midrule
+端到端推理频率 & 12.8 Hz (DDPM-10) & \textbf{$\sim$15.7 Hz} (DDIM-5) \\
+扩散采样加速比 & 1.0$\times$ & \textbf{1.94$\times$} \\
+MSE（轨迹质量） & 0.000047 & 0.000033（无损） \\
+CFG 最佳引导 & $w{=}0$ & $w{=}1.0$（Diversity $\uparrow$ 32\%） \\
+\bottomrule
+\end{tabular}
+\end{block}
+\vspace{3mm}
+\begin{block}{定性成果}
+\begin{itemize}
+\item 完成 NoMaD 全流程复现（训练 + 推理 + 可视化）
+\item MuJoCo 仿真中成功实现 Lite3 四足机器人视觉导航
+\item 建立了较完整的实验评估框架
+\end{itemize}
+\end{block}
+\end{frame}
+
+% ================================================================
+\section{下一阶段研究重点}
+% ================================================================
+
+% ---------- 6.1 下一阶段（简洁列表） ----------
+\begin{frame}{下一阶段研究重点}
+\begin{block}{核心任务}
+\begin{enumerate}
+\item \textbf{开环策略优化为闭环策略}
+\item \textbf{步态抖动鲁棒性实验与 CFG 补偿验证}
+\item \textbf{完整消融实验}
+\item \textbf{DeepRobotics Lite3 真机部署}
+\item \textbf{毕业论文撰写}
+\end{enumerate}
+\end{block}
+\end{frame}
+
+% ==================== 结束页 ====================
+{
+\setbeamertemplate{footline}{}
+\begin{frame}
+\begin{center}
+\vspace{15mm}
+{\Huge\bfseries\color{sjtuBlue} 谢谢各位老师！}\\[10mm]
+{\Large 欢迎批评指正}\\[8mm]
+{\large 汇报人：陈样}\\[2mm]
+{\normalsize 上海交通大学}\\[2mm]
+{\normalsize 2026 年 3 月}
+\end{center}
+\end{frame}
+}
+
+\end{document}

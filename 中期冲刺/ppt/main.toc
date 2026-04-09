@@ -1,0 +1,6 @@
+\beamer@sectionintoc {1}{研究背景与问题}{3}{0}{1}
+\beamer@sectionintoc {2}{NoMaD 框架复现}{8}{0}{2}
+\beamer@sectionintoc {3}{面向足式部署的三项优化}{15}{0}{3}
+\beamer@sectionintoc {4}{轮式到足式迁移验证}{22}{0}{4}
+\beamer@sectionintoc {5}{创新点与阶段性成果}{32}{0}{5}
+\beamer@sectionintoc {6}{下一阶段研究重点}{37}{0}{6}

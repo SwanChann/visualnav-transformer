@@ -1,0 +1,49 @@
+# ================================================================
+#  NoMaD 中期冲刺实验脚本 — Python 依赖清单
+#  环境: Python 3.8 + CUDA 12.1 + RTX 4090
+# ================================================================
+#
+#  使用方式:
+#    conda activate nomad
+#    cd <repo_root>
+#    pip install -r scripts/requirements.txt
+#
+#  注意: PyTorch 需单独安装（需要指定 CUDA index），见下方说明
+# ================================================================
+
+# ── 1. PyTorch (请单独执行，不要通过本文件安装) ──────────────
+# pip install torch==2.1.0 torchvision==0.16.0 --index-url https://download.pytorch.org/whl/cu121
+# 验证: python -c "import torch; print(torch.cuda.is_available(), torch.version.cuda)"
+# 预期输出: True 12.1
+
+# ── 2. Diffusion & HuggingFace ──────────────────────────────
+# diffusers==0.11.1 与项目原始 train_environment.yml 一致
+# huggingface-hub 锁定 0.10.1 以保留 cached_download，确保 diffusers 可正常 import
+# DDPMScheduler / DDIMScheduler 均在 0.11.1 中可用（自 0.2.0 起就有）
+diffusers==0.11.1
+huggingface-hub==0.10.1
+
+# ── 3. NoMaD 模型依赖 ──────────────────────────────────────
+efficientnet-pytorch>=1.1.0
+vit-pytorch>=0.40.0
+positional-encodings[torch]>=6.0.0
+
+# ── 4. 训练 & 日志 ─────────────────────────────────────────
+wandb==0.12.18
+prettytable>=2.0.0
+lmdb>=1.3.0
+warmup-scheduler>=0.3.0
+
+# ── 5. 图像处理 & 数据 ─────────────────────────────────────
+opencv-python==4.6.0.66
+Pillow>=9.0.0,<11.0.0
+matplotlib>=3.5.0,<4.0.0
+tqdm==4.64.0
+h5py==3.6.0
+numpy>=1.21.0,<2.0.0
+
+# ── 6. DINOv2 (Day 4 才需要) ───────────────────────────────
+timm>=0.9.0,<1.0.0
+
+# ── 7. 仿真 (Day 5, 在仿真机上安装) ───────────────────────
+# pip install pybullet>=3.2.5

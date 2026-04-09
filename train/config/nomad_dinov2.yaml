@@ -1,0 +1,87 @@
+# ────────────────────────────────────────────────────────────
+# NoMaD + DINOv2-Small Training Configuration
+# Based on nomad.yaml with the following changes:
+#   1. vision_encoder: nomad_vint_dinov2 (replaces nomad_vint)
+#   2. batch_size: 64 (DINOv2-S 21M params → higher VRAM per sample)
+#   3. lr: 5e-5 (backbone frozen, only projection + diffusion trainable)
+#   4. epochs: 20 (short verification run; extend to 100 if converging)
+#   5. image_size: [98, 98] (DINOv2 patch_size=14, 98=14×7)
+# ────────────────────────────────────────────────────────────
+
+project_name: nomad-dinov2
+run_name: nomad_dinov2
+
+# ── Training Setup ──────────────────────────────────────────
+use_wandb: True
+train: True
+batch_size: 64          # reduced from 256: DINOv2 backbone uses more VRAM
+eval_batch_size: 64
+epochs: 20              # short verification; increase to 100 after confirming convergence
+gpu_ids: [0]
+num_workers: 8          # reduce from 12 to avoid CPU bottleneck with smaller batch
+lr: 5e-5               # lower LR: backbone frozen, only train projection + heads
+optimizer: adamw
+clipping: False
+max_norm: 1.0
+scheduler: "cosine"
+warmup: True
+warmup_epochs: 2        # shorter warmup for 20-epoch run
+cyclic_period: 10
+plateau_patience: 3
+plateau_factor: 0.5
+seed: 0
+
+# ── Model Architecture ─────────────────────────────────────
+model_type: nomad
+vision_encoder: nomad_vint_dinov2   # <-- DINOv2 encoder (scripts/nomad_vint_dinov2.py)
+encoding_size: 256
+obs_encoder: dinov2_vits14          # informational: actual loading in NoMaD_ViNT_DINOv2
+freeze_backbone: True               # freeze DINOv2, only train projection layers
+attn_unet: False
+cond_predict_scale: False
+mha_num_attention_heads: 4
+mha_num_attention_layers: 4
+mha_ff_dim_factor: 4
+down_dims: [64, 128, 256]
+
+# ── Diffusion Model ────────────────────────────────────────
+num_diffusion_iters: 10
+
+# ── Goal Masking ────────────────────────────────────────────
+goal_mask_prob: 0.5
+
+# ── Data ────────────────────────────────────────────────────
+normalize: True
+context_type: temporal
+context_size: 3
+alpha: 1e-4
+
+distance:
+  min_dist_cat: 0
+  max_dist_cat: 20
+action:
+  min_dist_cat: 3
+  max_dist_cat: 20
+
+len_traj_pred: 8
+learn_angle: False
+
+image_size: [98, 98]    # DINOv2 patch_size=14, 98=14×7 (changed from 96×96)
+
+datasets:
+  go_stanford:
+    data_folder: nomad_dataset/go_stanford
+    train: train/vint_train/data/data_splits/go_stanford/train/
+    test: train/vint_train/data/data_splits/go_stanford/test/
+    end_slack: 0
+    goals_per_obs: 2
+    negative_mining: True
+
+# ── Logging ─────────────────────────────────────────────────
+print_log_freq: 50      # more frequent logging for short run
+image_log_freq: 500
+num_images_log: 8
+pairwise_test_freq: 0
+eval_fraction: 0.25
+wandb_log_freq: 10
+eval_freq: 1
