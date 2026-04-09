@@ -1,70 +1,103 @@
-# NoMaD 中期冲刺实验脚本
+# Scripts Layout
 
-> **环境要求**：Ubuntu 22.04 · Python 3.8 · RTX 4090 (24 GB) · CUDA 12.1
+## Canonical Paths
 
-## 脚本列表
+The `scripts/` directory now has categorized entrypoints.  
+Root-level scripts are still kept as legacy-compatible entrypoints, but new work and docs should prefer the categorized paths below.
 
-| 脚本 | Day | 功能 | 依赖 |
-|------|-----|------|------|
-| `check_dataset.py` | Day 1 | 数据集完整性检查 | — |
-| `offline_inference.py` | Day 1 | NoMaD 离线推理基线 | 预训练权重 |
-| `ddim_experiment.py` | Day 2 | DDIM 加速采样对比实验 | `offline_inference.py` |
-| `ddim_stat_experiment.py` | Day 2 | DDIM 多次重复统计实验 | `nomad_eval_common.py` |
-| `realtime_inference.py` | Day 2 | 实时摄像头推理 | `offline_inference.py` |
-| `cfg_experiment.py` | Day 3 | CFG 目标引导实验 | `offline_inference.py` |
-| `cfg_stat_experiment.py` | Day 3 | CFG 多次重复统计实验 | `nomad_eval_common.py` |
-| `gait_shake_robustness.py` | Day 3 | 步态抖动鲁棒性实验 | `offline_inference.py` |
-| `nomad_vint_dinov2.py` | Day 4 | DINOv2 视觉编码器适配模块 | `timm` |
-| `train_dinov2.py` | Day 4 | DINOv2 独立训练脚本 | `nomad_vint_dinov2.py` |
-| `nomad_vint_backbone_suite.py` | Day 4 | 多视觉编码器统一封装 | `timm` |
-| `train_backbone_suite.py` | Day 4 | ConvNeXt / ResNet / DINOv2 训练入口 | `nomad_vint_backbone_suite.py` |
-| `encoder_comparison_experiment.py` | Day 4 | 多视觉编码器导航对比实验 | `nomad_eval_common.py` |
-| `lite3_sim.py` | Day 5 | PyBullet 仿真 + 轮式 vs 足式对比 | `pybullet`（仿真机） |
-| `nomad_mujoco_lite3_nav.py` | Day 6 | NoMaD + Lite3 + MuJoCo + RL 联合导航 | `mujoco` `onnxruntime` |
-| `nomad_mujoco_tron1_nav.py` | Day 6 | Tron1 MuJoCo 适配入口与资产检查 | `mujoco`（后续接入） |
-| `nomad_real_deployment_checklist.py` | Day 7 | Lite3 / Tron1 真机部署清单生成 | — |
+### `scripts/analysis/`
 
-## 统一运行方式
+- `check_dataset.py`
+- `offline_inference.py`
+- `realtime_inference.py`
+- `result_collector.py`
+- `thesis_result_summary.py`
+
+### `scripts/experiments/`
+
+- `ablation_experiment.py`
+- `ddim_experiment.py`
+- `ddim_stat_experiment.py`
+- `cfg_experiment.py`
+- `cfg_stat_experiment.py`
+- `gait_shake_robustness.py`
+- `encoder_comparison_experiment.py`
+
+### `scripts/models/`
+
+- `nomad_vint_dinov2.py`
+- `nomad_vint_backbone_suite.py`
+
+### `scripts/training/`
+
+- `train_dinov2.py`
+- `train_backbone_suite.py`
+
+### `scripts/shared/`
+
+- `nomad_eval_common.py`
+
+### `scripts/tooling/`
+
+- `env_check.py`
+- `path_audit.py`
+- `project_paths.py`
+
+### `scripts/simulation/`
+
+- `lite3_sim.py`
+- `nomad_mujoco_lite3_nav.py`
+- `nomad_mujoco_lite3_state_machine.py`
+- `nomad_mujoco_tron1_nav.py`
+
+### `scripts/deployment/`
+
+- `nomad_real_deployment_checklist.py`
+
+## Lite3 MuJoCo Structure
+
+There are now two Lite3 MuJoCo paths:
+
+1. Legacy monolithic implementation:
+   `scripts/nomad_mujoco_lite3_nav.py`
+2. Categorized legacy-compatible entrypoint:
+   `scripts/simulation/nomad_mujoco_lite3_nav.py`
+3. New modular state-machine implementation:
+   `scripts/simulation/nomad_mujoco_lite3_state_machine.py`
+
+The new modular system splits the stack into:
+
+- High level: NoMaD topomap localization and waypoint generation
+- Middle level: waypoint to velocity PD bridge
+- Low level: Lite3 ONNX locomotion plus MuJoCo physics execution
+- State machine: `idle / standup / navigate / explore / recovery_back / recovery_turn / completed / failed`
+
+Supporting modules live in:
+
+- `scripts/simulation/lite3_system/interfaces.py`
+- `scripts/simulation/lite3_system/topomap.py`
+- `scripts/simulation/lite3_system/states.py`
+- `scripts/simulation/lite3_system/system.py`
+
+## Topomap Sources
+
+`topomap` candidate node images can come from two different sources:
+
+1. Dataset source:
+   loaded from GoStanford trajectories by `load_topomap_from_dataset`
+2. Deployment / simulation source:
+   generated online or offline from the real scene / MuJoCo scene by `generate-topomap`
+
+In other words, topomap nodes are not generated from encoder features during deployment.  
+They are pre-collected or pre-generated reference images, and NoMaD uses the current observation to match against them.
+
+## Example Commands
 
 ```bash
-# SSH 连接训练机，激活环境
-ssh yifei@<训练机IP>
-conda activate nomad
-
-# 所有脚本均在项目根目录下运行
-cd <repo_root>
-python scripts/<脚本名>.py
-```
-
-## 安装依赖
-
-```bash
-# 1. 安装 PyTorch (CUDA 12.1)
-pip install torch==2.1.0 torchvision==0.16.0 --index-url https://download.pytorch.org/whl/cu121
-
-# 2. 安装项目训练包
-cd train && pip install -e .
-
-# 3. 安装实验依赖
-cd <repo_root>
-pip install -r scripts/requirements.txt
-```
-
-## 输出目录
-
-所有实验结果保存在 `results/` 目录下，按 Day 分组，每次运行生成带时间戳的子目录：
-
-```
-results/
-├── day1/YYYYMMDD_HHMMSS_offline_inference/
-├── day2/YYYYMMDD_HHMMSS_ddim_experiment/
-├── day2/YYYYMMDD_HHMMSS_ddim_stat_experiment/
-├── realtime/YYYYMMDD_HHMMSS_realtime/
-├── day3/YYYYMMDD_HHMMSS_cfg_experiment/
-├── day3/YYYYMMDD_HHMMSS_cfg_stat_experiment/
-├── day3/YYYYMMDD_HHMMSS_gait_shake/
-├── day4/YYYYMMDD_HHMMSS_encoder_comparison_experiment/
-├── day4/  (DINOv2 与多编码器训练日志在 train/logs/)
-├── day5/  (仿真结果)
-└── day6/  (消融实验汇总)
+python scripts/analysis/offline_inference.py
+python scripts/experiments/ddim_stat_experiment.py --cases-per-suite 8 --num-runs 8
+python scripts/training/train_backbone_suite.py --config config/nomad_dinov2.yaml --backbone dinov2_small --freeze-backbone --pretrained-backbone
+python scripts/simulation/nomad_mujoco_lite3_nav.py --mode navigate --map easy
+python scripts/simulation/nomad_mujoco_lite3_state_machine.py --mode mission --map medium --mission-topomap topomaps/medium
+python scripts/deployment/nomad_real_deployment_checklist.py --platform lite3 --save
 ```
