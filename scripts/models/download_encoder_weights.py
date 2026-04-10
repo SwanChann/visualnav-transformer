@@ -21,9 +21,17 @@ BACKBONE_INPUT_SIZES: Dict[str, int] = {
     "resnet50": 96,
 }
 
+BACKBONE_GLOBAL_POOLS: Dict[str, str] = {
+    "dinov2_small": "token",
+    "convnext_tiny": "avg",
+    "resnet50": "avg",
+}
 
-def parse_backbones(raw_backbones: List[str]) -> List[str]:
+
+def parse_backbones(raw_backbones: List[str] | None) -> List[str]:
     """Parse requested backbone names."""
+    if raw_backbones is None:
+        return list(BACKBONE_TIMM_NAMES.keys())
     if "all" in raw_backbones:
         return list(BACKBONE_TIMM_NAMES.keys())
     return raw_backbones
@@ -52,10 +60,10 @@ def create_timm_model(backbone_name: str):
     create_kwargs = {
         "pretrained": True,
         "num_classes": 0,
-        "global_pool": "avg",
+        "global_pool": BACKBONE_GLOBAL_POOLS[backbone_name],
     }
     if backbone_name == "dinov2_small":
-        # 中文注释：DINOv2 使用 patch14，开启动态尺寸以匹配 98x98 输入
+        # 中文注释：DINOv2 使用 token pooling，避免预训练权重的 norm 键和 fc_norm 键不匹配
         create_kwargs["dynamic_img_size"] = True
 
     return timm.create_model(BACKBONE_TIMM_NAMES[backbone_name], **create_kwargs)
@@ -80,7 +88,7 @@ def main() -> None:
     parser.add_argument(
         "--backbone",
         action="append",
-        default=["all"],
+        default=None,
         choices=["all", *BACKBONE_TIMM_NAMES.keys()],
         help="Backbone to download, can be repeated",
     )

@@ -27,6 +27,7 @@ class BackboneSpec:
 
     timm_name: str
     input_size: int
+    global_pool: str = "avg"
     dynamic_img_size: bool = False
 
 
@@ -34,6 +35,7 @@ BACKBONE_SPECS: Dict[str, BackboneSpec] = {
     "dinov2_small": BackboneSpec(
         timm_name="vit_small_patch14_dinov2.lvd142m",
         input_size=98,
+        global_pool="token",
         dynamic_img_size=True,
     ),
     "convnext_tiny": BackboneSpec(
@@ -77,7 +79,7 @@ class TimmBackboneEncoder(nn.Module):
         create_kwargs = {
             "pretrained": pretrained,
             "num_classes": 0,
-            "global_pool": "avg",
+            "global_pool": self.spec.global_pool,
         }
         if self.spec.dynamic_img_size:
             create_kwargs["dynamic_img_size"] = True
