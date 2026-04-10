@@ -27,11 +27,19 @@ Root-level scripts are still kept as legacy-compatible entrypoints, but new work
 
 - `nomad_vint_dinov2.py`
 - `nomad_vint_backbone_suite.py`
+- `download_encoder_weights.py`
 
 ### `scripts/training/`
 
 - `train_dinov2.py`
 - `train_backbone_suite.py`
+- `run_encoder_seed_sweep.py`
+
+### `scripts/configs/vision_encoder/`
+
+- `nomad_encoder_dinov2_small.yaml`
+- `nomad_encoder_convnext_tiny.yaml`
+- `nomad_encoder_resnet50.yaml`
 
 ### `scripts/shared/`
 
@@ -96,7 +104,9 @@ They are pre-collected or pre-generated reference images, and NoMaD uses the cur
 ```bash
 python scripts/analysis/offline_inference.py
 python scripts/experiments/ddim_stat_experiment.py --cases-per-suite 8 --num-runs 8
+python scripts/models/download_encoder_weights.py --backbone all
 python scripts/training/train_backbone_suite.py --config config/nomad_dinov2.yaml --backbone dinov2_small --freeze-backbone --pretrained-backbone
+python scripts/training/run_encoder_seed_sweep.py --base-config scripts/configs/vision_encoder/nomad_encoder_dinov2_small.yaml --backbone dinov2_small --seeds 0 1 2 --freeze-backbone --pretrained-backbone --dry-run
 python scripts/simulation/nomad_mujoco_lite3_nav.py --mode navigate --map easy
 python scripts/simulation/nomad_mujoco_lite3_state_machine.py --mode mission --map medium --mission-topomap topomaps/medium
 python scripts/deployment/nomad_real_deployment_checklist.py --platform lite3 --save
