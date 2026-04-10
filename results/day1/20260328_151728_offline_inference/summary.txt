@@ -1,8 +1,0 @@
-Run time: 20260328_151728
-Script: offline_inference.py
-Test trajectory: no10vcF_10_0
-Model params: 19,049,675
-DDPM inference time: 0.0780 s (10 steps)
-Inference frequency: 12.8 Hz
-Generated trajectories: 8 x 8 waypoints
-Predicted distance: 10.2580

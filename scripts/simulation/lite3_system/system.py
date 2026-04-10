@@ -79,7 +79,8 @@ class Lite3System:
         self.velocity_log.append((command.linear_x, command.yaw_rate))
 
     def _show_camera(self, camera_image, extra_text: str, goal_view=None) -> None:
-        self.legacy.show_fpv_realtime(camera_image, self.tick, extra_text, goal_view=goal_view)
+        if not self.args.no_gui:
+            self.legacy.show_fpv_realtime(camera_image, self.tick, extra_text, goal_view=goal_view)
         if self.fp_dir and self.tick % 5 == 0:
             camera_image.save(self.fp_dir / f"{self.tick:04d}.png")
 
@@ -214,4 +215,6 @@ class Lite3System:
             return 0
         if current_name == "completed" and self.args.mode in {"explore", "walk-test"}:
             return 0
+        if current_name == "completed" and self.args.mode in {"navigate", "mission"}:
+            return 1
         return 1 if current_name == "failed" else 0

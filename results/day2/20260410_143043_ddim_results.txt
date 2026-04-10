@@ -1,0 +1,28 @@
+Run Time: 20260410_143043
+Script: ddim_experiment.py
+Repeat runs per config: 10
+
+# 列说明:
+#   Config      - 调度器类型及去噪步数
+#   Time(ms)    - 平均推理延迟 (ms)，越低越好
+#   Std(ms)     - 推理时间标准差 (ms)
+#   MSE         - 相对 DDPM-10 基线轨迹的均方误差
+#                 衡量轨迹质量退化程度；0 = 完全一致
+#   Diversity   - 采样轨迹路径点的标准差
+#                 越高 = 轨迹越多样
+#   Steps       - 使用的去噪步数
+#   Speedup     - 相对 DDPM 基线的加速比
+
+Config                 Time(ms)     Std(ms)    MSE            Diversity    Steps    Speedup 
+--------------------------------------------------------------------------------------
+DDPM-10 (baseline)     36.83        2.79       0.000052       0.0242       10       1.00    x
+DDIM-10                34.30        1.21       0.000021       0.0440       10       1.07    x
+DDIM-5                 17.92        1.54       0.000035       0.0329       5        2.06    x
+DDIM-3                 10.43        0.33       0.000019       0.0327       3        3.53    x
+DDIM-2                 7.24         0.70       0.000091       0.0436       2        5.09    x
+DDIM-1                 3.61         0.29       0.008194       0.5839       1        10.21   x
+
+# 关键发现:
+#   Best speed-quality tradeoff: DDIM-2
+#     Time: 7.24 ms, MSE: 0.000091
+#   Fastest config: DDIM-1 (3.61 ms)

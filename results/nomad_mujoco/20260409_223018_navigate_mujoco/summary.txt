@@ -1,4 +1,0 @@
-Mode: navigate_mujoco
-Steps: 70
-Total distance: 7.467 m
-Reached goal: True

@@ -1,0 +1,4 @@
+Mode: lite3_state_machine_mission
+Steps: 129
+Total distance: 12.601 m
+Reached goal: True

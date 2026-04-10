@@ -85,7 +85,7 @@
 | **DDIM-2+CFG 导航 easy** | `--scheduler ddim --ddim-steps 2 --cfg-weight 1.0` | `results/nomad_mujoco/20260409_230237_navigate_mujoco/` | SUCCESS, 42 步, 0 恢复 | 5.x CFG 对比 |
 | **DDIM-2+CFG 导航 medium** | `--scheduler ddim --ddim-steps 2 --cfg-weight 1.0` | `results/nomad_mujoco/20260409_230246_navigate_mujoco/` | SUCCESS, 61 步, 0 恢复 | 5.x CFG 对比 |
 | **DDIM-2+CFG 导航 hard** | `--scheduler ddim --ddim-steps 2 --cfg-weight 1.0` | `results/nomad_mujoco/20260409_230257_navigate_mujoco/` | SUCCESS, 70 步, 0 恢复 | 5.x CFG 对比 |
-| **DDIM-2 探索 easy** | `--mode explore --scheduler ddim --ddim-steps 2` | `results/nomad_mujoco/20260409_230327_explore_mujoco/` | 100 步, 2 恢复, ~6.6m | 5.x 探索模式 |
+| **DDIM-2 探索 easy** | `--mode explore --scheduler ddim --ddim-steps 2` | `results/nomad_mujoco/20260409_230327_explore_mujoco/` | 100 步, 2 恢复, 8.671m | 5.x 探索模式 |
 | **状态机 DDIM-2** | `state_machine --scheduler ddim --ddim-steps 2` | `results/nomad_mujoco/20260409_230434_lite3_state_machine_navigate/` | SUCCESS, 44 步, 4.673m | 5.x 状态机 |
 | **多目标 mission** | `state_machine --mode mission --scheduler ddim --ddim-steps 2` | `results/nomad_mujoco/20260409_230505_lite3_state_machine_mission/` | SUCCESS, 152 步, 13.466m | 5.x 多目标导航 |
 
@@ -129,7 +129,7 @@
 ## 最终推荐配置
 
 1. **模型**：NoMaD（19M 参数）
-2. **调度器**：DDIM-5（2× 加速，精度损失可忽略）
-3. **引导强度**：CFG w=1.0（适度引导，轨迹更集中）
-4. **视觉编码器**：DINOv2-small 表现优于 EfficientNet-b0（需训练验证）
-5. **Lite3 仿真**：3 地图 × 2 调度器 = 6/6 成功率
+2. **调度器**：DDIM-2（联合优化综合最优，6.18ms，4.84× 加速）；若论文强调保守精度，可把 DDIM-5 作为稳健备选。
+3. **引导强度**：整体推荐 w=0.0；在 medium 障碍场景中可使用 CFG w=1.0 作为避障增强配置。
+4. **视觉编码器**：DINOv2-small 在现有评测中优于 EfficientNet-b0，但 ConvNeXt/ResNet 训练结果缺失，应写成探索性对比。
+5. **Lite3 仿真**：DDPM、DDIM-5、DDIM-2 与 DDIM-2+CFG 均已有成功结果；正式表格应引用 summary.txt 的实测路径距离。

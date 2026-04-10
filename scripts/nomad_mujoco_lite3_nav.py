@@ -1230,7 +1230,8 @@ def run_explore(args):
         # ── 实时 FPV 显示 ──
         actual_vel = env.get_body_speed_forward()
         status_text = f"State: {state_machine} | v_body={actual_vel:.3f} m/s"
-        show_fpv_realtime(cam_img, step_i, status_text)
+        if not args.no_gui:
+            show_fpv_realtime(cam_img, step_i, status_text)
 
         # ── 状态机: 碰撞恢复 ──
         if state_machine == "RECOVERY_BACK":
@@ -1449,7 +1450,8 @@ def run_navigate(args):
         # ── 实时 FPV + 目标点视角显示 ──
         actual_vel = env.get_body_speed_forward()
         status_text = f"{state_machine} | node={closest_node}/{goal_node} | v_body={actual_vel:.3f}"
-        show_fpv_realtime(cam_img, step_i, status_text, goal_view=goal_view_img)
+        if not args.no_gui:
+            show_fpv_realtime(cam_img, step_i, status_text, goal_view=goal_view_img)
 
         # ── 状态机: 碰撞恢复 ──
         if state_machine == "RECOVERY_BACK":

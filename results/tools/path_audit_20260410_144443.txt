@@ -1,0 +1,280 @@
+NoMaD Thesis Path Audit
+Time: 2026-04-10 14:44:40
+Repo root: /home/swanchan/visualnav-transformer
+
+## results/deployment/20260410_144215_tron1_checklist/deployment_checklist.md
+- line 8 | linux_home | /home/swanchan/visualnav-transformer/deployment/model_weights/nomad.pth`
+- line 9 | linux_home | /home/swanchan/visualnav-transformer/deployment/src/navigate.py`
+- line 10 | linux_home | /home/swanchan/visualnav-transformer/deployment/src/pd_controller.py`
+- line 11 | linux_home | /home/swanchan/visualnav-transformer/deployment/config/models.yaml`
+- line 12 | linux_home | /home/swanchan/visualnav-transformer/deployment/config/robot.yaml`
+- line 13 | linux_home | /home/swanchan/visualnav-transformer/scripts/nomad_mujoco_tron1_nav.py`
+- line 14 | linux_home | /home/swanchan/visualnav-transformer/assets/tron1/mujoco/tron1.xml`
+- line 15 | linux_home | /home/swanchan/visualnav-transformer/assets/tron1/policy/policy.onnx`
+
+## results/deployment/20260410_144215_lite3_checklist/deployment_checklist.md
+- line 8 | linux_home | /home/swanchan/visualnav-transformer/deployment/model_weights/nomad.pth`
+- line 9 | linux_home | /home/swanchan/visualnav-transformer/deployment/src/navigate.py`
+- line 10 | linux_home | /home/swanchan/visualnav-transformer/deployment/src/pd_controller.py`
+- line 11 | linux_home | /home/swanchan/visualnav-transformer/deployment/config/models.yaml`
+- line 12 | linux_home | /home/swanchan/visualnav-transformer/deployment/config/robot.yaml`
+- line 13 | linux_home | /home/swanchan/visualnav-transformer/sdk_deploy/src/Lite3_sdk_deploy/Lite3_description/lite3_mjcf/mjcf/Lite3.xml`
+- line 14 | linux_home | /home/swanchan/visualnav-transformer/sdk_deploy/src/Lite3_sdk_deploy/policy/policy.onnx`
+- line 15 | linux_home | /home/swanchan/visualnav-transformer/scripts/nomad_mujoco_lite3_nav.py`
+
+## results/day1/20260410_143018_dataset_check.txt
+- line 3 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford
+
+## results/summary/thesis_result_summary_20260410_144434.md
+- line 81 | linux_home | /home/swanchan/visualnav-transformer/deployment/model_weights/nomad.pth`
+- line 82 | linux_home | /home/swanchan/visualnav-transformer/assets/tron1/mujoco/tron1.xml`
+- line 83 | linux_home | /home/swanchan/visualnav-transformer/assets/tron1/policy/policy.onnx`
+- line 84 | linux_home | /home/swanchan/visualnav-transformer/assets/tron1/config/camera.yaml`
+- line 85 | linux_home | /home/swanchan/visualnav-transformer/assets/tron1/README.md`
+
+## results/day3/20260410_143225_cfg_stat_experiment/README.txt
+- line 1 | linux_home | /home/swanchan/visualnav-transformer/deployment/model_weights/nomad.pth
+
+## results/day3/20260410_143225_cfg_stat_experiment/eval_cases.json
+- line 6 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no27vc_26_0
+- line 14 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no15vcF_7_0
+- line 22 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no4vc_116_0
+- line 30 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/sim3h_1_10
+- line 38 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/sim26h_4_6
+- line 46 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/sim8hF_0_12
+- line 54 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/sim2h_0_1
+- line 62 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/sim21h_0_4
+- line 70 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no27vc_26_0
+- line 78 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no15vcF_7_0
+- line 86 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no4vc_116_0
+- line 94 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/sim3h_1_10
+- line 102 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/sim26h_4_6
+- line 110 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/sim2h_0_1
+- line 118 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/sim21h_0_4
+- line 126 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/sim26h_0_2
+- line 134 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no27vc_26_0
+- line 142 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no15vcF_7_0
+- line 150 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no4vc_116_0
+- line 158 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/sim3h_1_10
+- line 166 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/sim26h_4_6
+- line 174 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/sim2h_0_1
+- line 182 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/sim21h_0_4
+- line 190 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/sim26h_0_2
+
+## results/day6/20260410_144215_tron1_tron1_plan/tron1_manifest.json
+- line 7 | linux_home | /home/swanchan/visualnav-transformer/deployment/model_weights/nomad.pth
+- line 14 | linux_home | /home/swanchan/visualnav-transformer/assets/tron1/mujoco/tron1.xml
+- line 21 | linux_home | /home/swanchan/visualnav-transformer/assets/tron1/policy/policy.onnx
+- line 28 | linux_home | /home/swanchan/visualnav-transformer/assets/tron1/config/camera.yaml
+- line 35 | linux_home | /home/swanchan/visualnav-transformer/assets/tron1/README.md
+
+## results/day6/20260410_144215_tron1_tron1_plan/tron1_report.md
+- line 4 | linux_home | /home/swanchan/visualnav-transformer`
+- line 11 | linux_home | /home/swanchan/visualnav-transformer/deployment/model_weights/nomad.pth`
+- line 12 | linux_home | /home/swanchan/visualnav-transformer/assets/tron1/mujoco/tron1.xml`
+- line 13 | linux_home | /home/swanchan/visualnav-transformer/assets/tron1/policy/policy.onnx`
+- line 14 | linux_home | /home/swanchan/visualnav-transformer/assets/tron1/config/camera.yaml`
+- line 15 | linux_home | /home/swanchan/visualnav-transformer/assets/tron1/README.md`
+
+## results/day4/20260410_143709_joint_ddim_cfg_experiment/README.txt
+- line 2 | linux_home | /home/swanchan/visualnav-transformer/deployment/model_weights/nomad.pth
+
+## results/day4/20260410_143709_joint_ddim_cfg_experiment/eval_cases.json
+- line 6 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no9vc_56_0
+- line 14 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no26vcF_20_0
+- line 22 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/sim2hF_0_0
+- line 30 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no14vc_16_1
+- line 38 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no5vc_144_0
+- line 46 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no31vcF_25_0
+- line 54 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/sim4h_0_0
+- line 62 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no4vcF_61_0
+- line 70 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no9vc_56_0
+- line 78 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no26vcF_20_0
+- line 86 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/sim2hF_0_0
+- line 94 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no14vc_16_1
+- line 102 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no5vc_144_0
+- line 110 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no31vcF_25_0
+- line 118 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/sim4h_0_0
+- line 126 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no4vcF_61_0
+- line 134 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no9vc_56_0
+- line 142 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no26vcF_20_0
+- line 150 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/sim2hF_0_0
+- line 158 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no14vc_16_1
+- line 166 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no5vc_144_0
+- line 174 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no31vcF_25_0
+- line 182 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/sim4h_0_0
+- line 190 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no4vcF_61_0
+
+## results/day4/20260410_143729_encoder_comparison_experiment/eval_cases.json
+- line 6 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no5vcF_117_0
+- line 14 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no6vc_22_1
+- line 22 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no3vcF_25_0
+- line 30 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/sim12h_1_2
+- line 38 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/sim12h_1_9
+- line 46 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no23vcF_83_0
+- line 54 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no16vcF_25_0
+- line 62 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/sim11hF_4_1
+- line 70 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no5vcF_117_0
+- line 78 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no6vc_22_1
+- line 86 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no3vcF_25_0
+- line 94 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/sim12h_1_2
+- line 102 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/sim12h_1_9
+- line 110 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no23vcF_83_0
+- line 118 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no16vcF_25_0
+- line 126 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/sim11hF_4_1
+- line 134 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no5vcF_117_0
+- line 142 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no3vcF_25_0
+- line 150 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/sim12h_1_2
+- line 158 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/sim12h_1_9
+- line 166 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no23vcF_83_0
+- line 174 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no16vcF_25_0
+- line 182 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/sim11hF_4_1
+- line 190 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no25vc_6_0
+
+## results/day2/20260410_143136_ddim_stat_experiment/README.txt
+- line 1 | linux_home | /home/swanchan/visualnav-transformer/deployment/model_weights/nomad.pth
+
+## results/day2/20260410_143136_ddim_stat_experiment/eval_cases.json
+- line 6 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no6vc_72_1
+- line 14 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no8vc_15_0
+- line 22 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no17vcF_5_2
+- line 30 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/sim29h_1_0
+- line 38 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/sim3h_1_9
+- line 46 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no30vcF_33_0
+- line 54 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no2vc_192_3
+- line 62 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no3vc_43_0
+- line 70 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no6vc_72_1
+- line 78 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no8vc_15_0
+- line 86 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no17vcF_5_2
+- line 94 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/sim29h_1_0
+- line 102 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/sim3h_1_9
+- line 110 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no30vcF_33_0
+- line 118 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no2vc_192_3
+- line 126 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no5vcF_20_0
+- line 134 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no6vc_72_1
+- line 142 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no8vc_15_0
+- line 150 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no17vcF_5_2
+- line 158 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/sim29h_1_0
+- line 166 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/sim3h_1_9
+- line 174 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no30vcF_33_0
+- line 182 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no2vc_192_3
+- line 190 | linux_home | /home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no5vcF_20_0
+
+## deployment/src/vint_locobot.launch
+- line 17 | linux_home | /home/racecar/vint_release/gnm-v2/deployment/config/cmd_vel_mux.yaml
+
+## .vscode/settings.json
+- line 4 | linux_home | /home/swanchan/visualnav-transformer/Lite3_rl_deploy
+
+## docs/NoMaD_复现指南.md
+- line 298 | linux_home | /home/your_username/visualnav-transformer/nomad_dataset/go_stanford/no10vcF_10_0/traj_data.pkl
+- line 1248 | linux_home | /home/john/visualnav-transformer/nomad_dataset/go_stanford
+- line 1263 | linux_home | /home/john/visualnav-transformer/nomad_dataset/go_stanford
+- line 2755 | linux_home | /home/yifei/codespace/visualnav-transformer/train/wandb/run-20251201_164322-ctu0lccn
+- line 2777 | linux_home | /home/yifei/codespace/visualnav-transformer/nomad_dataset/go_stanford
+- line 2778 | linux_home | /home/yifei/codespace/visualnav-transformer/train/vint_train/data/data_splits/go_stanford/train/
+- line 2779 | linux_home | /home/yifei/codespace/visualnav-transformer/train/vint_train/data/data_splits/go_stanford/test/
+
+## Lite3_rl_deploy/third_party/eigen/scripts/eigen_monitor_perf.sh
+- line 25 | linux_home | /home/eigen/eigen.tuxfamily.org-web/htdocs/perf_monitoring
+
+## Lite3_rl_deploy/third_party/gamepad/example/fmt/CMakeLists.txt
+- line 261 | windows_drive | C:\\Program
+
+## Lite3_rl_deploy/third_party/gamepad/example/fmt/ChangeLog.md
+- line 103 | windows_drive | C:\\foo
+
+## Lite3_rl_deploy/build/CMakeCache.txt
+- line 2 | linux_home | /home/swanchan/ysc/Lite3_rl_deploy/build
+- line 231 | linux_home | /home/swanchan/ysc/Lite3_rl_deploy/build
+- line 234 | linux_home | /home/swanchan/ysc/Lite3_rl_deploy
+- line 246 | linux_home | /home/swanchan/ysc/Lite3_rl_deploy/build
+- line 321 | linux_home | /home/swanchan/ysc/Lite3_rl_deploy
+
+## Lite3_rl_deploy/build/CMakeFiles/TargetDirectories.txt
+- line 1 | linux_home | /home/swanchan/ysc/Lite3_rl_deploy/build/CMakeFiles/rebuild_cache.dir
+- line 2 | linux_home | /home/swanchan/ysc/Lite3_rl_deploy/build/CMakeFiles/edit_cache.dir
+- line 3 | linux_home | /home/swanchan/ysc/Lite3_rl_deploy/build/CMakeFiles/rl_deploy.dir
+- line 4 | linux_home | /home/swanchan/ysc/Lite3_rl_deploy/build/interface/CMakeFiles/rebuild_cache.dir
+- line 5 | linux_home | /home/swanchan/ysc/Lite3_rl_deploy/build/interface/CMakeFiles/edit_cache.dir
+- line 6 | linux_home | /home/swanchan/ysc/Lite3_rl_deploy/build/interface/CMakeFiles/interface.dir
+
+## Lite3_rl_deploy/build/CMakeFiles/rl_deploy.dir/link.txt
+- line 1 | linux_home | /home/swanchan/ysc/Lite3_rl_deploy/third_party/onnxruntime/x86/lib
+
+## 中期冲刺/中期研究报告.md
+- line 512 | linux_home | /home/yifei/codespace/visualnav-transformer
+
+## 中期冲刺/一周详细工作流程指导.md
+- line 16 | linux_home | /home/yifei/codespace/visualnav-transformer`
+- line 17 | linux_home | /home/yifei/codespace/visualnav-transformer/scripts/`
+- line 18 | linux_home | /home/yifei/codespace/visualnav-transformer/results/`
+- line 19 | linux_home | /home/yifei/codespace/visualnav-transformer/deployment/model_weights/nomad/nomad.pth`（自训练后复制到此处）
+- line 20 | linux_home | /home/yifei/codespace/visualnav-transformer/nomad_dataset/go_stanford/`
+- line 21 | linux_home | /home/yifei/codespace/visualnav-transformer/assets/lite3/`
+- line 25 | linux_home | /home/yifei/codespace/visualnav-transformer/scripts/`
+- line 34 | linux_home | /home/yifei/codespace/visualnav-transformer
+- line 488 | linux_home | /home/yifei/codespace/visualnav-transformer/train
+- line 497 | linux_home | /home/yifei/codespace/visualnav-transformer
+- line 535 | linux_home | /home/yifei/codespace/visualnav-transformer/train/diffusion_policy/
+- line 539 | linux_home | /home/yifei/codespace/visualnav-transformer/train/
+- line 545 | linux_home | /home/yifei/codespace/visualnav-transformer/train
+- line 608 | linux_home | /home/yifei/codespace/visualnav-transformer/deployment/model_weights/nomad
+- line 609 | linux_home | /home/yifei/codespace/visualnav-transformer/train/${TRAIN_RUN}/ema_87.pth
+- line 610 | linux_home | /home/yifei/codespace/visualnav-transformer/deployment/model_weights/nomad/nomad.pth
+- line 616 | linux_home | /home/yifei/codespace/visualnav-transformer/deployment/model_weights/nomad/nomad.pth
+- line 639 | linux_home | /home/yifei/codespace/visualnav-transformer/nomad_dataset/go_stanford
+- line 640 | linux_home | /home/yifei/codespace/visualnav-transformer
+- line 694 | linux_home | /home/yifei/codespace/visualnav-transformer/scripts/check_dataset.py`
+- line 698 | linux_home | /home/yifei/codespace/visualnav-transformer
+- line 744 | linux_home | /home/yifei/codespace/visualnav-transformer
+- line 1062 | linux_home | /home/yifei/codespace/visualnav-transformer/scripts/offline_inference.py`
+- line 1066 | linux_home | /home/yifei/codespace/visualnav-transformer
+- line 1184 | linux_home | /home/yifei/codespace/visualnav-transformer
+- line 1389 | linux_home | /home/yifei/codespace/visualnav-transformer/scripts/ddim_experiment.py`
+- line 1394 | linux_home | /home/yifei/codespace/visualnav-transformer
+- line 1446 | linux_home | /home/yifei/codespace/visualnav-transformer
+- line 1470 | linux_home | /home/yifei/codespace/visualnav-transformer
+- line 1806 | linux_home | /home/yifei/codespace/visualnav-transformer/scripts/realtime_inference.py`
+- line 1817 | linux_home | /home/yifei/codespace/visualnav-transformer
+- line 1937 | linux_home | /home/yifei/codespace/visualnav-transformer
+- line 2148 | linux_home | /home/yifei/codespace/visualnav-transformer/scripts/cfg_experiment.py`
+- line 2153 | linux_home | /home/yifei/codespace/visualnav-transformer
+- line 2209 | linux_home | /home/yifei/codespace/visualnav-transformer
+- line 2451 | linux_home | /home/yifei/codespace/visualnav-transformer/scripts/gait_shake_robustness.py`
+- line 2456 | linux_home | /home/yifei/codespace/visualnav-transformer
+- line 2551 | linux_home | /home/yifei/codespace/visualnav-transformer
+- line 2705 | linux_home | /home/yifei/codespace/visualnav-transformer/scripts/nomad_vint_dinov2.py`
+- line 2785 | linux_home | /home/yifei/nomad_dataset/go_stanford_cropped
+- line 2786 | linux_home | /home/yifei/data_splits/go_stanford/train/
+- line 2787 | linux_home | /home/yifei/data_splits/go_stanford/test/
+- line 2803 | linux_home | /home/yifei/codespace/visualnav-transformer/train/config/nomad_dinov2.yaml`
+- line 2829 | linux_home | /home/yifei/codespace/visualnav-transformer/train
+- line 2853 | linux_home | /home/yifei/codespace/visualnav-transformer
+- line 3162 | linux_home | /home/yifei/codespace/visualnav-transformer/scripts/train_dinov2.py`
+- line 3167 | linux_home | /home/yifei/codespace/visualnav-transformer/train
+- line 3177 | linux_home | /home/yifei/data_splits/go_stanford/train/traj_names.txt
+- line 3178 | linux_home | /home/yifei/data_splits/go_stanford/test/traj_names.txt
+- line 3181 | linux_home | /home/yifei/codespace/visualnav-transformer/train
+- line 3182 | linux_home | /home/yifei/nomad_dataset/go_stanford_cropped
+- line 3183 | linux_home | /home/yifei/data_splits/go_stanford
+- line 3190 | linux_home | /home/yifei/codespace/visualnav-transformer/train
+- line 3210 | linux_home | /home/yifei/codespace/visualnav-transformer/deployment/model_weights/nomad_dinov2
+- line 3211 | linux_home | /home/yifei/codespace/visualnav-transformer/train/${DINOV2_RUN}/ema_15.pth
+- line 3212 | linux_home | /home/yifei/codespace/visualnav-transformer/deployment/model_weights/nomad_dinov2/nomad_dinov2.pth
+- line 3271 | linux_home | /home/yifei/codespace/visualnav-transformer/assets/lite3
+- line 3276 | linux_home | /home/yifei/codespace/visualnav-transformer/assets/lite3/
+- line 3418 | linux_home | /home/yifei/codespace/visualnav-transformer/scripts/lite3_sim.py`
+- line 3422 | linux_home | /home/yifei/codespace/visualnav-transformer
+- line 3487 | linux_home | /home/yifei/codespace/visualnav-transformer/assets/lite3/lite3.urdf
+
+## 中期冲刺/NoMaD_复现指南.md
+- line 298 | linux_home | /home/your_username/visualnav-transformer/nomad_dataset/go_stanford/no10vcF_10_0/traj_data.pkl
+- line 1248 | linux_home | /home/john/visualnav-transformer/nomad_dataset/go_stanford
+- line 1263 | linux_home | /home/john/visualnav-transformer/nomad_dataset/go_stanford
+- line 2755 | linux_home | /home/yifei/codespace/visualnav-transformer/train/wandb/run-20251201_164322-ctu0lccn
+- line 2777 | linux_home | /home/yifei/codespace/visualnav-transformer/nomad_dataset/go_stanford
+- line 2778 | linux_home | /home/yifei/codespace/visualnav-transformer/train/vint_train/data/data_splits/go_stanford/train/
+- line 2779 | linux_home | /home/yifei/codespace/visualnav-transformer/train/vint_train/data/data_splits/go_stanford/test/
+
+Summary: 225 findings in 25 files.

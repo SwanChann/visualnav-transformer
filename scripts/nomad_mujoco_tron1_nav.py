@@ -175,8 +175,8 @@ def render_report(robot_name: str, checks: List[AssetCheck], stages: List[dict])
             "## Recommended Next Commands",
             "",
             "```bash",
-            "python scripts/nomad_mujoco_tron1_nav.py --mode validate-assets",
-            "python scripts/nomad_mujoco_tron1_nav.py --mode export-manifest --save",
+            "python3 scripts/simulation/nomad_mujoco_tron1_nav.py --mode validate-assets",
+            "python3 scripts/simulation/nomad_mujoco_tron1_nav.py --mode export-manifest --save",
             "```",
         ]
     )

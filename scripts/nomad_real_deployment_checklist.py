@@ -21,6 +21,7 @@ class ChecklistItem:
     item: str
     required_file: str
     exists: bool
+    required: bool
     note: str
 
 
@@ -43,24 +44,24 @@ def first_weight_path() -> Path:
 def platform_rules(platform: str) -> Dict[str, List[tuple]]:
     """Return platform-specific checklist rules."""
     common = [
-        ("base", "NoMaD checkpoint", first_weight_path(), "High-level navigation checkpoint"),
-        ("base", "navigation node", repo_path("deployment", "src", "navigate.py"), "Topomap localization and waypoint generation"),
-        ("base", "pd controller", repo_path("deployment", "src", "pd_controller.py"), "Waypoint-to-velocity bridge"),
-        ("base", "model config", repo_path("deployment", "config", "models.yaml"), "Checkpoint and model parameter registry"),
-        ("base", "robot config", repo_path("deployment", "config", "robot.yaml"), "Velocity bounds and topic names"),
+        ("base", "NoMaD checkpoint", first_weight_path(), True, "High-level navigation checkpoint"),
+        ("base", "navigation node", repo_path("deployment", "src", "navigate.py"), True, "Topomap localization and waypoint generation"),
+        ("base", "pd controller", repo_path("deployment", "src", "pd_controller.py"), True, "Waypoint-to-velocity bridge"),
+        ("base", "model config", repo_path("deployment", "config", "models.yaml"), True, "Checkpoint and model parameter registry"),
+        ("base", "robot config", repo_path("deployment", "config", "robot.yaml"), True, "Velocity bounds and topic names"),
     ]
 
     if platform == "lite3":
         extra = [
-            ("platform", "Lite3 MuJoCo model", repo_path("sdk_deploy", "src", "Lite3_sdk_deploy", "Lite3_description", "lite3_mjcf", "mjcf", "Lite3.xml"), "Simulation asset for integrated validation"),
-            ("platform", "Lite3 locomotion policy", repo_path("sdk_deploy", "src", "Lite3_sdk_deploy", "policy", "policy.onnx"), "Low-level RL locomotion policy"),
-            ("platform", "Lite3 MuJoCo runner", repo_path("scripts", "nomad_mujoco_lite3_nav.py"), "Integrated NoMaD + MuJoCo + RL navigation entry"),
+            ("platform", "Lite3 MuJoCo model", repo_path("sdk_deploy", "src", "Lite3_sdk_deploy", "Lite3_description", "lite3_mjcf", "mjcf", "Lite3.xml"), True, "Simulation asset for integrated validation"),
+            ("platform", "Lite3 locomotion policy", repo_path("sdk_deploy", "src", "Lite3_sdk_deploy", "policy", "policy.onnx"), True, "Low-level RL locomotion policy"),
+            ("platform", "Lite3 MuJoCo runner", repo_path("scripts", "nomad_mujoco_lite3_nav.py"), True, "Integrated NoMaD + MuJoCo + RL navigation entry"),
         ]
     else:
         extra = [
-            ("platform", "Tron1 MuJoCo helper", repo_path("scripts", "nomad_mujoco_tron1_nav.py"), "Asset validation and implementation staging entry"),
-            ("platform", "Tron1 MuJoCo model", repo_path("assets", "tron1", "mujoco", "tron1.xml"), "Wheel-legged MuJoCo XML or MJCF asset"),
-            ("platform", "Tron1 low-level controller", repo_path("assets", "tron1", "policy", "policy.onnx"), "Optional wheel-legged controller export"),
+            ("platform", "Tron1 MuJoCo helper", repo_path("scripts", "nomad_mujoco_tron1_nav.py"), True, "Asset validation and implementation staging entry"),
+            ("platform", "Tron1 MuJoCo model", repo_path("assets", "tron1", "mujoco", "tron1.xml"), True, "Wheel-legged MuJoCo XML or MJCF asset"),
+            ("platform", "Tron1 low-level controller", repo_path("assets", "tron1", "policy", "policy.onnx"), False, "Optional wheel-legged controller export"),
         ]
     return {"common": common, "extra": extra}
 
@@ -69,13 +70,14 @@ def build_checklist(platform: str) -> List[ChecklistItem]:
     """Build the deployment checklist for the selected platform."""
     rules = platform_rules(platform)
     items: List[ChecklistItem] = []
-    for category, item, file_path, note in rules["common"] + rules["extra"]:
+    for category, item, file_path, required, note in rules["common"] + rules["extra"]:
         items.append(
             ChecklistItem(
                 category=category,
                 item=item,
                 required_file=str(file_path),
                 exists=file_path.exists(),
+                required=required,
                 note=note,
             )
         )
@@ -90,12 +92,13 @@ def render_markdown(platform: str, items: List[ChecklistItem]) -> str:
         f"- Platform: `{platform}`",
         f"- Generated At: `{datetime.now().isoformat(timespec='seconds')}`",
         "",
-        "| Category | Item | Exists | Required File | Note |",
-        "|---|---|---|---|---|",
+        "| Category | Item | Exists | Required | Required File | Note |",
+        "|---|---|---|---|---|---|",
     ]
     for item in items:
         lines.append(
             f"| {item.category} | {item.item} | {'yes' if item.exists else 'no'} | "
+            f"{'yes' if item.required else 'no'} | "
             f"`{item.required_file}` | {item.note} |"
         )
 
@@ -138,7 +141,7 @@ def main() -> int:
         print(f"\nSaved checklist to: {output_path}")
 
     missing_required = [
-        item for item in items if item.category in {"base", "platform"} and not item.exists
+        item for item in items if item.required and not item.exists
     ]
     return 0 if not missing_required else 1
 

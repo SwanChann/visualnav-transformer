@@ -1,4 +1,0 @@
-Mode: lite3_state_machine_navigate
-Steps: 72
-Total distance: 7.734 m
-Reached goal: True
