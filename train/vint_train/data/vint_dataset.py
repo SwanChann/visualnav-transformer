@@ -243,8 +243,10 @@ class ViNT_Dataset(Dataset):
         positions = traj_data["position"][start_index:end_index:self.waypoint_spacing]
         goal_pos = traj_data["position"][min(goal_time, len(traj_data["position"]) - 1)]
 
-        if len(yaw.shape) == 2:
-            yaw = yaw.squeeze(1)
+        # 中文注释：兼容 yaw 被保存成 [value] 或 [[value]] 的数据格式
+        yaw = np.asarray(yaw, dtype=np.float32).reshape(-1)
+        positions = np.asarray(positions, dtype=np.float32).reshape(len(positions), -1)[:, :2]
+        goal_pos = np.asarray(goal_pos, dtype=np.float32).reshape(-1)[:2]
 
         if yaw.shape != (self.len_traj_pred + 1,):
             const_len = self.len_traj_pred + 1 - yaw.shape[0]

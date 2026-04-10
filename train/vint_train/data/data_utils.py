@@ -25,7 +25,16 @@ def get_data_path(data_folder: str, f: str, time: int, data_type: str = "image")
     return os.path.join(data_folder, f, f"{str(time)}{data_ext[data_type]}")
 
 
+def _as_scalar_float(value: Any, name: str) -> float:
+    array_value = np.asarray(value, dtype=np.float32).reshape(-1)
+    if array_value.size != 1:
+        raise ValueError(f"{name} should be scalar, got shape {np.asarray(value).shape}")
+    return float(array_value[0])
+
+
 def yaw_rotmat(yaw: float) -> np.ndarray:
+    # 中文注释：部分数据集会把 yaw 存成 [value]，这里统一转成纯标量
+    yaw = _as_scalar_float(yaw, "yaw")
     return np.array(
         [
             [np.cos(yaw), -np.sin(yaw), 0.0],
@@ -132,4 +141,3 @@ def img_path_to_data(path: Union[str, io.BytesIO], image_resize_size: Tuple[int,
     """
     # return transform_images(Image.open(path), transform, image_resize_size, aspect_ratio)
     return resize_and_aspect_crop(Image.open(path), image_resize_size)    
-
