@@ -76,6 +76,7 @@ class TimmBackboneEncoder(nn.Module):
             raise KeyError(f"Unsupported backbone: {backbone_name}")
 
         self.spec = BACKBONE_SPECS[backbone_name]
+        self.freeze_backbone = freeze_backbone
         create_kwargs = {
             "pretrained": pretrained,
             "num_classes": 0,
@@ -115,7 +116,12 @@ class TimmBackboneEncoder(nn.Module):
                 mode="bilinear",
                 align_corners=False,
             )
-        features = self.backbone(x)
+        if self.freeze_backbone:
+            # 中文注释：冻结 backbone 时不记录其计算图，只让 projection 层参与训练
+            with torch.no_grad():
+                features = self.backbone(x)
+        else:
+            features = self.backbone(x)
         if features.ndim > 2:
             features = torch.flatten(features, start_dim=1)
         return self.projection(features)
@@ -134,6 +140,7 @@ class NoMaD_ViNT_BackboneSuite(nn.Module):
         mha_ff_dim_factor: int = 4,
         freeze_backbone: bool = True,
         pretrained: bool = True,
+        share_goal_encoder: bool = True,
     ):
         super().__init__()
         self.context_size = context_size
@@ -144,12 +151,16 @@ class NoMaD_ViNT_BackboneSuite(nn.Module):
             freeze_backbone=freeze_backbone,
             pretrained=pretrained,
         )
-        self.goal_encoder = TimmBackboneEncoder(
-            backbone_name=backbone_name,
-            output_dim=obs_encoding_size,
-            freeze_backbone=freeze_backbone,
-            pretrained=pretrained,
-        )
+        if share_goal_encoder:
+            # 中文注释：观测图像和目标图像共用编码器，可显著降低参数量和显存占用
+            self.goal_encoder = self.obs_encoder
+        else:
+            self.goal_encoder = TimmBackboneEncoder(
+                backbone_name=backbone_name,
+                output_dim=obs_encoding_size,
+                freeze_backbone=freeze_backbone,
+                pretrained=pretrained,
+            )
 
         self.goal_fusion = nn.Sequential(
             nn.Linear(obs_encoding_size * 2, obs_encoding_size),
@@ -234,6 +245,7 @@ def build_backbone_nomad_model(
     backbone_name: str,
     freeze_backbone: bool = True,
     pretrained_backbone: bool = True,
+    share_goal_encoder: bool = True,
 ) -> NoMaD:
     """Build a NoMaD model with a selected timm backbone."""
     vision_encoder = NoMaD_ViNT_BackboneSuite(
@@ -245,6 +257,7 @@ def build_backbone_nomad_model(
         mha_ff_dim_factor=config["mha_ff_dim_factor"],
         freeze_backbone=freeze_backbone,
         pretrained=pretrained_backbone,
+        share_goal_encoder=share_goal_encoder,
     )
     vision_encoder = replace_bn_with_gn(vision_encoder)
 

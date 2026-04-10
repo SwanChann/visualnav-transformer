@@ -115,7 +115,8 @@ def build_dataloaders(config: dict):
         shuffle=True,
         num_workers=config["num_workers"],
         drop_last=False,
-        persistent_workers=True,
+        persistent_workers=config["num_workers"] > 0,
+        pin_memory=torch.cuda.is_available(),
     )
 
     eval_batch_size = config.get("eval_batch_size", config["batch_size"])
@@ -126,6 +127,7 @@ def build_dataloaders(config: dict):
             shuffle=True,
             num_workers=0,
             drop_last=False,
+            pin_memory=torch.cuda.is_available(),
         )
 
     return train_loader, test_dataloaders, transform
@@ -153,6 +155,8 @@ def main(config: dict, backbone_name: str, freeze_backbone: bool, pretrained_bac
         gpu_ids = config.get("gpu_ids", [0])
         os.environ["CUDA_VISIBLE_DEVICES"] = ",".join(str(gpu_id) for gpu_id in gpu_ids)
         device = torch.device(f"cuda:{gpu_ids[0]}")
+        torch.backends.cuda.matmul.allow_tf32 = bool(config.get("allow_tf32", True))
+        torch.backends.cudnn.allow_tf32 = bool(config.get("allow_tf32", True))
     else:
         device = torch.device("cpu")
 
@@ -167,6 +171,7 @@ def main(config: dict, backbone_name: str, freeze_backbone: bool, pretrained_bac
         backbone_name=backbone_name,
         freeze_backbone=freeze_backbone,
         pretrained_backbone=pretrained_backbone,
+        share_goal_encoder=config.get("share_goal_encoder", True),
     )
     noise_scheduler = build_noise_scheduler(config)
 
@@ -224,6 +229,8 @@ def main(config: dict, backbone_name: str, freeze_backbone: bool, pretrained_bac
         use_wandb=config["use_wandb"],
         eval_fraction=config["eval_fraction"],
         eval_freq=config["eval_freq"],
+        use_amp=config.get("use_amp", False),
+        grad_accum_steps=config.get("grad_accum_steps", 1),
     )
 
 

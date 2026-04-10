@@ -539,6 +539,8 @@ def train_nomad(
     image_log_freq: int = 1000,
     num_images_log: int = 8,
     use_wandb: bool = True,
+    use_amp: bool = False,
+    grad_accum_steps: int = 1,
 ):
     """
     Train the model for one epoch.
@@ -562,6 +564,10 @@ def train_nomad(
     goal_mask_prob = torch.clip(torch.tensor(goal_mask_prob), 0, 1)
     model.train()
     num_batches = len(dataloader)
+    grad_accum_steps = max(1, int(grad_accum_steps))
+    amp_enabled = bool(use_amp and device.type == "cuda")
+    scaler = torch.cuda.amp.GradScaler(enabled=amp_enabled)
+    optimizer.zero_grad(set_to_none=True)
 
     uc_action_loss_logger = Logger("uc_action_loss", "train", window_size=print_log_freq)
     uc_action_waypts_cos_sim_logger = Logger(
@@ -600,8 +606,11 @@ def train_nomad(
             ) = data
             
             obs_images = torch.split(obs_image, 3, dim=1)
-            batch_viz_obs_images = TF.resize(obs_images[-1], VISUALIZATION_IMAGE_SIZE[::-1])
-            batch_viz_goal_images = TF.resize(goal_image, VISUALIZATION_IMAGE_SIZE[::-1])
+            should_log_images = image_log_freq != 0 and i % image_log_freq == 0
+            if should_log_images:
+                # 中文注释：只在需要可视化时生成缩略图，避免每个 batch 都做额外 resize
+                batch_viz_obs_images = TF.resize(obs_images[-1], VISUALIZATION_IMAGE_SIZE[::-1])
+                batch_viz_goal_images = TF.resize(goal_image, VISUALIZATION_IMAGE_SIZE[::-1])
             batch_obs_images = [transform(obs) for obs in obs_images]
             batch_obs_images = torch.cat(batch_obs_images, dim=1).to(device)
             batch_goal_images = transform(goal_image).to(device)
@@ -609,69 +618,74 @@ def train_nomad(
 
             B = actions.shape[0]
 
-            # Generate random goal mask
-            goal_mask = (torch.rand((B,)) < goal_mask_prob).long().to(device)
-            obsgoal_cond = model("vision_encoder", obs_img=batch_obs_images, goal_img=batch_goal_images, input_goal_mask=goal_mask)
-            
-            # Get distance label
-            distance = distance.float().to(device)
+            with torch.cuda.amp.autocast(enabled=amp_enabled):
+                # Generate random goal mask
+                goal_mask = (torch.rand((B,)) < goal_mask_prob).long().to(device)
+                obsgoal_cond = model("vision_encoder", obs_img=batch_obs_images, goal_img=batch_goal_images, input_goal_mask=goal_mask)
+                
+                # Get distance label
+                distance = distance.float().to(device)
 
-            deltas = get_delta(actions)
-            ndeltas = normalize_data(deltas, ACTION_STATS)
-            naction = from_numpy(ndeltas).to(device)
-            assert naction.shape[-1] == 2, "action dim must be 2"
+                deltas = get_delta(actions)
+                ndeltas = normalize_data(deltas, ACTION_STATS)
+                naction = from_numpy(ndeltas).to(device)
+                assert naction.shape[-1] == 2, "action dim must be 2"
 
-            # Predict distance
-            dist_pred = model("dist_pred_net", obsgoal_cond=obsgoal_cond)
-            dist_loss = nn.functional.mse_loss(dist_pred.squeeze(-1), distance)
-            dist_loss = (dist_loss * (1 - goal_mask.float())).mean() / (1e-2 +(1 - goal_mask.float()).mean())
+                # Predict distance
+                dist_pred = model("dist_pred_net", obsgoal_cond=obsgoal_cond)
+                dist_loss = nn.functional.mse_loss(dist_pred.squeeze(-1), distance)
+                dist_loss = (dist_loss * (1 - goal_mask.float())).mean() / (1e-2 +(1 - goal_mask.float()).mean())
 
-            # Sample noise to add to actions
-            noise = torch.randn(naction.shape, device=device)
+                # Sample noise to add to actions
+                noise = torch.randn(naction.shape, device=device)
 
-            # Sample a diffusion iteration for each data point
-            timesteps = torch.randint(
-                0, noise_scheduler.config.num_train_timesteps,
-                (B,), device=device
-            ).long()
+                # Sample a diffusion iteration for each data point
+                timesteps = torch.randint(
+                    0, noise_scheduler.config.num_train_timesteps,
+                    (B,), device=device
+                ).long()
 
-            # Add noise to the clean images according to the noise magnitude at each diffusion iteration
-            noisy_action = noise_scheduler.add_noise(
-                naction, noise, timesteps)
-            
-            # Predict the noise residual
-            noise_pred = model("noise_pred_net", sample=noisy_action, timestep=timesteps, global_cond=obsgoal_cond)
+                # Add noise to the clean images according to the noise magnitude at each diffusion iteration
+                noisy_action = noise_scheduler.add_noise(
+                    naction, noise, timesteps)
+                
+                # Predict the noise residual
+                noise_pred = model("noise_pred_net", sample=noisy_action, timestep=timesteps, global_cond=obsgoal_cond)
 
-            def action_reduce(unreduced_loss: torch.Tensor):
-                # Reduce over non-batch dimensions to get loss per batch element
-                while unreduced_loss.dim() > 1:
-                    unreduced_loss = unreduced_loss.mean(dim=-1)
-                assert unreduced_loss.shape == action_mask.shape, f"{unreduced_loss.shape} != {action_mask.shape}"
-                return (unreduced_loss * action_mask).mean() / (action_mask.mean() + 1e-2)
+                def action_reduce(unreduced_loss: torch.Tensor):
+                    # Reduce over non-batch dimensions to get loss per batch element
+                    while unreduced_loss.dim() > 1:
+                        unreduced_loss = unreduced_loss.mean(dim=-1)
+                    assert unreduced_loss.shape == action_mask.shape, f"{unreduced_loss.shape} != {action_mask.shape}"
+                    return (unreduced_loss * action_mask).mean() / (action_mask.mean() + 1e-2)
 
-            # L2 loss
-            diffusion_loss = action_reduce(F.mse_loss(noise_pred, noise, reduction="none"))
-            
-            # Total loss
-            loss = alpha * dist_loss + (1-alpha) * diffusion_loss
+                # L2 loss
+                diffusion_loss = action_reduce(F.mse_loss(noise_pred, noise, reduction="none"))
+                
+                # Total loss
+                loss = alpha * dist_loss + (1-alpha) * diffusion_loss
 
-            # Optimize
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-
-            # Update Exponential Moving Average of the model weights
-            ema_model.step(model)
+            # 中文注释：梯度累积保持等效 batch，同时降低单步显存占用
+            loss_to_backward = loss / grad_accum_steps
+            scaler.scale(loss_to_backward).backward()
+            should_step = ((i + 1) % grad_accum_steps == 0) or ((i + 1) == num_batches)
+            if should_step:
+                scaler.step(optimizer)
+                scaler.update()
+                optimizer.zero_grad(set_to_none=True)
+                # Update Exponential Moving Average of the model weights
+                ema_model.step(model)
 
             # Logging
             loss_cpu = loss.item()
             tepoch.set_postfix(loss=loss_cpu)
-            wandb.log({"total_loss": loss_cpu})
-            wandb.log({"dist_loss": dist_loss.item()})
-            wandb.log({"diffusion_loss": diffusion_loss.item()})
+            if use_wandb:
+                wandb.log({"total_loss": loss_cpu})
+                wandb.log({"dist_loss": dist_loss.item()})
+                wandb.log({"diffusion_loss": diffusion_loss.item()})
 
 
-            if i % print_log_freq == 0:
+            if print_log_freq != 0 and i % print_log_freq == 0:
                 losses = _compute_losses_nomad(
                             ema_model.averaged_model,
                             noise_scheduler,
@@ -697,7 +711,7 @@ def train_nomad(
                 if use_wandb and i % wandb_log_freq == 0 and wandb_log_freq != 0:
                     wandb.log(data_log, commit=True)
 
-            if image_log_freq != 0 and i % image_log_freq == 0:
+            if should_log_images:
                 visualize_diffusion_action_distribution(
                     ema_model.averaged_model,
                     noise_scheduler,
@@ -1173,5 +1187,3 @@ def visualize_diffusion_action_distribution(
         plt.close(fig)
     if len(wandb_list) > 0 and use_wandb:
         wandb.log({f"{eval_type}_action_samples": wandb_list}, commit=False)
-
-

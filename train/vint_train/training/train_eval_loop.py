@@ -166,6 +166,8 @@ def train_eval_loop_nomad(
     use_wandb: bool = True,
     eval_fraction: float = 0.25,
     eval_freq: int = 1,
+    use_amp: bool = False,
+    grad_accum_steps: int = 1,
 ):
     """
     Train and evaluate the model for several epochs (vint or gnm models)
@@ -217,6 +219,8 @@ def train_eval_loop_nomad(
                 num_images_log=num_images_log,
                 use_wandb=use_wandb,
                 alpha=alpha,
+                use_amp=use_amp,
+                grad_accum_steps=grad_accum_steps,
             )
             lr_scheduler.step()
 

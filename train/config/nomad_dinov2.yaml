@@ -14,15 +14,18 @@ run_name: nomad_dinov2
 # ── Training Setup ──────────────────────────────────────────
 use_wandb: True
 train: True
-batch_size: 64          # reduced from 256: DINOv2 backbone uses more VRAM
-eval_batch_size: 64
+batch_size: 16          # RTX 4090 friendly real batch; effective batch stays 64 with grad_accum_steps=4
+eval_batch_size: 16
 epochs: 20              # short verification; increase to 100 after confirming convergence
 gpu_ids: [0]
-num_workers: 8          # reduce from 12 to avoid CPU bottleneck with smaller batch
+num_workers: 6          # reduce from 12 to avoid CPU bottleneck with smaller batch
 lr: 5e-5               # lower LR: backbone frozen, only train projection + heads
 optimizer: adamw
 clipping: False
 max_norm: 1.0
+use_amp: True           # mixed precision reduces memory on RTX 4090
+allow_tf32: True        # TF32 speeds up matmul on Ampere/Ada GPUs
+grad_accum_steps: 4     # effective batch = 16 * 4 = 64
 scheduler: "cosine"
 warmup: True
 warmup_epochs: 2        # shorter warmup for 20-epoch run
@@ -37,6 +40,7 @@ vision_encoder: nomad_vint_dinov2   # <-- DINOv2 encoder (scripts/nomad_vint_din
 encoding_size: 256
 obs_encoder: dinov2_vits14          # informational: actual loading in NoMaD_ViNT_DINOv2
 freeze_backbone: True               # freeze DINOv2, only train projection layers
+share_goal_encoder: True            # share obs and goal backbones to reduce memory
 attn_unet: False
 cond_predict_scale: False
 mha_num_attention_heads: 4
@@ -78,10 +82,10 @@ datasets:
     negative_mining: True
 
 # ── Logging ─────────────────────────────────────────────────
-print_log_freq: 50      # more frequent logging for short run
-image_log_freq: 500
+print_log_freq: 200
+image_log_freq: 0
 num_images_log: 8
 pairwise_test_freq: 0
-eval_fraction: 0.25
+eval_fraction: 0.1
 wandb_log_freq: 10
-eval_freq: 1
+eval_freq: 2
