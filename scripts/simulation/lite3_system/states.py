@@ -54,6 +54,9 @@ class WalkState(BaseState):
     name = "walk"
 
     def step(self, system):
+        failure_state = system._common_failure_check()
+        if failure_state is not None:
+            return failure_state
         command = MotionCommand(0.5, 0.0, 0.0)
         system.platform.apply_command(command)
         position, _ = system.platform.get_pose()
@@ -73,6 +76,9 @@ class RecoveryBackState(BaseState):
         system.recovery_counter = 0
 
     def step(self, system):
+        failure_state = system._common_failure_check()
+        if failure_state is not None:
+            return failure_state
         command = MotionCommand(system.legacy.RECOVERY_BACK_VEL, 0.0, 0.0)
         system.platform.apply_command(command)
         system.recovery_counter += 1
@@ -92,6 +98,9 @@ class RecoveryTurnState(BaseState):
         system.recovery_counter = 0
 
     def step(self, system):
+        failure_state = system._common_failure_check()
+        if failure_state is not None:
+            return failure_state
         command = MotionCommand(0.05, 0.0, system.recovery_turn_direction * system.legacy.RECOVERY_TURN_VEL)
         system.platform.apply_command(command)
         system.recovery_counter += 1
@@ -107,12 +116,18 @@ class RecoveryTurnState(BaseState):
 class CompletedState(BaseState):
     name = "completed"
 
+    def on_enter(self, system) -> None:
+        system.safe_stop()
+
     def step(self, system):
         return "completed"
 
 
 class FailedState(BaseState):
     name = "failed"
+
+    def on_enter(self, system) -> None:
+        system.safe_stop()
 
     def step(self, system):
         return "failed"

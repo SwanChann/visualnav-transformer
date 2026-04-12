@@ -1,0 +1,26 @@
+{
+  "defaults": {
+    "scheduler": "ddim",
+    "ddim_steps": 2,
+    "cfg_weight": 0.0,
+    "no_gui": true,
+    "standup_time": 3.0,
+    "max_steps": 200
+  },
+  "tasks": [
+    {
+      "mode": "navigate",
+      "map": "easy",
+      "topomap_dir": "topomaps/easy"
+    },
+    {
+      "mode": "mission",
+      "map": "easy",
+      "mission_topomap": [
+        "topomaps/easy",
+        "topomaps/medium"
+      ],
+      "max_steps": 300
+    }
+  ]
+}

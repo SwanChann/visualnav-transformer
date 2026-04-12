@@ -45,6 +45,7 @@ def platform_rules(platform: str) -> Dict[str, List[tuple]]:
     """Return platform-specific checklist rules."""
     common = [
         ("base", "NoMaD checkpoint", first_weight_path(), True, "High-level navigation checkpoint"),
+        ("base", "navigation host", repo_path("scripts", "deployment", "nomad_navigation_host.py"), True, "Task scheduling and backend entry for MuJoCo / real robot"),
         ("base", "navigation node", repo_path("deployment", "src", "navigate.py"), True, "Topomap localization and waypoint generation"),
         ("base", "pd controller", repo_path("deployment", "src", "pd_controller.py"), True, "Waypoint-to-velocity bridge"),
         ("base", "model config", repo_path("deployment", "config", "models.yaml"), True, "Checkpoint and model parameter registry"),

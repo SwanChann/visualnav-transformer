@@ -4,7 +4,7 @@ from pathlib import Path
 
 import numpy as np
 
-from lite3_system.interfaces import ContextBuffer, Lite3HighLevelNoMaD, Lite3LowLevelPlatform, Lite3MiddleLayerPD, MotionCommand
+from lite3_system.interfaces import ContextBuffer, Lite3HighLevelNoMaD, Lite3LowLevelPlatform, Lite3MiddleLayerPD, MotionCommand, NavigationPlatformBase
 from lite3_system.legacy_bridge import load_legacy
 from lite3_system.states import (
     CompletedState,
@@ -21,11 +21,17 @@ from lite3_system.topomap import MissionQueue, build_mission_queue
 
 
 class Lite3System:
-    def __init__(self, args) -> None:
+    def __init__(
+        self,
+        args,
+        platform: NavigationPlatformBase | None = None,
+        result_prefix: str = "lite3_state_machine",
+        close_platform_on_finalize: bool = True,
+    ) -> None:
         self.args = args
         self.legacy = load_legacy()
         self.legacy.SCENE_CONFIG = self.legacy.SCENE_MAPS[args.map]
-        self.platform = Lite3LowLevelPlatform(gui=not args.no_gui, scene_name=args.map)
+        self.platform = platform or Lite3LowLevelPlatform(gui=not args.no_gui, scene_name=args.map)
         self.high_level = Lite3HighLevelNoMaD(
             scheduler_kind=args.scheduler,
             ddim_steps=args.ddim_steps,
@@ -47,6 +53,8 @@ class Lite3System:
         self.resume_state = "navigate" if args.mode in {"navigate", "mission"} else "explore"
         self.goal_reached = False
         self.fp_dir = None
+        self.result_prefix = result_prefix
+        self.close_platform_on_finalize = close_platform_on_finalize
         self.states = {
             "idle": IdleState(),
             "standup": StandupState(),
@@ -63,7 +71,7 @@ class Lite3System:
         self.state.on_enter(self)
         if args.save_fpv:
             run_tag = self.legacy.RUN_TAG
-            mode_name = "lite3_state_machine"
+            mode_name = result_prefix
             self.fp_dir = Path(self.legacy.PROJECT_ROOT) / "results" / "nomad_mujoco" / f"{run_tag}_{mode_name}" / "fpv"
             self.fp_dir.mkdir(parents=True, exist_ok=True)
 
@@ -77,6 +85,9 @@ class Lite3System:
     def record_step(self, position, command: MotionCommand) -> None:
         self.trajectory.append(np.asarray(position, dtype=float).copy())
         self.velocity_log.append((command.linear_x, command.yaw_rate))
+
+    def safe_stop(self) -> None:
+        self.platform.emergency_stop()
 
     def _show_camera(self, camera_image, extra_text: str, goal_view=None) -> None:
         if not self.args.no_gui:
@@ -185,7 +196,7 @@ class Lite3System:
         return "explore"
 
     def finalize(self) -> None:
-        mode_name = f"lite3_state_machine_{self.args.mode}"
+        mode_name = f"{self.result_prefix}_{self.args.mode}"
         self.legacy._save_results(
             self.trajectory,
             self.velocity_log,
@@ -193,7 +204,8 @@ class Lite3System:
             self.args,
             reached_goal=self.goal_reached if self.args.mode in {"navigate", "mission"} else None,
         )
-        self.platform.close()
+        if self.close_platform_on_finalize:
+            self.platform.close()
 
     def run(self) -> int:
         if self.args.mode == "generate-topomap":

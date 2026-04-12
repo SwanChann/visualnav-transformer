@@ -51,6 +51,8 @@ def build_mission_queue(args, platform) -> MissionQueue | None:
         return None
 
     if getattr(args, "random", False):
+        if not hasattr(platform, "env"):
+            raise ValueError("Random spawn/goal topomap generation requires a simulation backend with env support.")
         spawn_position, goal_position = legacy.generate_random_spawn_goal(legacy.SCENE_CONFIG)
         platform.reset_position(float(spawn_position[0]), float(spawn_position[1]))
         platform.set_scene_goal(goal_position)

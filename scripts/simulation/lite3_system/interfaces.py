@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections import deque
 from dataclasses import dataclass
+import importlib
 from typing import Deque
 
 import numpy as np
@@ -30,6 +31,47 @@ class NavigationResult:
 class ExplorationResult:
     chosen_waypoint: np.ndarray
     sampled_actions: np.ndarray
+
+
+class NavigationPlatformBase:
+    """Abstract platform interface for simulation and real deployment."""
+
+    def set_scene_goal(self, goal_position: np.ndarray) -> None:
+        return None
+
+    def render_camera(self):
+        raise NotImplementedError
+
+    def standup(self, duration: float) -> None:
+        raise NotImplementedError
+
+    def apply_command(self, command: MotionCommand) -> None:
+        raise NotImplementedError
+
+    def get_pose(self):
+        raise NotImplementedError
+
+    def get_height(self) -> float:
+        raise NotImplementedError
+
+    def get_forward_speed(self) -> float:
+        raise NotImplementedError
+
+    def is_fallen(self) -> bool:
+        raise NotImplementedError
+
+    def viewer_alive(self) -> bool:
+        raise NotImplementedError
+
+    def reset_position(self, x: float, y: float, yaw: float = 0.0) -> None:
+        return None
+
+    def emergency_stop(self) -> None:
+        # 中文注释：统一安全接口，默认发送零速度指令
+        self.apply_command(MotionCommand(0.0, 0.0, 0.0))
+
+    def close(self) -> None:
+        return None
 
 
 class Lite3HighLevelNoMaD:
@@ -154,7 +196,7 @@ class Lite3MiddleLayerPD:
         return MotionCommand(linear_x=float(linear_x), linear_y=0.0, yaw_rate=float(yaw_rate))
 
 
-class Lite3LowLevelPlatform:
+class Lite3LowLevelPlatform(NavigationPlatformBase):
     def __init__(self, gui: bool, scene_name: str) -> None:
         self.legacy = load_legacy()
         self.legacy.SCENE_CONFIG = self.legacy.SCENE_MAPS[scene_name]
@@ -195,8 +237,81 @@ class Lite3LowLevelPlatform:
     def reset_position(self, x: float, y: float, yaw: float = 0.0) -> None:
         self.env.set_robot_position(x, y, yaw=yaw)
 
+    def emergency_stop(self) -> None:
+        # 中文注释：仿真和真机统一使用零速度刹停，避免状态退出时仍保留旧指令
+        self.env.set_command(0.0, 0.0, 0.0)
+        self.env.step_nomad_period()
+
     def close(self) -> None:
         self.env.close()
+
+
+class ExternalBridgePlatform(NavigationPlatformBase):
+    """Adapter for a Python real-robot bridge."""
+
+    def __init__(self, bridge_module: str, bridge_class: str, bridge_kwargs: dict | None = None) -> None:
+        module = importlib.import_module(bridge_module)
+        bridge_type = getattr(module, bridge_class)
+        self.bridge = bridge_type(**(bridge_kwargs or {}))
+
+    def _call(self, method_name: str, *args, default=None, required: bool = False, **kwargs):
+        method = getattr(self.bridge, method_name, None)
+        if method is None:
+            if required:
+                raise AttributeError(f"Bridge missing required method: {method_name}")
+            return default
+        return method(*args, **kwargs)
+
+    def set_scene_goal(self, goal_position: np.ndarray) -> None:
+        self._call("set_scene_goal", goal_position, required=False)
+
+    def render_camera(self):
+        return self._call("render_camera", required=True)
+
+    def standup(self, duration: float) -> None:
+        self._call("standup", duration, required=True)
+
+    def apply_command(self, command: MotionCommand) -> None:
+        if hasattr(self.bridge, "apply_command"):
+            self.bridge.apply_command(command)
+            return
+        self._call(
+            "send_command",
+            command.linear_x,
+            command.linear_y,
+            command.yaw_rate,
+            required=True,
+        )
+
+    def get_pose(self):
+        return self._call("get_pose", required=True)
+
+    def get_height(self) -> float:
+        return float(self._call("get_height", default=0.0))
+
+    def get_forward_speed(self) -> float:
+        return float(self._call("get_forward_speed", default=0.0))
+
+    def is_fallen(self) -> bool:
+        return bool(self._call("is_fallen", default=False))
+
+    def viewer_alive(self) -> bool:
+        return bool(self._call("viewer_alive", default=True))
+
+    def reset_position(self, x: float, y: float, yaw: float = 0.0) -> None:
+        self._call("reset_position", x, y, yaw, required=False)
+
+    def emergency_stop(self) -> None:
+        if hasattr(self.bridge, "emergency_stop"):
+            self.bridge.emergency_stop()
+            return
+        if hasattr(self.bridge, "stop"):
+            self.bridge.stop()
+            return
+        self.apply_command(MotionCommand(0.0, 0.0, 0.0))
+
+    def close(self) -> None:
+        self._call("close", required=False)
 
 
 class ContextBuffer:

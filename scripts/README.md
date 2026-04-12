@@ -41,6 +41,10 @@ Root-level scripts are still kept as legacy-compatible entrypoints, but new work
 - `nomad_encoder_convnext_tiny.yaml`
 - `nomad_encoder_resnet50.yaml`
 
+### `scripts/configs/navigation_host/`
+
+- `lite3_navigation_host_plan.json`
+
 ### `scripts/shared/`
 
 - `nomad_eval_common.py`
@@ -61,6 +65,7 @@ Root-level scripts are still kept as legacy-compatible entrypoints, but new work
 ### `scripts/deployment/`
 
 - `nomad_real_deployment_checklist.py`
+- `nomad_navigation_host.py`
 
 ## Lite3 MuJoCo Structure
 
@@ -87,6 +92,24 @@ Supporting modules live in:
 - `scripts/simulation/lite3_system/states.py`
 - `scripts/simulation/lite3_system/system.py`
 
+## Navigation Host
+
+There is now a unified deployment host:
+
+- `scripts/deployment/nomad_navigation_host.py`
+
+Its role is different from the Lite3 state machine:
+
+- Navigation host: task scheduling, backend selection, mission switching
+- Lite3 state machine: closed-loop execution, recovery, result logging
+
+The host supports:
+
+- `mujoco` backend for direct simulation runs
+- `real` backend through a Python bridge adapter
+- single-task launch via CLI arguments
+- multi-task launch via `scripts/configs/navigation_host/lite3_navigation_host_plan.json`
+
 ## Topomap Sources
 
 `topomap` candidate node images can come from two different sources:
@@ -109,5 +132,6 @@ python scripts/training/train_backbone_suite.py --config config/nomad_dinov2.yam
 python scripts/training/run_encoder_seed_sweep.py --base-config scripts/configs/vision_encoder/nomad_encoder_dinov2_small.yaml --backbone dinov2_small --seeds 0 1 2 --freeze-backbone --pretrained-backbone --dry-run
 python scripts/simulation/nomad_mujoco_lite3_nav.py --mode navigate --map easy
 python scripts/simulation/nomad_mujoco_lite3_state_machine.py --mode mission --map medium --mission-topomap topomaps/medium
+python scripts/deployment/nomad_navigation_host.py --backend mujoco --plan-file scripts/configs/navigation_host/lite3_navigation_host_plan.json --dry-run
 python scripts/deployment/nomad_real_deployment_checklist.py --platform lite3 --save
 ```
