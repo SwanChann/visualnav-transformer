@@ -63,6 +63,10 @@ def collect_structure_checks(repo_root: Path) -> List[str]:
         ("readme", repo_root / "README.md"),
         ("train_config", repo_root / "train" / "config" / "nomad.yaml"),
         ("deployment_config", repo_root / "deployment" / "config" / "models.yaml"),
+        ("shared_inference", repo_root / "scripts" / "shared" / "nomad_inference.py"),
+        ("navigation_host", repo_root / "scripts" / "deployment" / "nomad_navigation_host.py"),
+        ("lite3_state_machine", repo_root / "scripts" / "simulation" / "nomad_mujoco_lite3_state_machine.py"),
+        ("navigation_host_plan", repo_root / "scripts" / "configs" / "navigation_host" / "lite3_navigation_host_plan.json"),
     ]
     lines = []
     for name, path in checks:
@@ -136,6 +140,11 @@ def collect_results_checks(results_root: Path, repo_root: Path) -> List[str]:
         results_root / "day1",
         results_root / "day2",
         results_root / "day3",
+        results_root / "day4",
+        results_root / "day6",
+        results_root / "deployment",
+        results_root / "nomad_mujoco",
+        results_root / "summary",
     ]:
         label = str(target.relative_to(repo_root))
         lines.append(status_line(label, target.exists(), "present" if target.exists() else "missing"))

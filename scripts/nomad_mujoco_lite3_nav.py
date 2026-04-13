@@ -109,6 +109,7 @@ import sys
 import time
 import math
 import argparse
+import json
 from datetime import datetime
 from collections import deque
 
@@ -215,6 +216,7 @@ KD = 1.0  # PD 速度增益
 # 相机参数
 CAM_WIDTH = 320
 CAM_HEIGHT_PX = 240
+MAX_GOAL_MARKERS = 8
 
 # ── 场景地图配置（3 级难度） ──────────────────────────────
 SCENE_MAPS = {
@@ -307,6 +309,18 @@ def get_default_topomap_dir(map_name):
     return os.path.join(PROJECT_ROOT, "topomaps", map_name)
 
 
+def write_topomap_metadata(topo_dir, domain, map_name=None, source=None):
+    payload = {
+        "domain": domain,
+        "map": map_name,
+        "generated_by": source or "scripts/nomad_mujoco_lite3_nav.py",
+        "generated_at": datetime.now().isoformat(timespec="seconds"),
+    }
+    meta_path = os.path.join(topo_dir, "topomap_meta.json")
+    with open(meta_path, "w", encoding="utf-8") as f:
+        json.dump(payload, f, indent=2, ensure_ascii=False)
+
+
 # ══════════════════════════════════════════════════════════
 #  MuJoCo 模型加载（加载地图场景 + 头部 FPV 相机）
 # ══════════════════════════════════════════════════════════
@@ -391,10 +405,12 @@ def load_lite3_model_with_scene(xml_path, scene_config=None):
     </body>
 """
 
-    scene_xml += f"""
-    <!-- 目标标记（绿色） -->
-    <body name="goal_marker" pos="{gx} {gy} 0.02">
-      <geom type="cylinder" size="0.15 0.05" rgba="0 0.9 0 0.8"
+    for marker_index in range(MAX_GOAL_MARKERS):
+        marker_x, marker_y = (gx, gy) if marker_index == 0 else (x_min - 1.0, 0.0)
+        marker_rgba = "0 0.9 0 0.85" if marker_index == 0 else "0.2 0.6 1.0 0.6"
+        scene_xml += f"""
+    <body name="goal_marker_{marker_index}" pos="{marker_x} {marker_y} 0.02">
+      <geom name="goal_marker_geom_{marker_index}" type="cylinder" size="0.15 0.05" rgba="{marker_rgba}"
             contype="0" conaffinity="0"/>
     </body>
 """
@@ -454,6 +470,8 @@ class MuJoCoLite3Env:
         # ── GUI viewer（可选） ──
         self.gui = gui
         self.viewer = None
+        self.goal_marker_body_ids = []
+        self.goal_marker_geom_ids = []
         if gui:
             try:
                 self.viewer = mujoco.viewer.launch_passive(self.model, self.data)
@@ -468,10 +486,23 @@ class MuJoCoLite3Env:
         self._wall_t0 = time.time()  # 用于 GUI 实时同步
 
         mujoco.mj_forward(self.model, self.data)
+        self._cache_goal_marker_ids()
         print(
             f"[MuJoCo] Ready: SIM_DT={SIM_DT}, POLICY_DT={POLICY_DT}, "
             f"Decimation={POLICY_DECIMATION}, RL/NoMaD={RL_STEPS_PER_NOMAD}"
         )
+
+    def _cache_goal_marker_ids(self):
+        self.goal_marker_body_ids = []
+        self.goal_marker_geom_ids = []
+        for marker_index in range(MAX_GOAL_MARKERS):
+            body_name = f"goal_marker_{marker_index}"
+            geom_name = f"goal_marker_geom_{marker_index}"
+            body_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, body_name)
+            geom_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_GEOM, geom_name)
+            if body_id >= 0 and geom_id >= 0:
+                self.goal_marker_body_ids.append(body_id)
+                self.goal_marker_geom_ids.append(geom_id)
 
     def _set_initial_pose(self):
         """设置初始姿态并让机器人自由落地建立接地。"""
@@ -619,6 +650,16 @@ class MuJoCoLite3Env:
         self._wall_t0 = time.time()
         self.sim_step = 0
 
+    def prepare_task(self, mode="navigate"):
+        """任务切换时复位实时节拍和跌倒宽限，不重载地图也不重置位姿。"""
+        self.command[:] = 0.0
+        self.last_action[:] = 0.0
+        self.policy_step = 0
+        self.reset_wall_clock()
+        mujoco.mj_forward(self.model, self.data)
+        if self.viewer:
+            self.viewer.sync()
+
     def standup(self, duration=3.0):
         """站立稳定：策略从地面开始同时站立并适应指令。"""
         print(f"[MuJoCo] Warming up policy for {duration:.1f}s...")
@@ -702,12 +743,34 @@ class MuJoCoLite3Env:
 
     def move_goal_marker(self, x, y):
         """移动目标点标记到新位置。"""
-        body_id = mujoco.mj_name2id(
-            self.model, mujoco.mjtObj.mjOBJ_BODY, "goal_marker"
-        )
-        if body_id >= 0:
-            self.model.body_pos[body_id] = [x, y, 0.02]
-            mujoco.mj_forward(self.model, self.data)
+        self.set_goal_markers([(x, y)], active_index=0)
+
+    def set_goal_markers(self, goal_positions, active_index=0):
+        if not self.goal_marker_body_ids:
+            return
+        for marker_index, body_id in enumerate(self.goal_marker_body_ids):
+            geom_id = self.goal_marker_geom_ids[marker_index]
+            if marker_index < len(goal_positions):
+                goal_x, goal_y = goal_positions[marker_index]
+                self.model.body_pos[body_id] = [float(goal_x), float(goal_y), 0.02]
+                if marker_index == active_index:
+                    self.model.geom_rgba[geom_id] = np.array([0.0, 0.9, 0.0, 0.9])
+                else:
+                    self.model.geom_rgba[geom_id] = np.array([0.2, 0.6, 1.0, 0.65])
+            else:
+                self.model.body_pos[body_id] = [self.model.stat.center[0], self.model.stat.center[1], -1.0]
+                self.model.geom_rgba[geom_id] = np.array([0.2, 0.6, 1.0, 0.0])
+        mujoco.mj_forward(self.model, self.data)
+
+    def highlight_goal_marker(self, active_index):
+        if not self.goal_marker_body_ids:
+            return
+        for marker_index, geom_id in enumerate(self.goal_marker_geom_ids):
+            rgba = np.array([0.0, 0.9, 0.0, 0.9]) if marker_index == active_index else np.array([0.2, 0.6, 1.0, 0.65])
+            if self.model.body_pos[self.goal_marker_body_ids[marker_index]][2] < 0.0:
+                rgba[3] = 0.0
+            self.model.geom_rgba[geom_id] = rgba
+        mujoco.mj_forward(self.model, self.data)
 
     def close(self):
         if self.viewer:
@@ -764,37 +827,48 @@ class StuckDetector:
         self.cmd_history.clear()
 
 
-def show_fpv_realtime(cam_img, step_i, extra_text="", goal_view=None):
-    """在 OpenCV 窗口中实时显示头部 FPV 相机画面（可选：含目标点视角）。
+def _make_goal_placeholder(width=640, height=480):
+    canvas = np.full((height, width, 3), 32, dtype=np.uint8)
+    cv2.putText(canvas, "NO GOAL SELECTED", (120, 225), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (220, 220, 220), 2)
+    cv2.putText(canvas, "Use c / [ / ] to manage captures", (85, 265), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (180, 180, 180), 2)
+    return canvas
 
-    Args:
-        cam_img: PIL Image (RGB) - 当前 FPV 画面
-        step_i: 当前步数
-        extra_text: 叠加显示的状态文字
-        goal_view: PIL Image (RGB) - 目标点摄像头画面（可选）
-    """
+
+def show_fpv_realtime(cam_img, step_i, extra_text="", goal_view=None, footer_lines=None):
+    """在固定窗口中实时显示 FPV 和 goal vision。"""
     frame = np.array(cam_img)
     frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-    # 放大到可视尺寸
     display = cv2.resize(frame_bgr, (640, 480), interpolation=cv2.INTER_NEAREST)
-    # 叠加步数和状态信息
     cv2.putText(display, f"Step {step_i} | FPV Camera", (10, 25),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
     if extra_text:
         cv2.putText(display, extra_text, (10, 55),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255), 2)
+    footer_lines = footer_lines or []
+    footer_y = 440
+    for line in footer_lines[:3]:
+        cv2.putText(display, line, (10, footer_y),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.55, (255, 255, 255), 1)
+        footer_y += 24
 
     if goal_view is not None:
         gframe = np.array(goal_view)
         gframe_bgr = cv2.cvtColor(gframe, cv2.COLOR_RGB2BGR)
         gdisp = cv2.resize(gframe_bgr, (640, 480), interpolation=cv2.INTER_NEAREST)
-        cv2.putText(gdisp, "GOAL VIEW (target)", (10, 25),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
-        combined = np.hstack([display, gdisp])
-        cv2.imshow("Lite3 Navigation: FPV | Goal", combined)
     else:
-        cv2.imshow("Lite3 Head FPV Camera", display)
-    cv2.waitKey(1)
+        gdisp = _make_goal_placeholder()
+    cv2.putText(gdisp, "GOAL VIEW", (10, 25),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+    combined = np.hstack([display, gdisp])
+    cv2.imshow("Lite3 Navigation Camera", combined)
+    return cv2.waitKey(1) & 0xFF
+
+
+def camera_visualization_enabled(args):
+    camera_mode = getattr(args, "camera", None)
+    if camera_mode is not None:
+        return camera_mode == "on"
+    return not bool(getattr(args, "no_gui", False))
 
 
 # ══════════════════════════════════════════════════════════
@@ -1042,6 +1116,78 @@ def generate_topomap_online(env, spawn_pos, goal_pos, num_nodes=20):
     return topomap
 
 
+def build_scene_reference_path(scene_config=None, num_points=400):
+    """生成地图参考通路，用于稳定的目标点采样和在线导航。"""
+    sc = scene_config or SCENE_CONFIG
+    waypoints = sc.get("topomap_waypoints")
+    if waypoints:
+        wps = np.asarray(waypoints, dtype=float)
+    else:
+        rx, ry = sc["robot_start"]
+        gx, gy = sc["goal_pos"]
+        wps = np.asarray([[rx + 0.5, ry], [gx, gy]], dtype=float)
+
+    seg_lens = np.linalg.norm(np.diff(wps, axis=0), axis=1)
+    if len(seg_lens) == 0 or float(np.sum(seg_lens)) <= 1e-6:
+        return np.repeat(wps[:1], max(int(num_points), 2), axis=0)
+
+    cum_len = np.concatenate([[0.0], np.cumsum(seg_lens)])
+    sample_dists = np.linspace(0.0, float(cum_len[-1]), max(int(num_points), 2))
+    positions = np.zeros((len(sample_dists), 2), dtype=float)
+    for dim in range(2):
+        positions[:, dim] = np.interp(sample_dists, cum_len, wps[:, dim])
+    return positions
+
+
+def project_position_to_path_index(position, path_positions):
+    path_positions = np.asarray(path_positions, dtype=float)
+    position = np.asarray(position, dtype=float)
+    distances = np.linalg.norm(path_positions - position[None, :], axis=1)
+    return int(np.argmin(distances))
+
+
+def generate_topomap_online_from_positions(env, path_positions, num_nodes=20):
+    """沿给定参考通路位置序列生成在线 topomap。"""
+    path_positions = np.asarray(path_positions, dtype=float)
+    if len(path_positions) == 0:
+        raise ValueError("path_positions must not be empty.")
+    if len(path_positions) == 1:
+        path_positions = np.repeat(path_positions, 2, axis=0)
+
+    diffs = np.diff(path_positions, axis=0)
+    seg_lens = np.linalg.norm(diffs, axis=1)
+    if float(np.sum(seg_lens)) <= 1e-6:
+        sampled = np.repeat(path_positions[:1], max(int(num_nodes), 2), axis=0)
+    else:
+        cum_len = np.concatenate([[0.0], np.cumsum(seg_lens)])
+        sample_dists = np.linspace(0.0, float(cum_len[-1]), max(int(num_nodes), 2))
+        sampled = np.zeros((len(sample_dists), 2), dtype=float)
+        for dim in range(2):
+            sampled[:, dim] = np.interp(sample_dists, cum_len, path_positions[:, dim])
+
+    stand_z = 0.28
+    topomap = []
+    for i, (px, py) in enumerate(sampled):
+        if i + 1 < len(sampled):
+            dx, dy = sampled[i + 1] - sampled[i]
+        else:
+            dx, dy = sampled[i] - sampled[i - 1]
+        yaw = math.atan2(dy, dx) if abs(dx) + abs(dy) > 1e-8 else 0.0
+        cy, sy_q = math.cos(yaw / 2), math.sin(yaw / 2)
+        env.data.qpos[:3] = [px, py, stand_z]
+        env.data.qpos[3:7] = [cy, 0.0, 0.0, sy_q]
+        env.data.qpos[7:19] = JOINT_INIT
+        env.data.qvel[:] = 0.0
+        mujoco.mj_forward(env.model, env.data)
+        topomap.append(env.render_camera())
+
+    print(
+        f"[OnlineTopomap] Generated {len(topomap)} nodes along path from "
+        f"({sampled[0, 0]:.2f},{sampled[0, 1]:.2f}) to ({sampled[-1, 0]:.2f},{sampled[-1, 1]:.2f})"
+    )
+    return topomap
+
+
 def capture_goal_view(env, goal_pos, yaw=None):
     """在目标点渲染 FPV 画面，用于可视化和最终 topomap 节点对比。
 
@@ -1122,6 +1268,12 @@ def run_generate_topomap(args):
         if i % 5 == 0 or i == num_nodes - 1:
             print(f"  Node {i:3d}/{num_nodes}: pos=({px:.2f}, {py:.2f})")
 
+    write_topomap_metadata(
+        topo_dir,
+        domain="mujoco",
+        map_name=args.map,
+        source="scripts/nomad_mujoco_lite3_nav.py --mode generate-topomap",
+    )
     print(f"\n[GenerateTopomap] Done! Saved {num_nodes} images to {topo_dir}")
     print(f"  Navigate: --mode navigate --map {args.map}")
     env.close()
@@ -1141,9 +1293,13 @@ def run_walk_test(args):
 
     trajectory = []
     total_rl_steps = args.max_steps * RL_STEPS_PER_NOMAD
+    camera_enabled = camera_visualization_enabled(args)
 
     for step_i in range(total_rl_steps):
         env.step_policy()
+        if camera_enabled:
+            cam_img = env.render_camera()
+            show_fpv_realtime(cam_img, step_i, extra_text=f"WALK | v_cmd={walk_speed:.2f}", goal_view=None)
 
         if not env.viewer_alive():
             print("[WalkTest] Viewer closed, stopping.")
@@ -1204,6 +1360,7 @@ def run_explore(args):
     state_machine = "NAVIGATE"  # NAVIGATE | RECOVERY_BACK | RECOVERY_TURN
     recovery_counter = 0
     recovery_count_total = 0
+    camera_enabled = camera_visualization_enabled(args)
 
     frame_buffer = deque(maxlen=CONTEXT_SIZE + 1)
     trajectory = []
@@ -1230,7 +1387,7 @@ def run_explore(args):
         # ── 实时 FPV 显示 ──
         actual_vel = env.get_body_speed_forward()
         status_text = f"State: {state_machine} | v_body={actual_vel:.3f} m/s"
-        if not args.no_gui:
+        if camera_enabled:
             show_fpv_realtime(cam_img, step_i, status_text)
 
         # ── 状态机: 碰撞恢复 ──
@@ -1401,10 +1558,13 @@ def run_navigate(args):
     env.reset_wall_clock()
 
     if not args.random:
-        if args.topomap_dir:
-            topomap = load_topomap_from_dir(args.topomap_dir)
-        else:
-            topomap = load_topomap_from_dataset(args.topomap_traj, step=args.topomap_step)
+        if args.topomap_traj:
+            raise ValueError(
+                "MuJoCo closed-loop navigation no longer allows dataset trajectories as topomap input. "
+                "Use --mode generate-topomap to build a MuJoCo topomap, then pass --topomap-dir."
+            )
+        topo_dir = args.topomap_dir or get_default_topomap_dir(args.map)
+        topomap = load_topomap_from_dir(topo_dir)
         # 使用 topomap 最后一张图像作为目标点摄像头画面
         goal_view_img = topomap[-1]
     num_nodes = len(topomap)
@@ -1424,6 +1584,7 @@ def run_navigate(args):
     recovery_counter = 0
     recovery_count_total = 0
     turn_dir = 1.0
+    camera_enabled = camera_visualization_enabled(args)
 
     frame_buffer = deque(maxlen=CONTEXT_SIZE + 1)
     trajectory = []
@@ -1450,7 +1611,7 @@ def run_navigate(args):
         # ── 实时 FPV + 目标点视角显示 ──
         actual_vel = env.get_body_speed_forward()
         status_text = f"{state_machine} | node={closest_node}/{goal_node} | v_body={actual_vel:.3f}"
-        if not args.no_gui:
+        if camera_enabled:
             show_fpv_realtime(cam_img, step_i, status_text, goal_view=goal_view_img)
 
         # ── 状态机: 碰撞恢复 ──
@@ -1670,6 +1831,12 @@ def main():
     parser.add_argument("--map", choices=["easy", "medium", "hard"], default="easy",
                         help="地图: easy(直线5m)/medium(单障碍7m)/hard(S弯8m)")
     parser.add_argument("--no-gui", action="store_true", help="无头模式")
+    parser.add_argument(
+        "--camera",
+        choices=["on", "off"],
+        default="on",
+        help="是否显示统一的 FPV + goal vision 相机窗口",
+    )
     parser.add_argument("--max-steps", type=int, default=200,
                         help="最大 NoMaD 步数 (默认 200 ≈ 50s 仿真时间)")
     parser.add_argument("--waypoint", type=int, default=2,
@@ -1681,8 +1848,8 @@ def main():
                         help="保存头部 FPV 相机图像到 results 目录")
 
     # 导航/topomap 参数
-    parser.add_argument("--topomap-traj", type=str, default="no10vc_10_0",
-                        help="GoStanford 轨迹名（--topomap-dir 未指定时回退使用）")
+    parser.add_argument("--topomap-traj", type=str, default=None,
+                        help="已弃用：MuJoCo 闭环导航禁止使用数据集轨迹作为 topomap")
     parser.add_argument("--topomap-dir", type=str, default=None,
                         help="自定义 topomap 目录（覆盖 --map 默认路径）")
     parser.add_argument("--topomap-step", type=int, default=5)
@@ -1724,6 +1891,11 @@ def main():
         if args.random:
             print(f"[Config] Random mode: spawn/goal will be randomized")
         else:
+            if args.topomap_traj:
+                print("[Error] Dataset trajectories cannot be used as MuJoCo navigation goals.")
+                print("  请改用: python scripts/nomad_mujoco_lite3_nav.py --mode generate-topomap --map "
+                      f"{args.map}")
+                sys.exit(1)
             # 自动检测 topomap 目录
             if not args.topomap_dir:
                 default_dir = get_default_topomap_dir(args.map)

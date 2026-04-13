@@ -1,0 +1,4 @@
+Mode: lite3_mujoco_navigation_host_navigate
+Steps: 38
+Total distance: 4.052 m
+Reached goal: True

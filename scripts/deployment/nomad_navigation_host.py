@@ -1,11 +1,19 @@
 #!/usr/bin/env python3
-"""Unified NoMaD navigation host for MuJoCo and real-robot backends."""
+"""Unified NoMaD navigation host for MuJoCo and real-robot backends.
+
+支持两种运行模式：
+  1. 批量模式（默认）：从命令行或 JSON 计划文件加载预定义任务序列
+  2. 在线交互模式（--interactive）：启动后进入 idle 状态，通过 stdin 实时接收任务
+"""
 
 from __future__ import annotations
 
 import argparse
 import json
+import select
 import sys
+import threading
+import time
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from pathlib import Path
@@ -20,6 +28,8 @@ for candidate in (SCRIPTS_ROOT, SIM_ROOT):
 
 from nomad_mujoco_lite3_state_machine import build_parser as build_state_machine_parser
 from project_paths import repo_path
+from lite3_system.topomap import validate_task_topomap_args
+from lite3_system.session import NavigationSession
 
 
 RUN_TAG = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -40,6 +50,10 @@ class Lite3NavigationHost:
         self.host_args = host_args
         self.task_args_list = task_args_list
         self.results: list[HostTaskResult] = []
+        self.session = NavigationSession(run_label=f"{self.host_args.platform}_{self.host_args.backend}_host")
+        self._shared_platform = None
+        self._shared_mujoco_map = None
+        self._validate_plan_consistency()
 
     def _load_bridge_kwargs(self) -> dict:
         if not self.host_args.bridge_config:
@@ -49,9 +63,14 @@ class Lite3NavigationHost:
 
     def _validate_task(self, task_args: argparse.Namespace) -> None:
         if task_args.mode == "mission":
-            has_mission = bool(task_args.mission_topomap or task_args.mission_dataset_traj or task_args.random)
+            has_mission = bool(
+                task_args.mission_topomap
+                or task_args.mission_dataset_traj
+                or task_args.random
+                or getattr(task_args, "goal_source", "topomap") in {"random_points", "capture_queue"}
+            )
             if not has_mission:
-                raise ValueError("Mission mode requires mission_topomap, mission_dataset_traj, or --random.")
+                raise ValueError("Mission mode requires mission-topomap, goal-source=random_points/capture_queue, or --random.")
 
         if self.host_args.backend == "real":
             if task_args.mode == "generate-topomap":
@@ -60,6 +79,19 @@ class Lite3NavigationHost:
                 raise ValueError("Real backend does not support random spawn/goal generation.")
             if not self.host_args.bridge_module or not self.host_args.bridge_class:
                 raise ValueError("Real backend requires --bridge-module and --bridge-class.")
+
+        validate_task_topomap_args(task_args, expected_domain=self.host_args.backend)
+
+    def _validate_plan_consistency(self) -> None:
+        if self.host_args.backend != "mujoco" or not self.task_args_list:
+            return
+        map_names = {task_args.map for task_args in self.task_args_list}
+        if len(map_names) > 1:
+            raise ValueError(
+                "A single MuJoCo navigation-host run now keeps one scene instance alive across tasks. "
+                f"Please use a single map per host run, but got: {sorted(map_names)}."
+            )
+        self._shared_mujoco_map = next(iter(map_names))
 
     def _build_platform(self):
         if self.host_args.backend == "mujoco":
@@ -73,19 +105,37 @@ class Lite3NavigationHost:
             bridge_kwargs=bridge_kwargs,
         )
 
+    def _get_platform_for_task(self, task_args: argparse.Namespace):
+        if self._shared_platform is not None:
+            return self._shared_platform
+
+        if self.host_args.backend == "real":
+            if self._shared_platform is None:
+                self._shared_platform = self._build_platform()
+            return self._shared_platform
+
+        from lite3_system.interfaces import Lite3LowLevelPlatform
+
+        self._shared_platform = Lite3LowLevelPlatform(gui=not bool(task_args.no_gui), scene_name=task_args.map)
+        return self._shared_platform
+
     def _result_prefix(self) -> str:
         return f"{self.host_args.platform}_{self.host_args.backend}_navigation_host"
 
     def run_task(self, task_index: int, task_args: argparse.Namespace) -> HostTaskResult:
         from lite3_system.system import Lite3System
 
+        if task_args.mode != "estop":
+            self.session.clear_estop()
+        task_args.capture_enabled = True
         self._validate_task(task_args)
-        platform = self._build_platform()
+        platform = self._get_platform_for_task(task_args)
         system = Lite3System(
             task_args,
             platform=platform,
             result_prefix=self._result_prefix(),
-            close_platform_on_finalize=True,
+            close_platform_on_finalize=False,
+            session=self.session,
         )
         exit_code = system.run()
         return HostTaskResult(
@@ -99,6 +149,8 @@ class Lite3NavigationHost:
 
     def run(self) -> int:
         if self.host_args.dry_run:
+            for task_args in self.task_args_list:
+                self._validate_task(task_args)
             print(self.render_summary_markdown())
             if self.host_args.save_plan:
                 output_dir = repo_path("results", "deployment", f"{RUN_TAG}_{self.host_args.platform}_{self.host_args.backend}_navigation_host")
@@ -125,6 +177,9 @@ class Lite3NavigationHost:
             (output_dir / "host_plan.json").write_text(self.render_plan_json(), encoding="utf-8")
             (output_dir / "host_summary.md").write_text(self.render_summary_markdown(), encoding="utf-8")
             print(f"[Host] Saved host plan to: {output_dir}")
+
+        if self._shared_platform is not None:
+            self._shared_platform.close()
 
         return 0 if all(result.exit_code == 0 for result in self.results) else 1
 
@@ -167,9 +222,11 @@ class Lite3NavigationHost:
                 "## Host Design Notes",
                 "",
                 "1. The host is responsible for task scheduling and backend selection.",
-                "2. The Lite3 state machine remains responsible for closed-loop execution and recovery.",
-                "3. `navigate` is the single-topomap local navigation task, while `mission` is the multi-goal queue task.",
-                "4. The MuJoCo backend can run directly; the real backend requires an external Python bridge module.",
+                "2. Supported host tasks are `stand`, `navigate`, `explore`, and `estop`; `mission` remains a backward-compatible alias.",
+                "3. Capture is host-managed: the host keeps one shared session and enables c/[ / ] only during host runs.",
+                "4. The MuJoCo backend keeps one scene instance alive across task switches, so the viewer stays open and the robot pose is continuous.",
+                "5. The real backend uses one persistent bridge instance; there is no map reload concept during task switching.",
+                "6. Task topomaps must match the backend domain: MuJoCo tasks use MuJoCo topomaps, and real-robot tasks use real-world topomaps.",
             ]
         )
         return "\n".join(lines)
@@ -179,6 +236,8 @@ def build_host_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Unified NoMaD navigation host")
     parser.add_argument("--platform", choices=["lite3"], default="lite3")
     parser.add_argument("--backend", choices=["mujoco", "real"], default="mujoco")
+    parser.add_argument("--interactive", action="store_true", help="Start in online interactive mode (stdin command loop)")
+    parser.add_argument("--map", choices=["easy", "medium", "hard"], default="easy", help="Map for interactive mode")
     parser.add_argument("--plan-file", type=str, default=None, help="JSON plan file containing defaults and tasks")
     parser.add_argument("--bridge-module", type=str, default=None, help="Python module for the real-robot bridge")
     parser.add_argument("--bridge-class", type=str, default=None, help="Bridge class name in the selected module")
@@ -186,6 +245,10 @@ def build_host_parser() -> argparse.ArgumentParser:
     parser.add_argument("--continue-on-failure", action="store_true", help="Continue remaining tasks after one task fails")
     parser.add_argument("--save-plan", action="store_true", help="Save the host plan and run summary")
     parser.add_argument("--dry-run", action="store_true", help="Validate and print the task plan without starting NoMaD")
+    parser.add_argument("--no-gui", action="store_true", help="Run headless (no MuJoCo viewer)")
+    parser.add_argument("--camera", choices=["on", "off"], default="on", help="Camera visualization on/off")
+    parser.add_argument("--policy-config", type=str, default=None, help="Override policy config for interactive mode")
+    parser.add_argument("--policy-checkpoint", type=str, default=None, help="Override policy checkpoint for interactive mode")
     return parser
 
 
@@ -216,9 +279,280 @@ def load_task_args(host_args, remaining_args: list[str]) -> list[argparse.Namesp
     return [task_args]
 
 
+# ────────────────────────────────────────────────────────────
+# 在线交互模式
+# ────────────────────────────────────────────────────────────
+
+INTERACTIVE_HELP = """
+╔═══════════════════════════════════════════════════════════╗
+║             NoMaD 导航主机 — 在线交互模式                  ║
+╠═══════════════════════════════════════════════════════════╣
+║ 命令:                                                     ║
+║   navigate [--max-steps N]  使用默认 topomap 导航到目标    ║
+║   explore [--max-steps N]   无目标探索                     ║
+║   stand [--stand-steps N]   原地站立                       ║
+║   estop                     紧急停止                       ║
+║   capture                   拍照存入队列                   ║
+║   status                    查看当前状态                   ║
+║   help                      显示帮助                       ║
+║   quit / exit               退出                          ║
+╚═══════════════════════════════════════════════════════════╝
+""".strip()
+
+
+class InteractiveNavigationHost:
+    """在线交互导航主机：启动后进入 idle 状态，通过 stdin 接收实时任务。"""
+
+    def __init__(self, host_args) -> None:
+        self.host_args = host_args
+        self.session = NavigationSession(run_label=f"{host_args.platform}_{host_args.backend}_interactive")
+        self._platform = None
+        self._is_standing = False
+        self.task_count = 0
+        self.results: list[HostTaskResult] = []
+
+    def _ensure_platform(self):
+        if self._platform is not None:
+            return self._platform
+        if self.host_args.backend == "mujoco":
+            from lite3_system.interfaces import Lite3LowLevelPlatform
+            self._platform = Lite3LowLevelPlatform(
+                gui=not self.host_args.no_gui,
+                scene_name=self.host_args.map,
+            )
+        else:
+            from lite3_system.interfaces import ExternalBridgePlatform
+            bridge_kwargs = {}
+            if self.host_args.bridge_config:
+                config_path = Path(self.host_args.bridge_config).expanduser().resolve()
+                bridge_kwargs = json.loads(config_path.read_text(encoding="utf-8"))
+            self._platform = ExternalBridgePlatform(
+                bridge_module=self.host_args.bridge_module,
+                bridge_class=self.host_args.bridge_class,
+                bridge_kwargs=bridge_kwargs,
+            )
+        return self._platform
+
+    def _ensure_standing(self):
+        platform = self._ensure_platform()
+        if not self._is_standing:
+            platform.standup(3.0)
+            self._is_standing = True
+            setattr(platform, "_nomad_is_standing", True)
+
+    def _idle_step(self):
+        """idle 状态：站立并渲染相机"""
+        from lite3_system.interfaces import MotionCommand
+        platform = self._ensure_platform()
+        platform.apply_command(MotionCommand(0.0, 0.0, 0.0))
+
+    def _build_task_args(self, tokens: list[str]) -> argparse.Namespace:
+        """从用户输入解析任务参数"""
+        defaults = _state_machine_defaults()
+        defaults["map"] = self.host_args.map
+        defaults["no_gui"] = self.host_args.no_gui
+        defaults["camera"] = self.host_args.camera
+        if self.host_args.policy_config:
+            defaults["policy_config"] = self.host_args.policy_config
+        if self.host_args.policy_checkpoint:
+            defaults["policy_checkpoint"] = self.host_args.policy_checkpoint
+
+        if not tokens:
+            raise ValueError("Empty command")
+
+        mode = tokens[0].lower()
+        mode_map = {
+            "navigate": "navigate",
+            "nav": "navigate",
+            "explore": "explore",
+            "exp": "explore",
+            "stand": "stand",
+            "estop": "estop",
+            "stop": "estop",
+        }
+        if mode not in mode_map:
+            raise ValueError(f"Unknown command: {mode}. Type 'help' for available commands.")
+        defaults["mode"] = mode_map[mode]
+
+        # 解析可选参数
+        i = 1
+        while i < len(tokens):
+            if tokens[i] == "--max-steps" and i + 1 < len(tokens):
+                defaults["max_steps"] = int(tokens[i + 1])
+                i += 2
+            elif tokens[i] == "--stand-steps" and i + 1 < len(tokens):
+                defaults["stand_steps"] = int(tokens[i + 1])
+                i += 2
+            elif tokens[i] == "--scheduler" and i + 1 < len(tokens):
+                defaults["scheduler"] = tokens[i + 1]
+                i += 2
+            elif tokens[i] == "--ddim-steps" and i + 1 < len(tokens):
+                defaults["ddim_steps"] = int(tokens[i + 1])
+                i += 2
+            elif tokens[i] == "--cfg-weight" and i + 1 < len(tokens):
+                defaults["cfg_weight"] = float(tokens[i + 1])
+                i += 2
+            elif tokens[i] == "--close-threshold" and i + 1 < len(tokens):
+                defaults["close_threshold"] = float(tokens[i + 1])
+                i += 2
+            elif tokens[i] == "--goal-source" and i + 1 < len(tokens):
+                defaults["goal_source"] = tokens[i + 1]
+                i += 2
+            elif tokens[i] == "--num-goals" and i + 1 < len(tokens):
+                defaults["num_goals"] = int(tokens[i + 1])
+                i += 2
+            else:
+                i += 1
+
+        return argparse.Namespace(**defaults)
+
+    def _run_task(self, task_args: argparse.Namespace) -> HostTaskResult:
+        from lite3_system.system import Lite3System
+
+        self.task_count += 1
+        self.session.clear_estop()
+        task_args.capture_enabled = True
+        platform = self._ensure_platform()
+
+        system = Lite3System(
+            task_args,
+            platform=platform,
+            result_prefix=f"{self.host_args.platform}_{self.host_args.backend}_interactive",
+            close_platform_on_finalize=False,
+            session=self.session,
+        )
+        exit_code = system.run()
+        result = HostTaskResult(
+            index=self.task_count,
+            mode=task_args.mode,
+            map_name=task_args.map,
+            backend=self.host_args.backend,
+            exit_code=exit_code,
+            status="success" if exit_code == 0 else "failed",
+        )
+        self.results.append(result)
+        return result
+
+    def _do_capture(self):
+        platform = self._ensure_platform()
+        camera_image = platform.render_camera()
+        position, yaw = platform.get_pose()
+        capture = self.session.add_capture(
+            image=camera_image,
+            position=position,
+            yaw=yaw,
+            map_name=self.host_args.map,
+            label_prefix=f"{self.host_args.map}_interactive",
+        )
+        print(f"  [Capture] #{capture.index}: {capture.label} @ pos=({position[0]:.2f}, {position[1]:.2f}) -> {capture.saved_path}")
+
+    def _do_status(self):
+        platform = self._ensure_platform()
+        position, yaw = platform.get_pose()
+        height = platform.get_height()
+        captures = len(self.session.capture_queue)
+        print(f"  Position: ({position[0]:.3f}, {position[1]:.3f}), yaw={yaw:.3f}, height={height:.3f}")
+        print(f"  Tasks completed: {self.task_count}, Captures: {captures}")
+        print(f"  Backend: {self.host_args.backend}, Map: {self.host_args.map}")
+        if self.results:
+            last = self.results[-1]
+            print(f"  Last task: mode={last.mode}, status={last.status}")
+
+    def _has_stdin_input(self) -> bool:
+        """非阻塞检查 stdin 是否有输入"""
+        try:
+            ready, _, _ = select.select([sys.stdin], [], [], 0.0)
+            return bool(ready)
+        except (ValueError, OSError):
+            return False
+
+    def run(self) -> int:
+        print(INTERACTIVE_HELP)
+        self._ensure_platform()
+        self._ensure_standing()
+
+        # idle 循环：执行 stand 步进，同时轮询 stdin
+        print("\n[Host] IDLE — 等待命令 (输入 help 查看帮助):")
+        try:
+            while True:
+                # idle 步进（保持站立，渲染相机）
+                self._idle_step()
+
+                # 非阻塞读取命令
+                if not self._has_stdin_input():
+                    time.sleep(0.05)
+                    continue
+
+                raw_line = sys.stdin.readline()
+                if not raw_line:
+                    break
+                line = raw_line.strip()
+                if not line:
+                    print("[Host] IDLE — 等待命令:")
+                    continue
+
+                tokens = line.split()
+                cmd = tokens[0].lower()
+
+                if cmd in ("quit", "exit", "q"):
+                    print("[Host] Shutting down...")
+                    break
+                elif cmd == "help":
+                    print(INTERACTIVE_HELP)
+                elif cmd == "capture":
+                    self._do_capture()
+                elif cmd == "status":
+                    self._do_status()
+                elif cmd in ("navigate", "nav", "explore", "exp", "stand", "estop", "stop"):
+                    try:
+                        task_args = self._build_task_args(tokens)
+                        print(f"[Host] Dispatching: mode={task_args.mode}, map={task_args.map}, "
+                              f"max_steps={task_args.max_steps}")
+                        result = self._run_task(task_args)
+                        print(f"[Host] Task #{result.index} finished: {result.status} (exit={result.exit_code})")
+                    except Exception as e:
+                        print(f"[Host] Task error: {e}")
+                else:
+                    print(f"[Host] Unknown command: {cmd}. Type 'help' for available commands.")
+
+                if not self._platform.viewer_alive():
+                    print("[Host] Viewer closed.")
+                    break
+                print("[Host] IDLE — 等待命令:")
+
+        except KeyboardInterrupt:
+            print("\n[Host] Interrupted.")
+
+        # 清理
+        if self._platform is not None:
+            self._platform.close()
+
+        # 保存结果摘要
+        if self.results:
+            output_dir = self.session.run_dir
+            summary_lines = [
+                f"Interactive session: {len(self.results)} tasks completed",
+                f"Backend: {self.host_args.backend}, Map: {self.host_args.map}",
+                "",
+            ]
+            for r in self.results:
+                summary_lines.append(f"  Task {r.index}: mode={r.mode} status={r.status}")
+            (output_dir / "interactive_summary.txt").write_text(
+                "\n".join(summary_lines), encoding="utf-8"
+            )
+            print(f"[Host] Session saved to: {output_dir}")
+
+        return 0
+
+
 def main() -> int:
     host_parser = build_host_parser()
     host_args, remaining_args = host_parser.parse_known_args()
+
+    if host_args.interactive:
+        host = InteractiveNavigationHost(host_args)
+        return host.run()
+
     task_args_list = load_task_args(host_args, remaining_args)
     host = Lite3NavigationHost(host_args, task_args_list)
     return host.run()

@@ -1,0 +1,38 @@
+{
+  "defaults": {
+    "scheduler": "ddim",
+    "ddim_steps": 2,
+    "cfg_weight": 0.0,
+    "no_gui": false,
+    "camera": "on",
+    "standup_time": 3.0,
+    "max_steps": 120
+  },
+  "tasks": [
+    {
+      "mode": "stand",
+      "map": "easy",
+      "stand_steps": 30,
+      "max_steps": 30
+    },
+    {
+      "mode": "explore",
+      "map": "easy",
+      "max_steps": 60
+    },
+    {
+      "mode": "navigate",
+      "map": "easy",
+      "goal_source": "capture_queue",
+      "num_goals": 1,
+      "capture_index": -1,
+      "topomap_nodes": 20,
+      "max_steps": 220
+    },
+    {
+      "mode": "estop",
+      "map": "easy",
+      "max_steps": 1
+    }
+  ]
+}

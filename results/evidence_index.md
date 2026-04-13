@@ -1,135 +1,69 @@
 # 论文证据索引表
 
-> 生成时间：2026-04-09
-> 本表汇总所有实验的脚本入口、结果路径和核心指标，供论文各章节直接引用。
+> 生成时间：2026-04-13
+> 说明：本表按 `new` 分支当前代码结构整理，统一使用分类后的 canonical script path，并优先指向正式统计结果与 2026-04-13 补充生成的仿真/部署证据。
 
-## 第三章：NoMaD 基线与系统架构
-
-| 实验名称 | 脚本路径 | 结果路径 | 核心指标 | 章节用途 |
-|---|---|---|---|---|
-| 环境检查 | `scripts/env_check.py` | `results/tools/` | 数据集/权重/目录完整性 | 3.x 实验环境 |
-| 路径审计 | `scripts/path_audit.py` | `results/tools/` | 硬编码路径统计 | 3.x 工程规范 |
-| 数据集检查 | `scripts/check_dataset.py` | `results/day1/` | 3696 条轨迹，采样正常 | 3.x 数据集说明 |
-| 离线基线推理 | `scripts/offline_inference.py` | `results/day1/20260409_221944_offline_inference/` | 19,049,675 参数，12.2 Hz，DDPM 0.0817s | 3.x 基线性能 |
-
-## 第四章：DDIM 加速与 CFG 引导优化
+## 第三章：环境、数据与基线
 
 | 实验名称 | 脚本路径 | 结果路径 | 核心指标 | 章节用途 |
 |---|---|---|---|---|
-| DDIM 快速验证 | `scripts/ddim_experiment.py` | `results/day2/` | DDIM-5: 14.17ms (2× 加速), MSE 0.000063 | 4.x 快速验证 |
-| DDIM 统计实验 | `scripts/ddim_stat_experiment.py` | `results/day2/20260409_222333_ddim_stat_experiment/` | 6 配置 × 24 cases × 8 runs，含 CI95 | 4.x 正式结果表 |
-| CFG 快速验证 | `scripts/cfg_experiment.py` | `results/day3/` | w=1.0 最佳导航引导 | 4.x 快速验证 |
-| CFG 统计实验 | `scripts/cfg_stat_experiment.py` | `results/day3/20260409_222424_cfg_stat_experiment/` | 6 引导强度 × 24 cases × 8 runs，含 CI95 | 4.x 正式结果表 |
-| 编码器对比 | `scripts/encoder_comparison_experiment.py` | `results/day4/20260409_222739_encoder_comparison_experiment/` | EfficientNet-b0 vs DINOv2-small 推理对比 | 4.x 视觉编码器 |
+| 环境检查 | `scripts/tooling/env_check.py` | `results/tools/env_check_20260413_150644.txt` | Ubuntu 20.04 / Python 3.8.5 / Torch 2.4.1 / CUDA 可用 | 3.x 实验环境 |
+| 路径审计 | `scripts/tooling/path_audit.py` | `results/tools/path_audit_20260413_150647.txt` | 78 个路径发现项，已剔除 `results/` 与构建缓存噪声 | 3.x 工程规范 |
+| 数据集检查 | `scripts/analysis/check_dataset.py` | `results/day1/20260410_143018_dataset_check.txt` | 3696 条轨迹，抽查 5 条，0 异常 | 3.x 数据集说明 |
+| 离线基线推理 | `scripts/analysis/offline_inference.py` | `results/day1/20260410_143032_offline_inference/summary.txt` | 19,049,675 参数，DDPM 0.1250 s，8.0 Hz | 3.x 基线性能 |
+| 统一汇总 | `scripts/analysis/thesis_result_summary.py` | `results/summary/thesis_result_summary_20260413_150642.md` | 汇总基线、统计实验、Lite3、导航主机与 Tron1 资产状态 | 3.x 证据总览 |
 
-### DDIM 推荐配置结论
-
-| 配置 | 延迟 (ms) | 加速比 | MSE vs 基线 | 结论 |
-|---|---:|---:|---:|---|
-| DDPM-10 (基线) | 28.55 | 1.00× | 0.0000 | 基线 |
-| DDIM-5 (推荐) | 14.18 | 2.01× | 0.0048 | **部署推荐** |
-| DDIM-1 (极端) | 3.18 | 8.97× | 3.5168 | 不推荐，精度下降过大 |
-
-### DDIM × CFG 联合优化实验 (NEW)
+## 第四章：DDIM、CFG 与视觉编码器
 
 | 实验名称 | 脚本路径 | 结果路径 | 核心指标 | 章节用途 |
 |---|---|---|---|---|
-| 联合网格搜索 | `scripts/joint_ddim_cfg_experiment.py` | `results/day4/20260409_225810_joint_ddim_cfg_experiment/` | 20 配置 × 24 cases × 8 runs, 综合评分排名 | 4.x 联合优化 |
+| DDIM 快速验证 | `scripts/experiments/ddim_experiment.py` | `results/day2/20260410_143043_ddim_results.txt` | DDIM-2/3/5 与 DDPM-10 的时延与轨迹误差对比 | 4.x 快速验证 |
+| DDIM 统计实验 | `scripts/experiments/ddim_stat_experiment.py` | `results/day2/20260410_143136_ddim_stat_experiment/ddim_overall_summary.csv` | 6 配置 × 24 cases × 8 runs，含 CI95 | 4.x 正式结果 |
+| CFG 快速验证 | `scripts/experiments/cfg_experiment.py` | `results/day3/results.txt` | 不同 `w` 的快速效果对比 | 4.x 快速验证 |
+| CFG 统计实验 | `scripts/experiments/cfg_stat_experiment.py` | `results/day3/20260410_143225_cfg_stat_experiment/cfg_overall_summary.csv` | 6 引导强度 × 24 cases × 8 runs | 4.x 正式结果 |
+| DDIM × CFG 联合优化 | `scripts/joint_ddim_cfg_experiment.py` | `results/day4/20260410_143709_joint_ddim_cfg_experiment/overall_summary.csv` | 综合最优 `ddim2_w0.0` | 4.x 部署配置 |
+| 编码器对比 | `scripts/experiments/encoder_comparison_experiment.py` | `results/day4/20260410_143729_encoder_comparison_experiment/encoder_overall_summary.csv` | `dinov2_small` 优于 `efficientnet_b0` | 4.x 编码器升级 |
 
-#### 联合优化 Top-5 配置
+### 当前推荐配置
 
-| 排名 | 配置 | 综合评分 | 延迟(ms) | 加速比 | 前进距离 | 平滑度 |
-|---:|---|---:|---:|---:|---:|---:|
-| 1 | **DDIM-2 w=0.0** | **5.6477** | **6.18** | **4.84×** | 8.089 | 0.1237 |
-| 2 | DDIM-3 w=0.0 | 5.3648 | 9.12 | 3.28× | 8.076 | 0.1075 |
-| 3 | DDIM-2 w=0.5 | 4.9877 | 11.39 | 2.63× | 8.106 | 0.1246 |
-| 4 | DDIM-2 w=1.0 | 4.9853 | 11.44 | 2.62× | 8.122 | 0.1259 |
-| 5 | DDIM-5 w=0.0 | 4.9851 | 14.94 | 2.00× | 8.032 | 0.1043 |
-
-**最优部署配置: DDIM-2 + 无 CFG (6.18ms, 4.84× 加速)**
-
-### CFG 推荐配置结论
-
-| 引导强度 w | 延迟 (ms) | Diversity | Shift vs w=0 | 结论 |
-|---:|---:|---:|---:|---|
-| 0.0 (基线) | 28.65 | 0.2879 | 0.0000 | 标准导航 |
-| 1.0 (推荐) | 53.20 | 0.2774 | 0.0476 | **适度引导，轨迹更集中** |
-| 4.0 (过度) | 53.12 | 0.3041 | 0.5133 | 过度引导，偏移过大 |
-
-### 编码器对比结论
-
-| 编码器 | 延迟 (ms) | Diversity | Forward Progress | 结论 |
-|---|---:|---:|---:|---|
-| EfficientNet-b0 (原始) | 29.98 | 0.2668 | 6.87 | 基线 |
-| DINOv2-small | 28.94 | 0.5779 | 8.51 | 多样性更高，前进距离更优 |
+| 模块 | 推荐 | 依据 |
+|---|---|---|
+| 采样调度 | `DDIM-2` | `results/day2/20260410_143136_ddim_stat_experiment/ddim_overall_summary.csv` |
+| CFG | 默认 `w=0.0`，障碍增强 `w=1.0` | `results/day3/20260410_143225_cfg_stat_experiment/cfg_overall_summary.csv` 与 Lite3 medium 地图结果 |
+| 视觉编码器 | `dinov2_small` | `results/day4/20260410_143729_encoder_comparison_experiment/encoder_overall_summary.csv` |
 
 ## 第五章：Lite3 MuJoCo 联合导航
 
 | 实验名称 | 脚本路径 | 结果路径 | 核心指标 | 章节用途 |
 |---|---|---|---|---|
-| Topomap 生成 (easy) | `scripts/nomad_mujoco_lite3_nav.py --mode generate-topomap --map easy` | `topomaps/easy/` | 20 节点 | 5.x topomap 构建 |
-| Topomap 生成 (medium) | `scripts/nomad_mujoco_lite3_nav.py --mode generate-topomap --map medium` | `topomaps/medium/` | 20 节点 | 5.x topomap 构建 |
-| Topomap 生成 (hard) | `scripts/nomad_mujoco_lite3_nav.py --mode generate-topomap --map hard` | `topomaps/hard/` | 20 节点 | 5.x topomap 构建 |
-| DDPM 导航 easy | `--mode navigate --map easy` | `results/nomad_mujoco/20260409_222936_navigate_mujoco/` | SUCCESS, 43 步, 0 恢复, 4.565m | 5.x 结果表 |
-| DDPM 导航 medium | `--mode navigate --map medium` | `results/nomad_mujoco/20260409_222956_navigate_mujoco/` | SUCCESS, 60 步, 0 恢复, 6.388m | 5.x 结果表 |
-| DDPM 导航 hard | `--mode navigate --map hard` | `results/nomad_mujoco/20260409_223018_navigate_mujoco/` | SUCCESS, 70 步, 0 恢复, 7.467m | 5.x 结果表 |
-| DDIM-5 导航 easy | `--mode navigate --map easy --scheduler ddim --ddim-steps 5` | `results/nomad_mujoco/20260409_223041_navigate_mujoco/` | SUCCESS, 43 步, 0 恢复, 4.517m | 5.x 结果表 |
-| DDIM-5 导航 medium | `--mode navigate --map medium --scheduler ddim --ddim-steps 5` | `results/nomad_mujoco/20260409_223054_navigate_mujoco/` | SUCCESS, 61 步, 0 恢复, 6.401m | 5.x 结果表 |
-| DDIM-5 导航 hard | `--mode navigate --map hard --scheduler ddim --ddim-steps 5` | `results/nomad_mujoco/20260409_223109_navigate_mujoco/` | SUCCESS, 71 步, 0 恢复, 7.560m | 5.x 结果表 |
-| 探索模式 medium | `--mode explore --map medium` | `results/nomad_mujoco/20260409_223125_explore_mujoco/` | 200 步, 2 次恢复, 18.730m | 5.x 探索模式 |
-| 纯运动测试 | `--mode walk-test` | `results/nomad_mujoco/20260409_223153_walk_test/` | 前进 7.09m, locomotion 正常 | 5.x 底层验证 |
-| 状态机导航 hard | `nomad_mujoco_lite3_state_machine.py --map hard --scheduler ddim --ddim-steps 5` | `results/nomad_mujoco/20260409_223341_lite3_state_machine_navigate/` | SUCCESS, 72 步, 7.734m | 5.x 状态机 |
-| **DDIM-2 导航 easy** | `--scheduler ddim --ddim-steps 2` | `results/nomad_mujoco/20260409_230132_navigate_mujoco/` | SUCCESS, 43 步, 0 恢复 | 5.x 最优配置验证 |
-| **DDIM-2 导航 medium** | `--scheduler ddim --ddim-steps 2` | `results/nomad_mujoco/20260409_230158_navigate_mujoco/` | SUCCESS, 85 步, 0 恢复 | 5.x 最优配置验证 |
-| **DDIM-2 导航 hard** | `--scheduler ddim --ddim-steps 2` | `results/nomad_mujoco/20260409_230215_navigate_mujoco/` | SUCCESS, 70 步, 0 恢复 | 5.x 最优配置验证 |
-| **DDIM-2+CFG 导航 easy** | `--scheduler ddim --ddim-steps 2 --cfg-weight 1.0` | `results/nomad_mujoco/20260409_230237_navigate_mujoco/` | SUCCESS, 42 步, 0 恢复 | 5.x CFG 对比 |
-| **DDIM-2+CFG 导航 medium** | `--scheduler ddim --ddim-steps 2 --cfg-weight 1.0` | `results/nomad_mujoco/20260409_230246_navigate_mujoco/` | SUCCESS, 61 步, 0 恢复 | 5.x CFG 对比 |
-| **DDIM-2+CFG 导航 hard** | `--scheduler ddim --ddim-steps 2 --cfg-weight 1.0` | `results/nomad_mujoco/20260409_230257_navigate_mujoco/` | SUCCESS, 70 步, 0 恢复 | 5.x CFG 对比 |
-| **DDIM-2 探索 easy** | `--mode explore --scheduler ddim --ddim-steps 2` | `results/nomad_mujoco/20260409_230327_explore_mujoco/` | 100 步, 2 恢复, 8.671m | 5.x 探索模式 |
-| **状态机 DDIM-2** | `state_machine --scheduler ddim --ddim-steps 2` | `results/nomad_mujoco/20260409_230434_lite3_state_machine_navigate/` | SUCCESS, 44 步, 4.673m | 5.x 状态机 |
-| **多目标 mission** | `state_machine --mode mission --scheduler ddim --ddim-steps 2` | `results/nomad_mujoco/20260409_230505_lite3_state_machine_mission/` | SUCCESS, 152 步, 13.466m | 5.x 多目标导航 |
+| Topomap 生成 | `scripts/simulation/nomad_mujoco_lite3_nav.py --mode generate-topomap` | `topomaps/easy/`, `topomaps/medium/`, `topomaps/hard/` | 每张地图 20 节点 | 5.x topomap 构建 |
+| DDIM-2 导航 easy | `scripts/simulation/nomad_mujoco_lite3_nav.py` | `results/nomad_mujoco/20260410_143820_navigate_mujoco/summary.txt` | 45 步，4.705 m，成功到达 | 5.x 基础导航 |
+| DDIM-2 导航 medium | `scripts/simulation/nomad_mujoco_lite3_nav.py` | `results/nomad_mujoco/20260410_143829_navigate_mujoco/summary.txt` | 87 步，7.360 m，成功到达 | 5.x 基础导航 |
+| DDIM-2 导航 hard | `scripts/simulation/nomad_mujoco_lite3_nav.py` | `results/nomad_mujoco/20260410_143840_navigate_mujoco/summary.txt` | 70 步，7.474 m，成功到达 | 5.x 基础导航 |
+| DDIM-2 + CFG 导航 easy | `scripts/simulation/nomad_mujoco_lite3_nav.py --cfg-weight 1.0` | `results/nomad_mujoco/20260410_144025_navigate_mujoco/summary.txt` | 42 步，4.354 m | 5.x CFG 对比 |
+| DDIM-2 + CFG 导航 medium | `scripts/simulation/nomad_mujoco_lite3_nav.py --cfg-weight 1.0` | `results/nomad_mujoco/20260410_144035_navigate_mujoco/summary.txt` | 61 步，6.433 m | 5.x CFG 对比 |
+| DDIM-2 + CFG 导航 hard | `scripts/simulation/nomad_mujoco_lite3_nav.py --cfg-weight 1.0` | `results/nomad_mujoco/20260410_144047_navigate_mujoco/summary.txt` | 70 步，7.403 m | 5.x CFG 对比 |
+| 单脚本探索 | `scripts/simulation/nomad_mujoco_lite3_nav.py --mode explore` | `results/nomad_mujoco/20260410_144106_explore_mujoco/summary.txt` | 100 步，7.763 m | 5.x 探索能力 |
+| 单脚本纯运动 | `scripts/simulation/nomad_mujoco_lite3_nav.py --mode walk-test` | `results/nomad_mujoco/20260410_144120_walk_test/summary.txt` | 48 步，7.094 m | 5.x 底层链路 |
+| 状态机导航 | `scripts/simulation/nomad_mujoco_lite3_state_machine.py --mode navigate` | `results/nomad_mujoco/20260410_144134_lite3_state_machine_navigate/summary.txt` | 43 步，4.622 m，成功到达 | 5.x 分层系统 |
+| 状态机 mission | `scripts/simulation/nomad_mujoco_lite3_state_machine.py --mode mission` | `results/nomad_mujoco/20260410_144148_lite3_state_machine_mission/summary.txt` | 129 步，12.601 m，成功完成 | 5.x 多目标导航 |
+| 状态机探索 | `scripts/simulation/nomad_mujoco_lite3_state_machine.py --mode explore` | `results/nomad_mujoco/20260413_150349_lite3_state_machine_explore/summary.txt` | 99 步，8.711 m | 5.x 分层探索 |
+| 状态机纯运动 | `scripts/simulation/nomad_mujoco_lite3_state_machine.py --mode walk-test` | `results/nomad_mujoco/20260413_150349_lite3_state_machine_walk-test/summary.txt` | 48 步，6.398 m | 5.x 分层底层验证 |
+| 导航主机 dry-run | `scripts/deployment/nomad_navigation_host.py --backend mujoco --plan-file ... --dry-run --save-plan` | `results/deployment/20260413_150346_lite3_mujoco_navigation_host/host_summary.md` | `navigate + mission` 两任务计划通过校验 | 5.x 仿真到真机调度层 |
 
-### Lite3 导航结果汇总
+## 第六章：Tron1 与真机部署准备
 
-| 地图 | 调度器 | 结果 | 步数 | 恢复次数 | 路径距离 |
-|---|---|---|---:|---:|---:|
-| easy | DDPM | SUCCESS | 43 | 0 | 4.565m |
-| medium | DDPM | SUCCESS | 60 | 0 | 6.388m |
-| hard | DDPM | SUCCESS | 70 | 0 | 7.467m |
-| easy | DDIM-5 | SUCCESS | 43 | 0 | 4.517m |
-| medium | DDIM-5 | SUCCESS | 61 | 0 | 6.401m |
-| hard | DDIM-5 | SUCCESS | 71 | 0 | 7.560m |
-| **easy** | **DDIM-2** | **SUCCESS** | **43** | **0** | — |
-| **medium** | **DDIM-2** | **SUCCESS** | **85** | **0** | — |
-| **hard** | **DDIM-2** | **SUCCESS** | **70** | **0** | — |
-| **easy** | **DDIM-2+CFG** | **SUCCESS** | **42** | **0** | — |
-| **medium** | **DDIM-2+CFG** | **SUCCESS** | **61** | **0** | — |
-| **hard** | **DDIM-2+CFG** | **SUCCESS** | **70** | **0** | — |
+| 实验名称 | 脚本路径 | 结果路径 | 核心指标 | 章节用途 |
+|---|---|---|---|---|
+| Tron1 资产导出 | `scripts/simulation/nomad_mujoco_tron1_nav.py --mode export-manifest --save` | `results/day6/20260413_150410_tron1_tron1_plan/tron1_manifest.json` | 基础权重存在，MuJoCo 模型缺失 | 6.x Tron1 资产规范 |
+| Lite3 部署清单 | `scripts/deployment/nomad_real_deployment_checklist.py --platform lite3 --save` | `results/deployment/20260413_150410_lite3_checklist/deployment_checklist.md` | Lite3 必需资产齐全 | 6.x Lite3 部署准备 |
+| Tron1 部署清单 | `scripts/deployment/nomad_real_deployment_checklist.py --platform tron1 --save` | `results/deployment/20260413_150410_tron1_checklist/deployment_checklist.md` | Tron1 缺失 `assets/tron1/mujoco/tron1.xml` | 6.x Tron1 部署准备 |
 
-### 多目标导航结果
+## 当前未闭环项
 
-| 模式 | 目标序列 | 配置 | 步数 | 距离 | 结果 |
-|---|---|---|---:|---:|---|
-| mission | easy → medium | DDIM-2 | 152 | 13.466m | ✅ SUCCESS |
-
-## 第五章：Tron1 实施状态
-
-| 项目 | 脚本路径 | 结果路径 | 状态 |
-|---|---|---|---|
-| 资产验证 | `scripts/nomad_mujoco_tron1_nav.py --mode validate-assets` | 终端输出 | NoMaD 权重 OK，MuJoCo 模型缺失 |
-| 实施清单 | `scripts/nomad_mujoco_tron1_nav.py --mode export-manifest --save` | `results/day6/20260409_223422_tron1_tron1_plan/` | 6 阶段实施路线已导出 |
-
-## 部署清单
-
-| 平台 | 脚本路径 | 结果路径 |
+| 项目 | 当前状态 | 原因 |
 |---|---|---|
-| Lite3 | `scripts/nomad_real_deployment_checklist.py --platform lite3 --save` | `results/deployment/20260409_223446_lite3_checklist/` |
-| Tron1 | `scripts/nomad_real_deployment_checklist.py --platform tron1 --save` | `results/deployment/20260409_223452_tron1_checklist/` |
-
-## 最终推荐配置
-
-1. **模型**：NoMaD（19M 参数）
-2. **调度器**：DDIM-2（联合优化综合最优，6.18ms，4.84× 加速）；若论文强调保守精度，可把 DDIM-5 作为稳健备选。
-3. **引导强度**：整体推荐 w=0.0；在 medium 障碍场景中可使用 CFG w=1.0 作为避障增强配置。
-4. **视觉编码器**：DINOv2-small 在现有评测中优于 EfficientNet-b0，但 ConvNeXt/ResNet 训练结果缺失，应写成探索性对比。
-5. **Lite3 仿真**：DDPM、DDIM-5、DDIM-2 与 DDIM-2+CFG 均已有成功结果；正式表格应引用 summary.txt 的实测路径距离。
+| 训练相关流程 | 本轮未执行 | 当前要求明确不做训练验收 |
+| ConvNeXt / ResNet 正式结果 | 缺失 | 无现成训练权重，不在 Ubuntu 20.04 部署环境补训 |
+| Tron1 MuJoCo 闭环导航 | 缺失 | `assets/tron1/mujoco/tron1.xml` 尚未补齐 |
+| Lite3 / Tron1 真机低速测试日志 | 缺失 | 当前仓库保留接口与清单，未保存真机运行记录 |

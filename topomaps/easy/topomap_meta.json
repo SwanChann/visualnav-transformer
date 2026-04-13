@@ -1,0 +1,6 @@
+{
+  "domain": "mujoco",
+  "map": "easy",
+  "generated_by": "scripts/nomad_mujoco_lite3_nav.py --mode generate-topomap",
+  "generated_at": "2026-04-13T15:39:41"
+}

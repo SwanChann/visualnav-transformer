@@ -1,5 +1,7 @@
 import argparse
+import json
 import os
+import shutil
 from utils import msg_to_pil 
 import time
 
@@ -10,6 +12,7 @@ from sensor_msgs.msg import Joy
 
 IMAGE_TOPIC = "/usb_cam/image_raw"
 TOPOMAP_IMAGES_DIR = "../topomaps/images"
+TOPOMAP_META_FILENAME = "topomap_meta.json"
 obs_img = None
 
 
@@ -35,6 +38,19 @@ def callback_joy(msg: Joy):
         rospy.signal_shutdown("shutdown")
 
 
+def write_topomap_metadata(dir_path: str, sample_dt: float):
+    payload = {
+        "domain": "real",
+        "image_topic": IMAGE_TOPIC,
+        "sample_dt": float(sample_dt),
+        "generated_by": "deployment/src/create_topomap.py",
+        "generated_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+    }
+    meta_path = os.path.join(dir_path, TOPOMAP_META_FILENAME)
+    with open(meta_path, "w", encoding="utf-8") as f:
+        json.dump(payload, f, indent=2)
+
+
 def main(args: argparse.Namespace):
     global obs_img
     rospy.init_node("CREATE_TOPOMAP", anonymous=False)
@@ -50,6 +66,8 @@ def main(args: argparse.Namespace):
     else:
         print(f"{topomap_name_dir} already exists. Removing previous images...")
         remove_files_in_dir(topomap_name_dir)
+
+    write_topomap_metadata(topomap_name_dir, args.dt)
         
 
     assert args.dt > 0, "dt must be positive"
@@ -79,7 +97,7 @@ if __name__ == "__main__":
         "-d",
         default="topomap",
         type=str,
-        help="path to topological map images in ../topomaps/images directory (default: topomap)",
+        help="real-world topomap directory name under ../topomaps/images (default: topomap)",
     )
     parser.add_argument(
         "--dt",

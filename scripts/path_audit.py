@@ -34,11 +34,20 @@ PATTERNS: Sequence[Tuple[str, re.Pattern[str]]] = [
 ]
 
 SKIP_PARTS = {"__pycache__", ".git", ".mypy_cache", ".pytest_cache", ".ruff_cache"}
+SKIP_PREFIXES = {
+    Path("Lite3_rl_deploy") / "build",
+    Path("Lite3_rl_deploy") / "third_party",
+}
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Find absolute paths and portability risks in text files."
+    )
+    parser.add_argument(
+        "--include-results",
+        action="store_true",
+        help="Include generated results files in the scan output.",
     )
     parser.add_argument(
         "--save",
@@ -48,11 +57,20 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def iter_text_files(root: Path) -> Iterable[Path]:
+def should_skip_path(path: Path, include_results: bool) -> bool:
+    rel_path = path.relative_to(REPO_ROOT)
+    if any(part in SKIP_PARTS for part in rel_path.parts):
+        return True
+    if not include_results and rel_path.parts and rel_path.parts[0] == "results":
+        return True
+    return any(rel_path == prefix or prefix in rel_path.parents for prefix in SKIP_PREFIXES)
+
+
+def iter_text_files(root: Path, include_results: bool) -> Iterable[Path]:
     for path in root.rglob("*"):
         if not path.is_file():
             continue
-        if any(part in SKIP_PARTS for part in path.parts):
+        if should_skip_path(path, include_results):
             continue
         if path.suffix.lower() not in TEXT_SUFFIXES:
             continue
@@ -76,7 +94,7 @@ def scan_file(path: Path) -> List[Tuple[int, str, str]]:
     return findings
 
 
-def build_report() -> List[str]:
+def build_report(include_results: bool) -> List[str]:
     lines = [
         "NoMaD Thesis Path Audit",
         f"Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
@@ -86,7 +104,7 @@ def build_report() -> List[str]:
 
     total = 0
     files = 0
-    for path in iter_text_files(REPO_ROOT):
+    for path in iter_text_files(REPO_ROOT, include_results):
         findings = scan_file(path)
         if not findings:
             continue
@@ -116,7 +134,7 @@ def save_report(lines: Iterable[str]) -> Path:
 
 def main() -> int:
     args = parse_args()
-    lines = build_report()
+    lines = build_report(include_results=args.include_results)
     print("\n".join(lines))
 
     if args.save:

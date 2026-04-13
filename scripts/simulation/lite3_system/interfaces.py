@@ -47,7 +47,19 @@ class ExplorationResult:
 class NavigationPlatformBase:
     """Abstract platform interface for simulation and real deployment."""
 
+    def environment_domain(self) -> str:
+        return "unknown"
+
+    def supports_online_topomap_generation(self) -> bool:
+        return False
+
     def set_scene_goal(self, goal_position: np.ndarray) -> None:
+        return None
+
+    def set_goal_markers(self, goal_positions: list[np.ndarray], active_index: int = 0) -> None:
+        return None
+
+    def highlight_goal_marker(self, active_index: int) -> None:
         return None
 
     def render_camera(self):
@@ -75,6 +87,9 @@ class NavigationPlatformBase:
         raise NotImplementedError
 
     def reset_position(self, x: float, y: float, yaw: float = 0.0) -> None:
+        return None
+
+    def prepare_task(self, mode: str) -> None:
         return None
 
     def emergency_stop(self) -> None:
@@ -201,9 +216,22 @@ class Lite3LowLevelPlatform(NavigationPlatformBase):
         self.legacy.SCENE_CONFIG = self.legacy.SCENE_MAPS[scene_name]
         self.env = self.legacy.MuJoCoLite3Env(gui=gui)
 
+    def environment_domain(self) -> str:
+        return "mujoco"
+
+    def supports_online_topomap_generation(self) -> bool:
+        return True
+
     def set_scene_goal(self, goal_position: np.ndarray) -> None:
         self.legacy.SCENE_CONFIG["goal_pos"] = [float(goal_position[0]), float(goal_position[1])]
         self.env.move_goal_marker(float(goal_position[0]), float(goal_position[1]))
+
+    def set_goal_markers(self, goal_positions: list[np.ndarray], active_index: int = 0) -> None:
+        marker_positions = [(float(goal[0]), float(goal[1])) for goal in goal_positions]
+        self.env.set_goal_markers(marker_positions, active_index=active_index)
+
+    def highlight_goal_marker(self, active_index: int) -> None:
+        self.env.highlight_goal_marker(active_index)
 
     def render_camera(self):
         return self.env.render_camera()
@@ -236,6 +264,9 @@ class Lite3LowLevelPlatform(NavigationPlatformBase):
     def reset_position(self, x: float, y: float, yaw: float = 0.0) -> None:
         self.env.set_robot_position(x, y, yaw=yaw)
 
+    def prepare_task(self, mode: str) -> None:
+        self.env.prepare_task(mode)
+
     def emergency_stop(self) -> None:
         # 中文注释：仿真和真机统一使用零速度刹停，避免状态退出时仍保留旧指令
         self.env.set_command(0.0, 0.0, 0.0)
@@ -253,6 +284,9 @@ class ExternalBridgePlatform(NavigationPlatformBase):
         bridge_type = getattr(module, bridge_class)
         self.bridge = bridge_type(**(bridge_kwargs or {}))
 
+    def environment_domain(self) -> str:
+        return "real"
+
     def _call(self, method_name: str, *args, default=None, required: bool = False, **kwargs):
         method = getattr(self.bridge, method_name, None)
         if method is None:
@@ -263,6 +297,12 @@ class ExternalBridgePlatform(NavigationPlatformBase):
 
     def set_scene_goal(self, goal_position: np.ndarray) -> None:
         self._call("set_scene_goal", goal_position, required=False)
+
+    def set_goal_markers(self, goal_positions: list[np.ndarray], active_index: int = 0) -> None:
+        self._call("set_goal_markers", goal_positions, active_index=active_index, required=False)
+
+    def highlight_goal_marker(self, active_index: int) -> None:
+        self._call("highlight_goal_marker", active_index, required=False)
 
     def render_camera(self):
         return self._call("render_camera", required=True)
@@ -299,6 +339,9 @@ class ExternalBridgePlatform(NavigationPlatformBase):
 
     def reset_position(self, x: float, y: float, yaw: float = 0.0) -> None:
         self._call("reset_position", x, y, yaw, required=False)
+
+    def prepare_task(self, mode: str) -> None:
+        self._call("prepare_task", mode, required=False)
 
     def emergency_stop(self) -> None:
         if hasattr(self.bridge, "emergency_stop"):

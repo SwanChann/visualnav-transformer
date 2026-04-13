@@ -147,6 +147,14 @@ def extract_tron1(results_root: Path) -> tuple[Path | None, List[Dict[str, objec
     return path, list(payload.get("asset_checks", []))
 
 
+def extract_navigation_host(results_root: Path) -> tuple[Path | None, Dict[str, object]]:
+    path = latest_file(results_root, "host_plan.json", "navigation_host")
+    if path is None:
+        return None, {}
+    payload = json.loads(read_text(path))
+    return path, payload
+
+
 def build_markdown(results_root: Path) -> List[str]:
     baseline = extract_baseline(results_root)
     ddim_path, ddim_rows = extract_ddim(results_root)
@@ -155,6 +163,7 @@ def build_markdown(results_root: Path) -> List[str]:
     encoder_path, encoder_rows = extract_encoder(results_root)
     lite3_rows = extract_lite3(results_root)
     tron1_path, tron1_rows = extract_tron1(results_root)
+    host_path, host_payload = extract_navigation_host(results_root)
 
     lines = [
         "# Thesis Result Summary",
@@ -296,6 +305,50 @@ def build_markdown(results_root: Path) -> List[str]:
             )
     else:
         lines.append("| N/A | N/A | N/A | N/A | N/A |")
+
+    lines.extend(
+        [
+            "",
+            "## Navigation Host",
+            "",
+            f"- Source: `{format_path(host_path, REPO_ROOT)}`",
+        ]
+    )
+    if host_payload:
+        lines.extend(
+            [
+                f"- Platform: `{host_payload.get('platform', 'N/A')}`",
+                f"- Backend: `{host_payload.get('backend', 'N/A')}`",
+                "",
+                "| Task | Mode | Map | Status | Exit Code |",
+                "|---:|---|---|---|---:|",
+            ]
+        )
+        task_payloads = host_payload.get("tasks", [])
+        result_payloads = host_payload.get("results", [])
+        if result_payloads:
+            for row in result_payloads:
+                lines.append(
+                    f"| {row.get('index', 'N/A')} | "
+                    f"{row.get('mode', 'N/A')} | "
+                    f"{row.get('map_name', 'N/A')} | "
+                    f"{row.get('status', 'N/A')} | "
+                    f"{row.get('exit_code', 'N/A')} |"
+                )
+        else:
+            for index, row in enumerate(task_payloads, 1):
+                lines.append(
+                    f"| {index} | "
+                    f"{row.get('mode', 'N/A')} | "
+                    f"{row.get('map', 'N/A')} | "
+                    "pending(dry-run) | 0 |"
+                )
+    else:
+        lines.extend(
+            [
+                "- No navigation host result detected.",
+            ]
+        )
 
     lines.extend(
         [

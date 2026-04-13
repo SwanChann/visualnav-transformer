@@ -1,3 +1,6 @@
+results/nomad_mujoco/*
+results/deployment/*
+
 train/logs/*
 train/datasets/*
 train/vint_train/data/data_splits/*

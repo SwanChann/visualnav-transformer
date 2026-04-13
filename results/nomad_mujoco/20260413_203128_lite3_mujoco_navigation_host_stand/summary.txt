@@ -1,0 +1,3 @@
+Mode: lite3_mujoco_navigation_host_stand
+Steps: 20
+Total distance: 0.020 m

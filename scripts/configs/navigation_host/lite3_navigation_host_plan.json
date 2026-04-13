@@ -3,24 +3,38 @@
     "scheduler": "ddim",
     "ddim_steps": 2,
     "cfg_weight": 0.0,
-    "no_gui": true,
+    "no_gui": false,
+    "camera": "on",
     "standup_time": 3.0,
-    "max_steps": 200
+    "max_steps": 120
   },
   "tasks": [
     {
-      "mode": "navigate",
+      "mode": "stand",
       "map": "easy",
-      "topomap_dir": "topomaps/easy"
+      "stand_steps": 20,
+      "max_steps": 20
     },
     {
-      "mode": "mission",
+      "mode": "navigate",
       "map": "easy",
-      "mission_topomap": [
-        "topomaps/easy",
-        "topomaps/medium"
-      ],
-      "max_steps": 300
+      "goal_source": "random_points",
+      "num_goals": 3,
+      "goal_seed": 0,
+      "random_goal_min_dist": 1.8,
+      "random_goal_min_separation": 1.2,
+      "topomap_nodes": 24,
+      "max_steps": 320
+    },
+    {
+      "mode": "explore",
+      "map": "easy",
+      "max_steps": 30
+    },
+    {
+      "mode": "estop",
+      "map": "easy",
+      "max_steps": 1
     }
   ]
 }

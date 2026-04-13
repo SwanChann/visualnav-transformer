@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import os
+import json
 from typing import Tuple, Sequence, Dict, Union, Optional, Callable
 import numpy as np
 import torch
@@ -31,6 +32,7 @@ from topic_names import (IMAGE_TOPIC,
 
 # CONSTANTS
 TOPOMAP_IMAGES_DIR = "../topomaps/images"
+TOPOMAP_META_FILENAME = "topomap_meta.json"
 MODEL_WEIGHTS_PATH = "../model_weights"
 ROBOT_CONFIG_PATH ="../config/robot.yaml"
 MODEL_CONFIG_PATH = "../config/models.yaml"
@@ -58,6 +60,14 @@ def callback_obs(msg):
         else:
             context_queue.pop(0)
             context_queue.append(obs_img)
+
+
+def load_topomap_metadata(topomap_dir: str):
+    meta_path = os.path.join(topomap_dir, TOPOMAP_META_FILENAME)
+    if not os.path.isfile(meta_path):
+        return None
+    with open(meta_path, "r") as f:
+        return json.load(f)
 
 
 def main(args: argparse.Namespace):
@@ -89,10 +99,22 @@ def main(args: argparse.Namespace):
 
     
      # load topomap
-    topomap_filenames = sorted(os.listdir(os.path.join(
-        TOPOMAP_IMAGES_DIR, args.dir)), key=lambda x: int(x.split(".")[0]))
     topomap_dir = f"{TOPOMAP_IMAGES_DIR}/{args.dir}"
-    num_nodes = len(os.listdir(topomap_dir))
+    if not os.path.isdir(topomap_dir):
+        raise FileNotFoundError(f"Topomap directory not found: {topomap_dir}")
+    topomap_meta = load_topomap_metadata(topomap_dir)
+    if topomap_meta is not None and topomap_meta.get("domain") not in (None, "real"):
+        raise ValueError(
+            f"Topomap directory '{topomap_dir}' is tagged as '{topomap_meta.get('domain')}'. "
+            "Real deployment must use real-world topomap images."
+        )
+    topomap_filenames = sorted(
+        [f for f in os.listdir(topomap_dir) if f.endswith((".jpg", ".png", ".jpeg"))],
+        key=lambda x: int(os.path.splitext(x)[0]),
+    )
+    if not topomap_filenames:
+        raise ValueError(f"No topomap images found in: {topomap_dir}")
+    num_nodes = len(topomap_filenames)
     topomap = []
     for i in range(num_nodes):
         image_path = os.path.join(topomap_dir, topomap_filenames[i])
@@ -258,7 +280,7 @@ if __name__ == "__main__":
         "-d",
         default="topomap",
         type=str,
-        help="path to topomap images",
+        help="real-world topomap directory name under ../topomaps/images",
     )
     parser.add_argument(
         "--goal-node",
@@ -294,5 +316,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
     print(f"Using {device}")
     main(args)
-
 
