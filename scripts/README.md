@@ -49,6 +49,7 @@ Root-level scripts are still kept as legacy-compatible entrypoints, but new work
 ### `scripts/shared/`
 
 - `nomad_eval_common.py`
+- `nomad_inference.py`
 
 ### `scripts/tooling/`
 
@@ -81,6 +82,7 @@ There are now two Lite3 MuJoCo paths:
 
 The new modular system splits the stack into:
 
+- Inference module: shared policy loading plus DDPM/DDIM/CFG control
 - High level: NoMaD topomap localization and waypoint generation
 - Middle level: waypoint to velocity PD bridge
 - Low level: Lite3 ONNX locomotion plus MuJoCo physics execution
@@ -134,6 +136,7 @@ python scripts/training/run_encoder_seed_sweep.py --base-config scripts/configs/
 cd train && python train.py --config ../scripts/configs/vision_encoder/nomad_encoder_efficientnet_b0.yaml
 python scripts/simulation/nomad_mujoco_lite3_nav.py --mode navigate --map easy
 python scripts/simulation/nomad_mujoco_lite3_state_machine.py --mode mission --map medium --mission-topomap topomaps/medium
+python scripts/simulation/nomad_mujoco_lite3_state_machine.py --mode navigate --map easy --scheduler ddim --ddim-steps 2 --cfg-weight 1.0 --policy-config scripts/configs/vision_encoder/nomad_encoder_dinov2_small.yaml --policy-checkpoint train/logs/nomad-backbone-suite/your_run/ema_latest.pth
 python scripts/deployment/nomad_navigation_host.py --backend mujoco --plan-file scripts/configs/navigation_host/lite3_navigation_host_plan.json --dry-run
 python scripts/deployment/nomad_real_deployment_checklist.py --platform lite3 --save
 ```

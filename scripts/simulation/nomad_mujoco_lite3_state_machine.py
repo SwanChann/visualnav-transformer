@@ -6,8 +6,11 @@ import sys
 from pathlib import Path
 
 CURRENT_DIR = Path(__file__).resolve().parent
-if str(CURRENT_DIR) not in sys.path:
-    sys.path.insert(0, str(CURRENT_DIR))
+SCRIPTS_ROOT = CURRENT_DIR.parent
+for candidate in (CURRENT_DIR, SCRIPTS_ROOT, SCRIPTS_ROOT / "shared"):
+    candidate_str = str(candidate)
+    if candidate_str not in sys.path:
+        sys.path.insert(0, candidate_str)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -31,8 +34,30 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--close-threshold", type=float, default=3.0)
     parser.add_argument("--scheduler", choices=["ddpm", "ddim"], default="ddpm")
     parser.add_argument("--ddim-steps", type=int, default=10)
-    parser.add_argument("--cfg-weight", type=float, default=0.0,
-                        help="CFG 引导强度 (0.0=不使用)")
+    parser.add_argument(
+        "--cfg-weight",
+        type=float,
+        default=0.0,
+        help="Classifier-free guidance scale used during inference.",
+    )
+    parser.add_argument(
+        "--policy-config",
+        type=str,
+        default=None,
+        help="Optional policy config path. Leave empty to use the default NoMaD baseline config.",
+    )
+    parser.add_argument(
+        "--policy-checkpoint",
+        type=str,
+        default=None,
+        help="Optional policy checkpoint path. Leave empty to use the default NoMaD baseline checkpoint.",
+    )
+    parser.add_argument(
+        "--policy-device",
+        type=str,
+        default=None,
+        help="Optional policy device override such as cuda, cuda:0, or cpu.",
+    )
     parser.add_argument("--random", action="store_true")
     parser.add_argument("--mission-topomap", action="append", default=None)
     parser.add_argument("--mission-dataset-traj", action="append", default=None)

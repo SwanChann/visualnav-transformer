@@ -36,12 +36,18 @@ class Lite3System:
             scheduler_kind=args.scheduler,
             ddim_steps=args.ddim_steps,
             cfg_weight=getattr(args, "cfg_weight", 0.0),
+            policy_config=getattr(args, "policy_config", None),
+            policy_checkpoint=getattr(args, "policy_checkpoint", None),
+            device=getattr(args, "policy_device", None),
             waypoint_index=args.waypoint,
             radius=args.radius,
             close_threshold=args.close_threshold,
         )
         self.middle_layer = Lite3MiddleLayerPD()
-        self.context = ContextBuffer(max_frames=self.legacy.CONTEXT_SIZE + 1)
+        self.context = ContextBuffer(
+            max_frames=self.high_level.context_size + 1,
+            transform_fn=self.high_level.inference.pil_to_tensor,
+        )
         self.stuck_detector = self.legacy.StuckDetector()
         self.missions: MissionQueue | None = build_mission_queue(args, self.platform)
         self.trajectory = []
