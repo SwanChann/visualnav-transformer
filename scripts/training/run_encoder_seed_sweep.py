@@ -9,7 +9,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import List
+from typing import List, Tuple
 
 import yaml
 
@@ -44,7 +44,10 @@ def write_seed_config(base_config_path: Path, output_dir: Path, backbone: str, s
 
     config = copy.deepcopy(config)
     config["seed"] = seed
-    config["encoder_backbone"] = backbone
+    if backbone == "efficientnet_b0":
+        config["obs_encoder"] = "efficientnet-b0"
+    else:
+        config["encoder_backbone"] = backbone
     config["run_name"] = f"{config.get('run_name', backbone)}_seed_{seed}"
 
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -60,8 +63,18 @@ def make_seed_config_path(output_dir: Path, backbone: str, seed: int) -> Path:
     return output_dir / f"{backbone}_seed_{seed}.yaml"
 
 
-def build_train_command(args, config_path: Path) -> List[str]:
-    """Build one training command."""
+def build_train_command(args, config_path: Path) -> Tuple[List[str], Path]:
+    """Build one training command and its working directory."""
+    if args.backbone == "efficientnet_b0":
+        train_entry = REPO_ROOT / "train" / "train.py"
+        command = [
+            sys.executable,
+            str(train_entry),
+            "--config",
+            str(config_path),
+        ]
+        return command, REPO_ROOT / "train"
+
     train_entry = SCRIPTS_ROOT / "training" / "train_backbone_suite.py"
     command = [
         sys.executable,
@@ -75,7 +88,7 @@ def build_train_command(args, config_path: Path) -> List[str]:
         command.append("--freeze-backbone")
     if args.pretrained_backbone:
         command.append("--pretrained-backbone")
-    return command
+    return command, REPO_ROOT
 
 
 def main() -> None:
@@ -85,7 +98,7 @@ def main() -> None:
     parser.add_argument(
         "--backbone",
         required=True,
-        choices=["dinov2_small", "convnext_tiny", "resnet50"],
+        choices=["efficientnet_b0", "dinov2_small", "convnext_tiny", "resnet50"],
         help="Backbone name",
     )
     parser.add_argument(
@@ -127,11 +140,11 @@ def main() -> None:
             config_path = make_seed_config_path(output_dir, args.backbone, seed)
         else:
             config_path = write_seed_config(base_config_path, output_dir, args.backbone, seed)
-        command = build_train_command(args, config_path)
+        command, run_workdir = build_train_command(args, config_path)
         print(" ".join(command))
         if not args.dry_run:
             # 中文注释：逐个种子串行运行，避免多个训练任务争抢同一块 GPU
-            subprocess.run(command, cwd=str(REPO_ROOT), check=True)
+            subprocess.run(command, cwd=str(run_workdir), check=True)
 
 
 if __name__ == "__main__":

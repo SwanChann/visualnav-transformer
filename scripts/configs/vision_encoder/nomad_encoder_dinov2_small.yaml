@@ -3,10 +3,10 @@ project_name: nomad-backbone-suite
 run_name: nomad_dinov2_small
 
 # 中文注释：默认关闭 wandb，正式实验可改为 True 进行在线记录
-use_wandb: False
+use_wandb: True
 train: True
-batch_size: 16
-eval_batch_size: 16
+batch_size: 32
+eval_batch_size: 32
 epochs: 20
 gpu_ids: [0]
 num_workers: 6
@@ -16,7 +16,7 @@ clipping: False
 max_norm: 1.0
 use_amp: True
 allow_tf32: True
-grad_accum_steps: 4
+grad_accum_steps: 2
 scheduler: cosine
 warmup: True
 warmup_epochs: 2

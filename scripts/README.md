@@ -40,6 +40,7 @@ Root-level scripts are still kept as legacy-compatible entrypoints, but new work
 - `nomad_encoder_dinov2_small.yaml`
 - `nomad_encoder_convnext_tiny.yaml`
 - `nomad_encoder_resnet50.yaml`
+- `nomad_encoder_efficientnet_b0.yaml`
 
 ### `scripts/configs/navigation_host/`
 
@@ -130,6 +131,7 @@ python scripts/experiments/ddim_stat_experiment.py --cases-per-suite 8 --num-run
 python scripts/models/download_encoder_weights.py --backbone all
 python scripts/training/train_backbone_suite.py --config config/nomad_dinov2.yaml --backbone dinov2_small --freeze-backbone --pretrained-backbone
 python scripts/training/run_encoder_seed_sweep.py --base-config scripts/configs/vision_encoder/nomad_encoder_dinov2_small.yaml --backbone dinov2_small --seeds 0 1 2 --freeze-backbone --pretrained-backbone --dry-run
+cd train && python train.py --config ../scripts/configs/vision_encoder/nomad_encoder_efficientnet_b0.yaml
 python scripts/simulation/nomad_mujoco_lite3_nav.py --mode navigate --map easy
 python scripts/simulation/nomad_mujoco_lite3_state_machine.py --mode mission --map medium --mission-topomap topomaps/medium
 python scripts/deployment/nomad_navigation_host.py --backend mujoco --plan-file scripts/configs/navigation_host/lite3_navigation_host_plan.json --dry-run

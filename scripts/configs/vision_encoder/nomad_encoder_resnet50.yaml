@@ -3,7 +3,7 @@ project_name: nomad-backbone-suite
 run_name: nomad_resnet50
 
 # 中文注释：默认关闭 wandb，正式实验可改为 True 进行在线记录
-use_wandb: False
+use_wandb: True
 train: True
 batch_size: 32
 eval_batch_size: 32

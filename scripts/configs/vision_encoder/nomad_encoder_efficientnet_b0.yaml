@@ -1,8 +1,8 @@
-# 中文注释：ConvNeXt-Tiny 视觉编码器升级实验配置模板
+# 中文注释：NoMaD EfficientNet-B0 baseline 视觉编码器实验配置模板
 project_name: nomad-backbone-suite
-run_name: nomad_convnext_tiny
+run_name: nomad_efficientnet_b0
 
-# 中文注释：默认关闭 wandb，正式实验可改为 True 进行在线记录
+# 中文注释：默认开启 wandb，便于和升级编码器实验统一记录
 use_wandb: True
 train: True
 batch_size: 32
@@ -10,13 +10,10 @@ eval_batch_size: 32
 epochs: 20
 gpu_ids: [0]
 num_workers: 6
-lr: 5e-5
+lr: 1e-4
 optimizer: adamw
 clipping: False
 max_norm: 1.0
-use_amp: True
-allow_tf32: True
-grad_accum_steps: 2
 scheduler: cosine
 warmup: True
 warmup_epochs: 2
@@ -25,13 +22,11 @@ plateau_patience: 3
 plateau_factor: 0.5
 seed: 0
 
-# 中文注释：训练入口会根据 --backbone 自动覆盖 encoder_backbone 和 image_size
+# 中文注释：baseline 使用原始 NoMaD EfficientNet 视觉编码器
 model_type: nomad
-vision_encoder: nomad_vint_backbone_suite
-encoder_backbone: convnext_tiny
+vision_encoder: nomad_vint
 encoding_size: 256
-freeze_backbone: True
-share_goal_encoder: True
+obs_encoder: efficientnet-b0
 attn_unet: False
 cond_predict_scale: False
 mha_num_attention_heads: 4
