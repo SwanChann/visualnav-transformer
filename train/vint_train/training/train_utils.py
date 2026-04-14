@@ -835,8 +835,8 @@ def evaluate_nomad(
 
             rand_mask_cond = ema_model("vision_encoder", obs_img=batch_obs_images, goal_img=batch_goal_images, input_goal_mask=rand_goal_mask)
 
+            # 中文注释：距离预测头在训练和评测阶段都直接接收视觉编码器输出，避免形状约定不一致
             obsgoal_cond = ema_model("vision_encoder", obs_img=batch_obs_images, goal_img=batch_goal_images, input_goal_mask=no_mask)
-            obsgoal_cond = obsgoal_cond.flatten(start_dim=1)
 
             goal_mask_cond = ema_model("vision_encoder", obs_img=batch_obs_images, goal_img=batch_goal_images, input_goal_mask=goal_mask)
 
@@ -1038,7 +1038,6 @@ def model_output(
             timestep=k,
             sample=diffusion_output
         ).prev_sample
-    obsgoal_cond = obsgoal_cond.flatten(start_dim=1)
     gc_actions = get_action(diffusion_output, ACTION_STATS)
     gc_distance = model("dist_pred_net", obsgoal_cond=obsgoal_cond)
 

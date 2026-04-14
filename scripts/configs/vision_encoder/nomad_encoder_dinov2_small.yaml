@@ -2,12 +2,12 @@
 project_name: nomad-backbone-suite
 run_name: nomad_dinov2_small
 
-# 中文注释：默认关闭 wandb，正式实验可改为 True 进行在线记录
+# 中文注释：默认开启 wandb，便于和其他编码器实验统一记录
 use_wandb: True
 train: True
 batch_size: 32
 eval_batch_size: 32
-epochs: 20
+epochs: 100
 gpu_ids: [0]
 num_workers: 6
 lr: 5e-5

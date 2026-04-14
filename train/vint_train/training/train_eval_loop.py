@@ -222,8 +222,6 @@ def train_eval_loop_nomad(
                 use_amp=use_amp,
                 grad_accum_steps=grad_accum_steps,
             )
-            lr_scheduler.step()
-
         numbered_path = os.path.join(project_folder, f"ema_{epoch}.pth")
         torch.save(ema_model.averaged_model.state_dict(), numbered_path)
         numbered_path = os.path.join(project_folder, f"ema_latest.pth")
