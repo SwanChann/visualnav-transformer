@@ -98,7 +98,7 @@ def main() -> None:
     parser.add_argument(
         "--backbone",
         required=True,
-        choices=["efficientnet_b0", "dinov2_small", "convnext_tiny", "resnet50"],
+        choices=["efficientnet_b0", "efficientnet_b0_suite", "dinov2_small", "convnext_tiny", "resnet50"],
         help="Backbone name",
     )
     parser.add_argument(

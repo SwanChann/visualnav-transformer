@@ -43,6 +43,11 @@ MODEL_REGISTRY: Dict[str, Dict[str, str]] = {
         "checkpoint": "deployment/model_weights/nomad_efficientb0.pth",
         "label": "EfficientNet-B0 (baseline)",
     },
+    "efficientnet_b0_suite": {
+        "config": "scripts/configs/vision_encoder/nomad_encoder_efficientnet_b0_suite.yaml",
+        "checkpoint": "deployment/model_weights/nomad_efficientnet_b0_suite.pth",
+        "label": "EfficientNet-B0 (suite fair control)",
+    },
     "dinov2_small": {
         "config": "scripts/configs/vision_encoder/nomad_encoder_dinov2_small.yaml",
         "checkpoint": "deployment/model_weights/nomad_dinvo2_small.pth",
@@ -420,7 +425,7 @@ def main():
     parser.add_argument(
         "--encoders",
         nargs="+",
-        default=list(MODEL_REGISTRY.keys()),
+        default=["efficientnet_b0", "dinov2_small", "convnext_tiny", "resnet50"],
         choices=list(MODEL_REGISTRY.keys()),
         help="要测试的编码器列表",
     )

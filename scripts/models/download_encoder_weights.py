@@ -10,18 +10,21 @@ from typing import Dict, List
 
 
 BACKBONE_TIMM_NAMES: Dict[str, str] = {
+    "efficientnet_b0_suite": "efficientnet_b0",
     "dinov2_small": "vit_small_patch14_dinov2.lvd142m",
     "convnext_tiny": "convnext_tiny.in12k_ft_in1k",
     "resnet50": "resnet50.a1_in1k",
 }
 
 BACKBONE_INPUT_SIZES: Dict[str, int] = {
+    "efficientnet_b0_suite": 96,
     "dinov2_small": 98,
     "convnext_tiny": 96,
     "resnet50": 96,
 }
 
 BACKBONE_GLOBAL_POOLS: Dict[str, str] = {
+    "efficientnet_b0_suite": "avg",
     "dinov2_small": "token",
     "convnext_tiny": "avg",
     "resnet50": "avg",

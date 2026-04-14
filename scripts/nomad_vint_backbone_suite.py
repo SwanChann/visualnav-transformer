@@ -32,6 +32,10 @@ class BackboneSpec:
 
 
 BACKBONE_SPECS: Dict[str, BackboneSpec] = {
+    "efficientnet_b0_suite": BackboneSpec(
+        timm_name="efficientnet_b0",
+        input_size=96,
+    ),
     "dinov2_small": BackboneSpec(
         timm_name="vit_small_patch14_dinov2.lvd142m",
         input_size=98,
