@@ -85,9 +85,7 @@ class Lite3System:
         self.state = self.states[self.state_name]
         self.state.on_enter(self)
         if args.save_fpv:
-            run_tag = self.legacy.RUN_TAG
-            mode_name = result_prefix
-            self.fp_dir = Path(self.legacy.PROJECT_ROOT) / "results" / "nomad_mujoco" / f"{run_tag}_{mode_name}" / "fpv"
+            self.fp_dir = self.session.fpv_dir
             self.fp_dir.mkdir(parents=True, exist_ok=True)
 
     def transition_to(self, state_name: str) -> None:
@@ -210,6 +208,10 @@ class Lite3System:
         ]
         if goal_positions:
             self.platform.set_goal_markers(goal_positions, active_index=self.missions.index)
+        current_goal = self._current_mission()
+        if current_goal is not None and current_goal.goal_view is not None:
+            saved_path = self.session.save_goal_view(current_goal.goal_view, current_goal.label)
+            setattr(current_goal, "saved_goal_path", saved_path)
 
     def step_navigation(self) -> str:
         mission = self._current_mission()

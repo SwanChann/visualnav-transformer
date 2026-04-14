@@ -25,10 +25,15 @@ class NavigationSession:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         self.run_dir = repo_path("results", "deployment", f"{timestamp}_{run_label}")
         self.capture_dir = self.run_dir / "captures"
+        self.goal_dir = self.run_dir / "goal_views"
+        self.fpv_dir = self.run_dir / "fpv"
         self.capture_dir.mkdir(parents=True, exist_ok=True)
+        self.goal_dir.mkdir(parents=True, exist_ok=True)
+        self.fpv_dir.mkdir(parents=True, exist_ok=True)
         self.capture_queue: list[CaptureFrame] = []
         self.selected_capture_index = -1
         self.estop_requested = False
+        self._saved_goal_labels: set[str] = set()
 
     def clear_estop(self) -> None:
         self.estop_requested = False
@@ -90,3 +95,11 @@ class NavigationSession:
         if count <= 0:
             return []
         return list(self.capture_queue[-count:])
+
+    def save_goal_view(self, image, label: str) -> Path:
+        safe_label = "".join(ch if ch.isalnum() or ch in {"-", "_"} else "_" for ch in label).strip("_") or "goal"
+        saved_path = self.goal_dir / f"{safe_label}.png"
+        if safe_label not in self._saved_goal_labels:
+            image.save(saved_path)
+            self._saved_goal_labels.add(safe_label)
+        return saved_path
