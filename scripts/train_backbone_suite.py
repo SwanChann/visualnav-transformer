@@ -148,6 +148,30 @@ def update_config_for_backbone(config: dict, backbone_name: str, freeze_backbone
     return config
 
 
+def infer_backbone_name(config: dict, config_path: Path | None = None) -> str:
+    """Infer the backbone name from config content or filename."""
+    candidate = config.get("encoder_backbone")
+    if isinstance(candidate, str) and candidate in get_backbone_names():
+        return candidate
+
+    run_name = config.get("run_name")
+    if isinstance(run_name, str):
+        for backbone_name in get_backbone_names():
+            if backbone_name in run_name:
+                return backbone_name
+
+    if config_path is not None:
+        filename = config_path.stem
+        for backbone_name in get_backbone_names():
+            if backbone_name in filename:
+                return backbone_name
+
+    raise ValueError(
+        "Unable to infer backbone name from config. "
+        "Please set `encoder_backbone` in the YAML or pass `--backbone` explicitly."
+    )
+
+
 def main(config: dict, backbone_name: str, freeze_backbone: bool, pretrained_backbone: bool) -> None:
     """Training entry."""
     if torch.cuda.is_available():
@@ -247,17 +271,19 @@ if __name__ == "__main__":
     parser.add_argument(
         "--backbone",
         choices=get_backbone_names(),
-        required=True,
+        default=None,
         help="Backbone name to train",
     )
     parser.add_argument(
         "--freeze-backbone",
         action="store_true",
+        default=None,
         help="Freeze the backbone and only train projection plus navigation heads",
     )
     parser.add_argument(
         "--pretrained-backbone",
         action="store_true",
+        default=None,
         help="Load pretrained timm weights for the selected backbone",
     )
     args = parser.parse_args()
@@ -272,11 +298,20 @@ if __name__ == "__main__":
     with config_path.open("r", encoding="utf-8") as handle:
         user_config = yaml.safe_load(handle)
     config.update(user_config)
+
+    backbone_name = args.backbone or infer_backbone_name(config, config_path=config_path)
+    freeze_backbone = config.get("freeze_backbone", True) if args.freeze_backbone is None else args.freeze_backbone
+    pretrained_backbone = (
+        config.get("pretrained_backbone", True)
+        if args.pretrained_backbone is None
+        else args.pretrained_backbone
+    )
     config = update_config_for_backbone(
         config=config,
-        backbone_name=args.backbone,
-        freeze_backbone=args.freeze_backbone,
+        backbone_name=backbone_name,
+        freeze_backbone=freeze_backbone,
     )
+    config["pretrained_backbone"] = pretrained_backbone
 
     config["run_name"] += "_" + time.strftime("%Y_%m_%d_%H_%M_%S")
     config["project_folder"] = os.path.join(
@@ -304,7 +339,7 @@ if __name__ == "__main__":
 
     main(
         config=config,
-        backbone_name=args.backbone,
-        freeze_backbone=args.freeze_backbone,
-        pretrained_backbone=args.pretrained_backbone,
+        backbone_name=backbone_name,
+        freeze_backbone=freeze_backbone,
+        pretrained_backbone=pretrained_backbone,
     )
