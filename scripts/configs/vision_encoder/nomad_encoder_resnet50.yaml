@@ -1,5 +1,5 @@
 # 中文注释：ResNet-50 视觉编码器升级实验配置模板
-project_name: nomad-backbone-suite-new
+project_name: nomad-backbone-suite
 run_name: nomad_resnet50
 
 # 中文注释：默认开启 wandb，便于和其他编码器实验统一记录
