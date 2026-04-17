@@ -1,0 +1,20 @@
+{
+    "description": "Lite3 真机桥接配置 — Orin 部署用",
+    "bridge_kwargs": {
+        "robot_ip": "192.168.1.120",
+        "robot_port": 43893,
+        "local_port": 43897,
+        "camera_device": 0,
+        "camera_width": 640,
+        "camera_height": 480,
+        "camera_fps": 30,
+        "use_csi": false,
+        "csi_sensor_id": 0,
+        "csi_flip": 0,
+        "twist_hz": 25.0,
+        "max_linear_x": 0.4,
+        "max_yaw_rate": 0.8,
+        "gait": "low",
+        "standup_wait": 3.0
+    }
+}

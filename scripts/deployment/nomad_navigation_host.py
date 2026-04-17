@@ -45,6 +45,15 @@ class HostTaskResult:
     status: str
 
 
+def _normalize_bridge_kwargs(payload: dict | None) -> dict:
+    """Accept either a raw kwargs dict or a wrapped {"bridge_kwargs": {...}} payload."""
+    if not payload:
+        return {}
+    if isinstance(payload, dict) and isinstance(payload.get("bridge_kwargs"), dict):
+        return dict(payload["bridge_kwargs"])
+    return dict(payload)
+
+
 class Lite3NavigationHost:
     def __init__(self, host_args, task_args_list: list[argparse.Namespace]) -> None:
         self.host_args = host_args
@@ -59,7 +68,7 @@ class Lite3NavigationHost:
         if not self.host_args.bridge_config:
             return {}
         config_path = Path(self.host_args.bridge_config).expanduser().resolve()
-        return json.loads(config_path.read_text(encoding="utf-8"))
+        return _normalize_bridge_kwargs(json.loads(config_path.read_text(encoding="utf-8")))
 
     def _validate_task(self, task_args: argparse.Namespace) -> None:
         if task_args.mode == "mission":
@@ -249,6 +258,7 @@ def build_host_parser() -> argparse.ArgumentParser:
     parser.add_argument("--camera", choices=["on", "off"], default="on", help="Camera visualization on/off")
     parser.add_argument("--policy-config", type=str, default=None, help="Override policy config for interactive mode")
     parser.add_argument("--policy-checkpoint", type=str, default=None, help="Override policy checkpoint for interactive mode")
+    parser.add_argument("--save-fpv", action="store_true", help="Save FPV frames for interactive tasks")
     return parser
 
 
@@ -325,7 +335,7 @@ class InteractiveNavigationHost:
             bridge_kwargs = {}
             if self.host_args.bridge_config:
                 config_path = Path(self.host_args.bridge_config).expanduser().resolve()
-                bridge_kwargs = json.loads(config_path.read_text(encoding="utf-8"))
+                bridge_kwargs = _normalize_bridge_kwargs(json.loads(config_path.read_text(encoding="utf-8")))
             self._platform = ExternalBridgePlatform(
                 bridge_module=self.host_args.bridge_module,
                 bridge_class=self.host_args.bridge_class,
@@ -352,6 +362,7 @@ class InteractiveNavigationHost:
         defaults["map"] = self.host_args.map
         defaults["no_gui"] = self.host_args.no_gui
         defaults["camera"] = self.host_args.camera
+        defaults["save_fpv"] = self.host_args.save_fpv
         if self.host_args.policy_config:
             defaults["policy_config"] = self.host_args.policy_config
         if self.host_args.policy_checkpoint:
@@ -401,6 +412,12 @@ class InteractiveNavigationHost:
             elif tokens[i] == "--num-goals" and i + 1 < len(tokens):
                 defaults["num_goals"] = int(tokens[i + 1])
                 i += 2
+            elif tokens[i] == "--topomap-dir" and i + 1 < len(tokens):
+                defaults["topomap_dir"] = tokens[i + 1]
+                i += 2
+            elif tokens[i] == "--save-fpv":
+                defaults["save_fpv"] = True
+                i += 1
             else:
                 i += 1
 
