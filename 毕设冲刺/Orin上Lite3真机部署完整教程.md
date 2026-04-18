@@ -80,7 +80,7 @@ Orin Camera -> NoMaDInferenceModule -> waypoint sequence
 
 这里先明确一个关键事实：Jetson Orin 没有桌面平台那种独立 RTX 显卡，但它自带可用于 CUDA 推理的 NVIDIA 集成 GPU。对本项目来说，“Orin 能不能推理”不取决于有没有额外显卡，而取决于当前 JetPack 对应的 PyTorch 是否能把这块集成 GPU 正确识别为 `cuda`。
 
-因此，Orin 端不要照搬训练机上的桌面 GPU 安装方式。`scripts/requirements.txt` 是按训练/桌面环境整理的依赖清单，不能直接当成 Orin 上的 PyTorch 安装方案。推荐按照“先装 Jetson 版 PyTorch，再装其余依赖”的顺序进行。
+你现在已经确认 Orin 侧 CUDA 版本是 `11.4`。这通常意味着当前环境属于 JetPack 5.x 体系，安装时不要照搬训练机上的桌面 GPU 方式。`scripts/requirements.txt` 是按训练/桌面环境整理的依赖清单，不能直接当成 Orin 上的 PyTorch 安装方案。推荐按照“先确认 JetPack / Python 版本，再装 Jetson 版 PyTorch，最后装其余依赖”的顺序进行。
 
 ```bash
 conda create -n nomad-deploy python=3.8 -y
@@ -88,13 +88,31 @@ conda activate nomad-deploy
 
 cd /path/to/visualnav-transformer
 
-# 先安装与你当前 JetPack 匹配的 Jetson 版 PyTorch / torchvision
-# 不要直接照抄桌面 RTX 训练机上的 cu121 安装命令
-python -c "import torch; print(torch.__version__)" 2>/dev/null || echo "PyTorch not installed yet"
+# 先确认当前 Orin 环境
+python -V
+nvcc --version
+dpkg-query --show nvidia-jetpack
+
+# 安装 PyTorch 所需系统依赖
+sudo apt-get update
+sudo apt-get install -y python3-pip libopenblas-dev
+
+# 对于 CUDA 11.4 且 Python 3.8 的 Orin，优先使用 NVIDIA Jetson 官方 wheel
+# 如果 dpkg-query 显示 JetPack 5.1.1，可直接使用下面这条
+export TORCH_INSTALL=https://developer.download.nvidia.com/compute/redist/jp/v511/pytorch/torch-2.0.0+nv23.05-cp38-cp38-linux_aarch64.whl
+python -m pip install --upgrade pip
+# 当前部署环境为 Python 3.8，NumPy 使用兼容版本
+python -m pip install numpy==1.24.4
+python -m pip install --no-cache-dir $TORCH_INSTALL
+
+# 如果你的 JetPack 不是 5.1.1，不要直接照抄上面的 v511 路径
+# 改成 NVIDIA 官方文档给出的通式：
+# https://developer.download.nvidia.com/compute/redist/jp/v$JP_VERSION/pytorch/$PYT_VERSION
 
 # 再安装项目运行所需的其余依赖
+
 pip install diffusers==0.11.1 huggingface-hub==0.10.1
-pip install efficientnet-pytorch vit-pytorch positional-encodings[torch]
+pip install efficientnet-pytorch
 pip install prettytable lmdb warmup-scheduler
 pip install opencv-python pillow matplotlib tqdm h5py "numpy<2"
 pip install timm
@@ -102,11 +120,49 @@ pip install timm
 cd train && pip install -e . && cd ..
 ```
 
-安装完成后，先执行 GPU 可用性检查：
+然后验证 `torch` 是否正常导入。注意，这一步的目标不是看有没有桌面 RTX 卡，而是看 Jetson 集成 GPU 是否被 PyTorch 正确识别。
 
 ```bash
 python -c "import torch; print('torch', torch.__version__); print('cuda', torch.cuda.is_available()); print('device', torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'cpu')"
 ```
+
+当前 Lite3 + NoMaD 基线真机部署路径已经去掉了对 `torchvision` 的运行时强依赖，因此不需要为了真机部署在 Orin 上继续安装 `torchvision`、`vit-pytorch` 或 `positional-encodings`。
+如果 `python -m pip install numpy==1.26.1` 这类命令报 `No matching distribution found`，说明当前 Python 版本不支持该 NumPy 版本。对本文当前的 `Python 3.8` Orin 部署环境，应改用 `numpy==1.24.4`。
+
+如果你后续确实需要在 Orin 上安装 `torchvision`，要特别注意“版本匹配”和“安装来源”是两件事。对于本文当前使用的 Jetson 版 `torch 2.0.0+nv23.05`，应按 `torchvision 0.15.1` 这一版本线处理；但在 Jetson 上不要直接使用通用 PyPI 的 `pip install torchvision`，否则很容易把 NVIDIA 提供的 CUDA 版 `torch` 替换成通用版本，导致 `cuda False` 或 `torch._custom_ops` 这类错误。
+
+更稳妥的做法有两种：
+
+1. 部署环境中默认不安装 `torchvision`，保持当前最小运行时依赖。
+2. 如果研究脚本必须用到 `torchvision`，单独建立实验环境，并按 Jetson 兼容方式安装：
+
+```bash
+python -m pip uninstall -y torch torchvision
+export TORCH_INSTALL=https://developer.download.nvidia.com/compute/redist/jp/v511/pytorch/torch-2.0.0+nv23.05-cp38-cp38-linux_aarch64.whl
+python -m pip install --no-cache-dir $TORCH_INSTALL
+
+git clone --branch v0.15.1 --depth 1 https://github.com/pytorch/vision torchvision-src
+cd torchvision-src
+export BUILD_VERSION=0.15.1
+python setup.py install
+cd ..
+```
+
+安装完成后验收：
+
+```bash
+python -c "import torch, torchvision; print('torch', torch.__version__); print('cuda', torch.cuda.is_available()); print('torchvision', torchvision.__version__)"
+```
+
+理想结果应为：
+
+```text
+torch 2.0.0+nv23.05
+cuda True
+torchvision 0.15.1
+```
+
+如果你之前已经执行过 `pip install vit-pytorch positional-encodings[torch]` 或通用 `pip install torchvision`，先回滚到 Jetson 版 `torch` 再继续。不要在真机部署环境里混装会触发 PyPI 重新解析 `torch` / `torchvision` 的包。
 
 ### 3.3 预期结果
 

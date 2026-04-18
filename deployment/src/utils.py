@@ -10,8 +10,6 @@ from sensor_msgs.msg import Image
 # pytorch
 import torch
 import torch.nn as nn
-from torchvision import transforms
-import torchvision.transforms.functional as TF
 
 import numpy as np
 from PIL import Image as PILImage
@@ -131,27 +129,39 @@ def to_numpy(tensor):
     return tensor.cpu().detach().numpy()
 
 
+IMAGE_MEAN = torch.tensor([0.485, 0.456, 0.406], dtype=torch.float32).view(3, 1, 1)
+IMAGE_STD = torch.tensor([0.229, 0.224, 0.225], dtype=torch.float32).view(3, 1, 1)
+
+
+def _center_crop_to_aspect_ratio(pil_img: PILImage.Image, aspect_ratio: float) -> PILImage.Image:
+    """Center-crop a PIL image to the requested width/height aspect ratio."""
+    width, height = pil_img.size
+    current_ratio = width / float(height)
+    if abs(current_ratio - aspect_ratio) < 1e-6:
+        return pil_img
+
+    if current_ratio > aspect_ratio:
+        target_width = int(round(height * aspect_ratio))
+        left = max((width - target_width) // 2, 0)
+        return pil_img.crop((left, 0, left + target_width, height))
+
+    target_height = int(round(width / aspect_ratio))
+    top = max((height - target_height) // 2, 0)
+    return pil_img.crop((0, top, width, top + target_height))
+
+
 def transform_images(pil_imgs: List[PILImage.Image], image_size: List[int], center_crop: bool = False) -> torch.Tensor:
     """Transforms a list of PIL image to a torch tensor."""
-    transform_type = transforms.Compose(
-        [
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[
-                                    0.229, 0.224, 0.225]),
-        ]
-    )
     if type(pil_imgs) != list:
         pil_imgs = [pil_imgs]
     transf_imgs = []
     for pil_img in pil_imgs:
-        w, h = pil_img.size
         if center_crop:
-            if w > h:
-                pil_img = TF.center_crop(pil_img, (h, int(h * IMAGE_ASPECT_RATIO)))  # crop to the right ratio
-            else:
-                pil_img = TF.center_crop(pil_img, (int(w / IMAGE_ASPECT_RATIO), w))
-        pil_img = pil_img.resize(image_size) 
-        transf_img = transform_type(pil_img)
+            pil_img = _center_crop_to_aspect_ratio(pil_img, IMAGE_ASPECT_RATIO)
+        pil_img = pil_img.resize(image_size)
+        np_img = np.asarray(pil_img.convert("RGB"), dtype=np.float32) / 255.0
+        transf_img = torch.from_numpy(np_img).permute(2, 0, 1).contiguous()
+        transf_img = (transf_img - IMAGE_MEAN) / IMAGE_STD
         transf_img = torch.unsqueeze(transf_img, 0)
         transf_imgs.append(transf_img)
     return torch.cat(transf_imgs, dim=1)

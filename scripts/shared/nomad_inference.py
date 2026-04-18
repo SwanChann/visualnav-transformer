@@ -11,7 +11,6 @@ import numpy as np
 import torch
 import yaml
 from PIL import Image as PILImage
-from torchvision import transforms
 
 from project_paths import add_repo_paths, repo_path
 
@@ -33,6 +32,8 @@ DEFAULT_ACTION_STATS = {
     "min": np.array([-2.5, -4.0], dtype=np.float32),
     "max": np.array([5.0, 4.0], dtype=np.float32),
 }
+IMAGE_MEAN = torch.tensor([0.485, 0.456, 0.406], dtype=torch.float32).view(3, 1, 1)
+IMAGE_STD = torch.tensor([0.229, 0.224, 0.225], dtype=torch.float32).view(3, 1, 1)
 
 
 @dataclass(frozen=True)
@@ -118,15 +119,6 @@ class NoMaDInferenceModule:
         self.tts_topk = max(int(self.spec.tts_topk), 1)
         self.tts_verifier = str(self.spec.tts_verifier)
         self.last_tts_summary: dict[str, float | int | str] | None = None
-        self._transform = transforms.Compose(
-            [
-                transforms.ToTensor(),
-                transforms.Normalize(
-                    mean=[0.485, 0.456, 0.406],
-                    std=[0.229, 0.224, 0.225],
-                ),
-            ]
-        )
         self.model = self._build_model()
 
     def _resolve_checkpoint(self, explicit_path: str | None) -> Path:
@@ -217,7 +209,10 @@ class NoMaDInferenceModule:
 
     def pil_to_tensor(self, pil_img: PILImage.Image) -> torch.Tensor:
         """Convert one PIL image into a normalized tensor."""
-        return self._transform(pil_img.convert("RGB").resize(self.image_size))
+        resized = pil_img.convert("RGB").resize(self.image_size)
+        np_img = np.asarray(resized, dtype=np.float32) / 255.0
+        tensor = torch.from_numpy(np_img).permute(2, 0, 1).contiguous()
+        return (tensor - IMAGE_MEAN) / IMAGE_STD
 
     def build_obs_tensor(self, frame_buffer) -> torch.Tensor:
         """Build the stacked observation tensor expected by NoMaD."""

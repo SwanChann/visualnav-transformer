@@ -5,13 +5,11 @@ channels:
 dependencies:
 - python=3.8.5
 - cudatoolkit=11.
-- torchvision
 - numpy
 - matplotlib
 - pyyaml
 - rospkg
 - pip:
   - torch
-  - torchvision
   - efficientnet_pytorch
   - warmup_scheduler
