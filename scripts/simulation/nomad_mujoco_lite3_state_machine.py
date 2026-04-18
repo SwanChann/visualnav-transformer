@@ -65,6 +65,15 @@ def build_parser() -> argparse.ArgumentParser:
         default=0.0,
         help="Classifier-free guidance scale used during inference.",
     )
+    parser.add_argument("--tts", action="store_true", help="Enable test-time scaling for diffusion trajectory selection.")
+    parser.add_argument("--tts-budget", type=int, default=8, help="Total number of sampled trajectories considered by TTS.")
+    parser.add_argument("--tts-topk", type=int, default=1, help="How many top-ranked TTS trajectories to keep before averaging.")
+    parser.add_argument(
+        "--tts-verifier",
+        choices=["heuristic", "forward", "conservative"],
+        default="heuristic",
+        help="Trajectory verifier used by TTS candidate selection.",
+    )
     parser.add_argument(
         "--policy-config",
         type=str,

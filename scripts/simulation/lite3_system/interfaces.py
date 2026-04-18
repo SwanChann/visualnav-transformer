@@ -109,6 +109,10 @@ class Lite3HighLevelNoMaD:
         radius: int,
         close_threshold: float,
         cfg_weight: float = 0.0,
+        tts_enabled: bool = False,
+        tts_budget: int = 8,
+        tts_topk: int = 1,
+        tts_verifier: str = "heuristic",
         policy_config: str | None = None,
         policy_checkpoint: str | None = None,
         device: str | None = None,
@@ -121,6 +125,10 @@ class Lite3HighLevelNoMaD:
                 scheduler_kind=scheduler_kind,
                 ddim_steps=ddim_steps,
                 cfg_weight=cfg_weight,
+                tts_enabled=tts_enabled,
+                tts_budget=tts_budget,
+                tts_topk=tts_topk,
+                tts_verifier=tts_verifier,
                 device=device,
             )
         )

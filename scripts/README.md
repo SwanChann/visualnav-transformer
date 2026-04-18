@@ -20,6 +20,8 @@ Root-level scripts are still kept as legacy-compatible entrypoints, but new work
 - `ddim_stat_experiment.py`
 - `cfg_experiment.py`
 - `cfg_stat_experiment.py`
+- `tts_experiment.py`
+- `tts_stat_experiment.py`
 - `gait_shake_robustness.py`
 - `encoder_comparison_experiment.py`
 
@@ -82,7 +84,7 @@ There are now two Lite3 MuJoCo paths:
 
 The new modular system splits the stack into:
 
-- Inference module: shared policy loading plus DDPM/DDIM/CFG control
+- Inference module: shared policy loading plus DDPM/DDIM/CFG/TTS control
 - High level: NoMaD topomap localization and waypoint generation
 - Middle level: waypoint to velocity PD bridge
 - Low level: Lite3 ONNX locomotion plus MuJoCo physics execution
@@ -130,6 +132,7 @@ They are pre-collected or pre-generated reference images, and NoMaD uses the cur
 ```bash
 python scripts/analysis/offline_inference.py
 python scripts/experiments/ddim_stat_experiment.py --cases-per-suite 8 --num-runs 8
+python scripts/experiments/tts_stat_experiment.py --cases-per-suite 8 --num-runs 8 --ddim-steps-list 5,2 --cfg-weights 0.0,0.5,1.0 --tts-budgets 0,16,32
 python scripts/models/download_encoder_weights.py --backbone all
 python scripts/training/train_backbone_suite.py --config config/nomad_dinov2.yaml --backbone dinov2_small --freeze-backbone --pretrained-backbone
 python scripts/training/run_encoder_seed_sweep.py --base-config scripts/configs/vision_encoder/nomad_encoder_dinov2_small.yaml --backbone dinov2_small --seeds 0 1 2 --freeze-backbone --pretrained-backbone --dry-run

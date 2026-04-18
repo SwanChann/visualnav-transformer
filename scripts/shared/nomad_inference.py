@@ -44,6 +44,10 @@ class NoMaDInferenceSpec:
     cfg_weight: float = 0.0
     device: str | None = None
     num_samples: int = 8
+    tts_enabled: bool = False
+    tts_budget: int = 8
+    tts_topk: int = 1
+    tts_verifier: str = "heuristic"
 
 
 def resolve_repo_relative(path_value: str | None, default_path: Path | None = None) -> Path:
@@ -109,6 +113,11 @@ class NoMaDInferenceModule:
         self.scheduler_kind = str(self.spec.scheduler_kind)
         self.ddim_steps = int(self.spec.ddim_steps)
         self.cfg_weight = float(self.spec.cfg_weight)
+        self.tts_enabled = bool(self.spec.tts_enabled)
+        self.tts_budget = max(int(self.spec.tts_budget), int(self.spec.num_samples))
+        self.tts_topk = max(int(self.spec.tts_topk), 1)
+        self.tts_verifier = str(self.spec.tts_verifier)
+        self.last_tts_summary: dict[str, float | int | str] | None = None
         self._transform = transforms.Compose(
             [
                 transforms.ToTensor(),
@@ -262,13 +271,13 @@ class NoMaDInferenceModule:
         normalized = (deltas + 1.0) / 2.0
         return normalized * (DEFAULT_ACTION_STATS["max"] - DEFAULT_ACTION_STATS["min"]) + DEFAULT_ACTION_STATS["min"]
 
-    def sample_actions(
+    def _sample_actions_once(
         self,
         condition: torch.Tensor,
         uncond_condition: torch.Tensor | None = None,
         num_samples: int | None = None,
     ) -> np.ndarray:
-        """Run DDPM/DDIM sampling with optional CFG."""
+        """Run one diffusion sampling batch with optional CFG."""
         sample_count = int(num_samples or self.num_samples)
         scheduler = self._make_scheduler()
         condition_batch = condition.repeat(sample_count, 1)
@@ -307,3 +316,98 @@ class NoMaDInferenceModule:
 
         action_deltas = self.unnormalize_action(action_noise.detach().cpu().numpy())
         return np.cumsum(action_deltas, axis=1)
+
+    def score_action_candidates(
+        self,
+        samples: np.ndarray,
+        verifier: str | None = None,
+    ) -> np.ndarray:
+        """Score trajectory candidates for test-time scaling selection."""
+        if samples.ndim != 3:
+            raise ValueError(f"Expected [N, T, 2] samples, got {samples.shape}.")
+
+        mode = str(verifier or self.tts_verifier)
+        diffs = np.diff(samples, axis=1)
+        if samples.shape[1] > 2:
+            second_diffs = np.diff(samples, n=2, axis=1)
+            smoothness = np.linalg.norm(second_diffs, axis=-1).mean(axis=1)
+        else:
+            smoothness = np.zeros((samples.shape[0],), dtype=np.float32)
+
+        endpoints = samples[:, -1, :]
+        forward = endpoints[:, 0]
+        lateral_abs = np.abs(endpoints[:, 1])
+        path_length = np.linalg.norm(diffs, axis=-1).sum(axis=1)
+        endpoint_norm = np.linalg.norm(endpoints, axis=1)
+        efficiency = endpoint_norm / np.maximum(path_length, 1e-6)
+
+        if mode == "forward":
+            return forward
+        if mode == "conservative":
+            return forward - 0.45 * lateral_abs - 0.20 * smoothness
+        if mode != "heuristic":
+            raise ValueError(f"Unsupported TTS verifier: {mode}")
+        # 中文注释：默认 verifier 偏好“向前推进、横摆小、曲率小、路径效率高”的轨迹
+        return forward + 0.35 * efficiency - 0.35 * lateral_abs - 0.15 * smoothness
+
+    def sample_actions_with_tts(
+        self,
+        condition: torch.Tensor,
+        uncond_condition: torch.Tensor | None = None,
+        budget: int | None = None,
+        num_samples: int | None = None,
+        topk: int | None = None,
+        verifier: str | None = None,
+    ) -> np.ndarray:
+        """Run best-of-N test-time scaling and return the selected trajectories."""
+        batch_size = max(int(num_samples or self.num_samples), 1)
+        total_budget = max(int(budget or self.tts_budget), batch_size)
+        selected_topk = max(int(topk or self.tts_topk), 1)
+        candidate_batches: list[np.ndarray] = []
+        generated = 0
+
+        while generated < total_budget:
+            current_batch = min(batch_size, total_budget - generated)
+            candidate_batches.append(
+                self._sample_actions_once(
+                    condition=condition,
+                    uncond_condition=uncond_condition,
+                    num_samples=current_batch,
+                )
+            )
+            generated += current_batch
+
+        candidates = np.concatenate(candidate_batches, axis=0)
+        scores = self.score_action_candidates(candidates, verifier=verifier)
+        ranking = np.argsort(scores)[::-1]
+        keep = ranking[: min(selected_topk, len(ranking))]
+        self.last_tts_summary = {
+            "mode": str(verifier or self.tts_verifier),
+            "budget": int(total_budget),
+            "topk": int(len(keep)),
+            "best_score": float(scores[keep[0]]),
+            "mean_score": float(scores.mean()),
+        }
+        return candidates[keep]
+
+    def sample_actions(
+        self,
+        condition: torch.Tensor,
+        uncond_condition: torch.Tensor | None = None,
+        num_samples: int | None = None,
+    ) -> np.ndarray:
+        """Run DDPM/DDIM sampling with optional CFG and optional TTS selection."""
+        if self.tts_enabled:
+            return self.sample_actions_with_tts(
+                condition=condition,
+                uncond_condition=uncond_condition,
+                budget=self.tts_budget,
+                num_samples=num_samples,
+                topk=self.tts_topk,
+                verifier=self.tts_verifier,
+            )
+        return self._sample_actions_once(
+            condition=condition,
+            uncond_condition=uncond_condition,
+            num_samples=num_samples,
+        )

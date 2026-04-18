@@ -403,6 +403,18 @@ class InteractiveNavigationHost:
             elif tokens[i] == "--cfg-weight" and i + 1 < len(tokens):
                 defaults["cfg_weight"] = float(tokens[i + 1])
                 i += 2
+            elif tokens[i] == "--tts":
+                defaults["tts"] = True
+                i += 1
+            elif tokens[i] == "--tts-budget" and i + 1 < len(tokens):
+                defaults["tts_budget"] = int(tokens[i + 1])
+                i += 2
+            elif tokens[i] == "--tts-topk" and i + 1 < len(tokens):
+                defaults["tts_topk"] = int(tokens[i + 1])
+                i += 2
+            elif tokens[i] == "--tts-verifier" and i + 1 < len(tokens):
+                defaults["tts_verifier"] = tokens[i + 1]
+                i += 2
             elif tokens[i] == "--close-threshold" and i + 1 < len(tokens):
                 defaults["close_threshold"] = float(tokens[i + 1])
                 i += 2
