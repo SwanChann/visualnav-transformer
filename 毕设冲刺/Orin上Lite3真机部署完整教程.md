@@ -293,6 +293,19 @@ python scripts/deployment/orin_standalone_test.py \
 ✅ 相机正常 | 平均延迟: ...
 ```
 
+在当前 Orin 实测中，可参考如下输出：
+
+```text
+[OrinCamera] 相机已打开: 640x480@30fps, CSI=False
+  帧 0: size=(640, 480), latency=41.4ms
+  帧 1: size=(640, 480), latency=41.4ms
+  帧 2: size=(640, 480), latency=37.8ms
+
+  ✅ 相机正常 | 平均延迟: 40.0ms | FPS: 25.0
+```
+
+这说明当前 USB 相机链路稳定，帧率虽然略低于标称 30 FPS，但足以支撑后续 NoMaD 端到端测试。
+
 如果失败：
 
 1. USB 相机检查 `ls /dev/video*`。
@@ -322,6 +335,23 @@ python scripts/deployment/orin_standalone_test.py \
    `Device`、`Image size`、`Context size`、`Trajectory length`。
 5. 在 Orin 上的理想结果应是 `CUDA available: True`，并且 `Device` 为 `cuda`。
 
+在当前 Orin 实测中，可参考如下输出：
+
+```text
+PyTorch: 2.0.0+nv23.05
+CUDA available: True
+GPU: Orin
+Note: On Jetson Orin this CUDA device is the integrated NVIDIA GPU, not a desktop RTX card.
+
+✅ 模型加载成功 | 耗时: 2.87s
+Device: cuda
+Image size: (96, 96)
+Context size: 3
+Trajectory length: 8
+```
+
+这里的 `GPU: Orin` 和 `Device: cuda` 就是阶段一是否成立的关键证据。模型首次加载耗时约 2.9 秒属于正常范围，因为包含 checkpoint 读取、CUDA 初始化和模型搬运到设备的开销。
+
 如果失败：
 
 1. 优先检查 `--policy-config` 路径。
@@ -346,11 +376,34 @@ python scripts/deployment/orin_standalone_test.py \
 3. 然后输出 `结果 (DDIM-5)`，包括：
    视觉编码时间、扩散采样时间、端到端时间、推理频率。
 
+在当前 Orin 实测中，可参考如下输出：
+
+```text
+预热 (5 次)...
+运行 20 次基准测试...
+
+📊 结果 (DDIM-5):
+   视觉编码:   56.9 ± 1.4 ms
+   扩散采样:   86.7 ± 1.9 ms
+   端到端:     143.6 ± 2.8 ms
+   推理频率:   ~7.0 Hz
+```
+
+运行中如果出现下面这个 warning：
+
+```text
+UserWarning: Converting mask without torch.bool dtype to bool ...
+```
+
+只要测试已经完成、并且数值稳定，就可以先视为非阻塞 warning。它说明当前 PyTorch Transformer 在内部对 mask 做了类型转换，会影响少量性能，但不影响阶段一是否通过。后续若同步到本仓库最新代码，该 warning 应进一步减弱或消失。
+
 建议判断标准：
 
 1. 端到端延迟在 `120 ms - 300 ms` 区间内，说明可以继续做真机尝试。
-2. 如果低于 `3 Hz`，先不要进入真机闭环。
+2. 如果基准测试低于 `3 Hz`，先不要进入真机闭环。
 3. 如果本步骤显示运行设备是 `cpu`，即使数值偶尔可跑，也不要把它当作正式 Orin 部署结果。
+
+以上面的实测结果为例，`143.6 ms / 7.0 Hz` 已满足进入下一步的要求，说明当前 Orin 在 `DDIM-5` 下可以承担高层推理。
 
 优化方法：
 
@@ -393,6 +446,30 @@ python scripts/deployment/orin_standalone_test.py \
 
 这个步骤通过后，说明相机输入、张量构造、NoMaD 推理和 waypoint 输出已经连通。
 
+在当前 Orin 实测中，可参考如下输出：
+
+```text
+[1/10] 2895.5ms | waypoint=(1.245, 0.150)
+[2/10] 151.5ms | waypoint=(1.341, 0.161)
+[3/10] 152.5ms | waypoint=(1.302, 0.152)
+...
+[10/10] 153.0ms | waypoint=(1.330, 0.031)
+
+📊 端到端流水线结果:
+   平均延迟: 427.3 ± 822.7 ms
+   推理频率: ~2.3 Hz
+```
+
+这里要特别注意：第一轮 `2895.5 ms` 明显属于冷启动开销，主要来自首次 CUDA 图执行、调度器初始化和端到端流水线首次串联，不代表后续真实闭环周期。真正应关注的是第 2 到第 10 轮，它们大致稳定在 `151 ms - 157 ms`，对应稳态频率约 `6.4 Hz - 6.6 Hz`。
+
+因此，阶段一判断时：
+
+1. `benchmark` 步骤的统计结果作为主判断依据。
+2. `pipeline` 步骤主要看“首轮之后是否快速稳定”。
+3. 不要只看包含首轮的平均值就判断当前 Orin 只有 `2.3 Hz`。
+
+如果你已经同步到本仓库当前版本，`pipeline` 脚本会额外输出“稳态延迟(不含首轮)”与“稳态推理频率(不含首轮)”。
+
 ### 4.5 步骤五：桥接模块相机独立测试
 
 这个步骤仍然不连接 Lite3，只验证桥接模块的相机部分。
@@ -409,6 +486,8 @@ python scripts/deployment/lite3_real_bridge.py \
 2. 连续打印 30 帧图像尺寸。
 3. 最后输出 `相机测试完成`。
 
+在当前 Orin 实测中，30 帧图像均为 `(640, 480)`，说明桥接模块内部调用的相机封装与阶段一相机测试一致，没有出现桥接层单独失配的问题。
+
 ### 4.6 步骤六：部署清单检查
 
 ```bash
@@ -422,6 +501,18 @@ python scripts/deployment/nomad_real_deployment_checklist.py \
 2. 表格中会列出 checkpoint、导航主机、桥接链路等文件。
 3. 如果存在必需文件缺失，命令可能以非零状态退出，这是正常的提醒机制。
 
+在当前 Orin 实测中，该表格已经能列出：
+
+1. `deployment/model_weights/nomad/nomad.pth`
+2. `scripts/deployment/nomad_navigation_host.py`
+3. `deployment/src/navigate.py`
+4. `deployment/src/pd_controller.py`
+5. `deployment/config/models.yaml`
+6. `deployment/config/robot.yaml`
+7. Lite3 的 MuJoCo 资产、低层策略和集成导航入口
+
+这说明从“高层 NoMaD checkpoint -> 导航主机 -> 传统 deployment 目录 -> Lite3 平台资产”的证据链已经完整，足以支撑后续真机阶段的文件准备说明。
+
 ### 4.7 阶段一通过标准
 
 进入阶段二之前，至少满足：
@@ -429,8 +520,18 @@ python scripts/deployment/nomad_real_deployment_checklist.py \
 1. 相机读取正常。
 2. 模型可以成功加载。
 3. 模型加载时设备为 `cuda`，而不是 `cpu`。
-4. 端到端推理至少达到约 `3 Hz`。
+4. 基准测试频率至少达到约 `3 Hz`。
 5. 推理输出的 waypoint 数值不是全零，也不是明显发散的异常值。
+
+结合当前实测结果，阶段一已经满足：
+
+1. 相机链路约 `25 FPS`。
+2. 模型在 `cuda` 上成功加载。
+3. `benchmark` 结果约 `7.0 Hz`。
+4. `pipeline` 在首轮之后稳定在约 `150 ms` 量级。
+5. waypoint 始终非零，且数值分布合理。
+
+因此，后续进入阶段二时，应该把重点放在网络、桥接与安全限幅，而不是继续怀疑 Orin 是否具备高层推理能力。
 
 ---
 

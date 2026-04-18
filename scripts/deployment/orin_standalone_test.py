@@ -59,6 +59,8 @@ def test_camera(args):
             width=args.camera_width,
             height=args.camera_height,
             use_csi=args.use_csi,
+            calibration_path=args.camera_calibration_path,
+            undistort_alpha=args.undistort_alpha,
         )
     except RuntimeError as e:
         print(f"❌ 相机打开失败: {e}")
@@ -203,6 +205,8 @@ def test_pipeline(args):
         width=args.camera_width,
         height=args.camera_height,
         use_csi=args.use_csi,
+        calibration_path=args.camera_calibration_path,
+        undistort_alpha=args.undistort_alpha,
     )
 
     # 初始化推理模块
@@ -267,6 +271,86 @@ def test_pipeline(args):
     return True
 
 
+def test_pipeline_v2(args):
+    """End-to-end pipeline test with steady-state latency reporting."""
+    print("=" * 60)
+    print("测试四：完整流水线 (相机 + 推理)")
+    print("=" * 60)
+
+    if not args.policy_config or not args.policy_checkpoint:
+        print("❌ 需要 --policy-config 和 --policy-checkpoint")
+        return False
+
+    import torch
+    from shared.nomad_inference import NoMaDInferenceModule, NoMaDInferenceSpec
+    from deployment.lite3_real_bridge import OrinCamera
+
+    cam = OrinCamera(
+        device=args.camera_device,
+        width=args.camera_width,
+        height=args.camera_height,
+        use_csi=args.use_csi,
+        calibration_path=args.camera_calibration_path,
+        undistort_alpha=args.undistort_alpha,
+    )
+
+    spec = NoMaDInferenceSpec(
+        policy_config=args.policy_config,
+        policy_checkpoint=args.policy_checkpoint,
+        scheduler_kind="ddim",
+        ddim_steps=args.ddim_steps,
+    )
+    inference = NoMaDInferenceModule(spec)
+
+    context_size = inference.context_size
+    frame_buffer = deque(maxlen=context_size + 1)
+
+    print(f"  填充帧缓冲 (需要 {context_size + 1} 帧)...")
+    for i in range(context_size + 1):
+        img = cam.read()
+        tensor = inference.pil_to_tensor(img)
+        frame_buffer.append(tensor)
+        print(f"    帧 {i + 1}/{context_size + 1}")
+
+    n_runs = 10
+    latencies = []
+    print(f"\n  运行 {n_runs} 次端到端流水线...")
+
+    for i in range(n_runs):
+        t0 = time.time()
+
+        img = cam.read()
+        tensor = inference.pil_to_tensor(img)
+        frame_buffer.append(tensor)
+
+        obs_tensor = inference.build_obs_tensor(frame_buffer).to(inference.device)
+        h, w = int(inference.image_size[1]), int(inference.image_size[0])
+        fake_goal = torch.randn(1, 3, h, w).to(inference.device)
+
+        obs_cond = inference.encode_condition(obs_tensor, fake_goal, goal_mask_value=1)
+        actions = inference.sample_actions(obs_cond)
+        mean_action = actions.mean(axis=0)
+        waypoint = mean_action[min(2, inference.len_traj_pred - 1)]
+
+        dt = (time.time() - t0) * 1000
+        latencies.append(dt)
+        print(f"    [{i + 1}/{n_runs}] {dt:.1f}ms | waypoint=({waypoint[0]:.3f}, {waypoint[1]:.3f})")
+
+    cam.close()
+
+    print("\n  📊 端到端流水线结果:")
+    print(f"     平均延迟: {np.mean(latencies):.1f} ± {np.std(latencies):.1f} ms")
+    print(f"     推理频率: ~{1000 / np.mean(latencies):.1f} Hz")
+    if len(latencies) > 1:
+        steady_latencies = latencies[1:]
+        print(f"     稳态延迟(不含首轮): {np.mean(steady_latencies):.1f} ± {np.std(steady_latencies):.1f} ms")
+        print(f"     稳态推理频率(不含首轮): ~{1000 / np.mean(steady_latencies):.1f} Hz")
+        print("     注意: 首轮通常包含 CUDA 和调度器冷启动开销，请优先参考稳态数据。")
+
+    print("\n  ✅ 流水线测试完成")
+    return True
+
+
 def main():
     parser = argparse.ArgumentParser(description="Orin 独立调试脚本")
     parser.add_argument("--test", choices=["camera", "model", "benchmark", "pipeline", "all"], default="all")
@@ -277,13 +361,15 @@ def main():
     parser.add_argument("--camera-width", type=int, default=640)
     parser.add_argument("--camera-height", type=int, default=480)
     parser.add_argument("--use-csi", action="store_true")
+    parser.add_argument("--camera-calibration-path", type=str, default=None)
+    parser.add_argument("--undistort-alpha", type=float, default=0.0)
     args = parser.parse_args()
 
     tests = {
         "camera": test_camera,
         "model": test_model,
         "benchmark": test_benchmark,
-        "pipeline": test_pipeline,
+        "pipeline": test_pipeline_v2,
     }
 
     if args.test == "all":

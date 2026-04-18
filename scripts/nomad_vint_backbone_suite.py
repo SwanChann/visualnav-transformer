@@ -220,12 +220,12 @@ class NoMaD_ViNT_BackboneSuite(nn.Module):
         tokens = torch.cat([obs_encoding, goal_encoding], dim=1)
 
         if input_goal_mask is not None:
-            idx = input_goal_mask.long()
+            idx = input_goal_mask.to(device=device, dtype=torch.bool).to(dtype=torch.long)
             src_key_padding_mask = torch.index_select(
                 self.all_masks.to(device),
                 0,
                 idx,
-            )
+            ).to(dtype=torch.bool)
         else:
             idx = None
             src_key_padding_mask = None

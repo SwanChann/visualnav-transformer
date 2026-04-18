@@ -8,6 +8,8 @@
         "camera_width": 640,
         "camera_height": 480,
         "camera_fps": 30,
+        "camera_calibration_path": null,
+        "undistort_alpha": 0.0,
         "use_csi": false,
         "csi_sensor_id": 0,
         "csi_flip": 0,

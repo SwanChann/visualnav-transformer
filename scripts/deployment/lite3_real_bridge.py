@@ -15,6 +15,7 @@
 
 from __future__ import annotations
 
+import json
 import sys
 import time
 from pathlib import Path
@@ -33,6 +34,21 @@ if str(LITE3_CTRL_DIR) not in sys.path:
 from lite3_controller import Lite3Controller, Twist
 
 
+def _load_camera_calibration(calibration_path: str | Path) -> tuple[np.ndarray, np.ndarray]:
+    """Load one camera calibration JSON file."""
+    path = Path(calibration_path).expanduser().resolve()
+    with path.open("r", encoding="utf-8") as handle:
+        payload = json.load(handle)
+
+    camera_matrix = np.asarray(payload["camera_matrix"], dtype=np.float32)
+    dist_coeffs = np.asarray(payload["dist_coeffs"], dtype=np.float32).reshape(-1)
+    if camera_matrix.shape != (3, 3):
+        raise ValueError(f"camera_matrix must be 3x3, got {camera_matrix.shape}")
+    if dist_coeffs.size < 4:
+        raise ValueError("dist_coeffs must contain at least 4 coefficients")
+    return camera_matrix, dist_coeffs
+
+
 class OrinCamera:
     """Orin 上的相机封装，支持 USB 相机和 CSI 相机。"""
 
@@ -45,6 +61,8 @@ class OrinCamera:
         use_csi: bool = False,
         csi_sensor_id: int = 0,
         csi_flip: int = 0,
+        calibration_path: str | None = None,
+        undistort_alpha: float = 0.0,
     ) -> None:
         """
         Args:
@@ -58,6 +76,14 @@ class OrinCamera:
         """
         self.width = width
         self.height = height
+        self.calibration_path = calibration_path
+        self.undistort_alpha = float(undistort_alpha)
+        self.camera_matrix: np.ndarray | None = None
+        self.dist_coeffs: np.ndarray | None = None
+        self._new_camera_matrix: np.ndarray | None = None
+        self._map1: np.ndarray | None = None
+        self._map2: np.ndarray | None = None
+        self._rectify_ready = False
 
         if use_csi:
             # Jetson CSI 相机通过 GStreamer pipeline
@@ -80,17 +106,45 @@ class OrinCamera:
         if not self.cap.isOpened():
             raise RuntimeError(f"无法打开相机: device={device}, use_csi={use_csi}")
 
+        if calibration_path:
+            self.camera_matrix, self.dist_coeffs = _load_camera_calibration(calibration_path)
+            self._prepare_rectify_maps()
+            print(f"[OrinCamera] 已加载相机标定文件: {Path(calibration_path).resolve()}")
+
         # 预热：丢弃前几帧
         for _ in range(5):
             self.cap.read()
 
         print(f"[OrinCamera] 相机已打开: {width}x{height}@{fps}fps, CSI={use_csi}")
 
+    def _prepare_rectify_maps(self) -> None:
+        if self.camera_matrix is None or self.dist_coeffs is None:
+            return
+        image_size = (int(self.width), int(self.height))
+        self._new_camera_matrix, _ = cv2.getOptimalNewCameraMatrix(
+            self.camera_matrix,
+            self.dist_coeffs,
+            image_size,
+            self.undistort_alpha,
+            image_size,
+        )
+        self._map1, self._map2 = cv2.initUndistortRectifyMap(
+            self.camera_matrix,
+            self.dist_coeffs,
+            None,
+            self._new_camera_matrix,
+            image_size,
+            cv2.CV_16SC2,
+        )
+        self._rectify_ready = True
+
     def read(self) -> Image.Image:
         """读取一帧并返回 PIL Image (RGB)。"""
         ret, frame = self.cap.read()
         if not ret or frame is None:
             raise RuntimeError("[OrinCamera] 相机读取失败")
+        if self._rectify_ready and self._map1 is not None and self._map2 is not None:
+            frame = cv2.remap(frame, self._map1, self._map2, interpolation=cv2.INTER_LINEAR)
         # BGR -> RGB -> PIL
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         return Image.fromarray(rgb)
@@ -129,6 +183,8 @@ class Lite3RealBridge:
         use_csi: bool = False,
         csi_sensor_id: int = 0,
         csi_flip: int = 0,
+        camera_calibration_path: str | None = None,
+        undistort_alpha: float = 0.0,
         twist_hz: float = 25.0,
         max_linear_x: float = 0.4,
         max_yaw_rate: float = 0.8,
@@ -169,6 +225,8 @@ class Lite3RealBridge:
             use_csi=use_csi,
             csi_sensor_id=csi_sensor_id,
             csi_flip=csi_flip,
+            calibration_path=camera_calibration_path,
+            undistort_alpha=undistort_alpha,
         )
 
         # 初始化 Lite3 控制器

@@ -246,7 +246,7 @@ class NoMaDInferenceModule:
     ) -> torch.Tensor:
         """Encode the NoMaD visual condition."""
         batch_size = obs_img.shape[0]
-        mask = torch.full((batch_size,), int(goal_mask_value), dtype=torch.long, device=self.device)
+        mask = torch.full((batch_size,), bool(goal_mask_value), dtype=torch.bool, device=self.device)
         with torch.no_grad():
             return self.model(
                 "vision_encoder",

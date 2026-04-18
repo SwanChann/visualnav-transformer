@@ -151,10 +151,10 @@ class NoMaD_ViNT_DINOv2(nn.Module):
 
         # 目标遮罩
         if input_goal_mask is not None:
-            idx = input_goal_mask.long()
+            idx = input_goal_mask.to(device=device, dtype=torch.bool).to(dtype=torch.long)
             src_key_padding_mask = torch.index_select(
                 self.all_masks.to(device), 0, idx,
-            )
+            ).to(dtype=torch.bool)
         else:
             src_key_padding_mask = None
 
