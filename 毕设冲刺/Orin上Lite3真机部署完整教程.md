@@ -76,21 +76,36 @@ Orin Camera -> NoMaDInferenceModule -> waypoint sequence
 
 ### 3.2 软件环境
 
-在 Orin 上执行：
+在 Orin 上执行。
+
+这里先明确一个关键事实：Jetson Orin 没有桌面平台那种独立 RTX 显卡，但它自带可用于 CUDA 推理的 NVIDIA 集成 GPU。对本项目来说，“Orin 能不能推理”不取决于有没有额外显卡，而取决于当前 JetPack 对应的 PyTorch 是否能把这块集成 GPU 正确识别为 `cuda`。
+
+因此，Orin 端不要照搬训练机上的桌面 GPU 安装方式。`scripts/requirements.txt` 是按训练/桌面环境整理的依赖清单，不能直接当成 Orin 上的 PyTorch 安装方案。推荐按照“先装 Jetson 版 PyTorch，再装其余依赖”的顺序进行。
 
 ```bash
 conda create -n nomad-deploy python=3.8 -y
 conda activate nomad-deploy
 
 cd /path/to/visualnav-transformer
-pip install -r scripts/requirements.txt
+
+# 先安装与你当前 JetPack 匹配的 Jetson 版 PyTorch / torchvision
+# 不要直接照抄桌面 RTX 训练机上的 cu121 安装命令
+python -c "import torch; print(torch.__version__)" 2>/dev/null || echo "PyTorch not installed yet"
+
+# 再安装项目运行所需的其余依赖
+pip install diffusers==0.11.1 huggingface-hub==0.10.1
+pip install efficientnet-pytorch vit-pytorch positional-encodings[torch]
+pip install prettytable lmdb warmup-scheduler
+pip install opencv-python pillow matplotlib tqdm h5py "numpy<2"
+pip install timm
+
 cd train && pip install -e . && cd ..
+```
 
-# Jetson 上的 PyTorch 请按你当前 JetPack / CUDA 版本安装可用版本
-pip install torch torchvision
+安装完成后，先执行 GPU 可用性检查：
 
-# 相机与可视化
-pip install opencv-python pillow
+```bash
+python -c "import torch; print('torch', torch.__version__); print('cuda', torch.cuda.is_available()); print('device', torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'cpu')"
 ```
 
 ### 3.3 预期结果
@@ -109,8 +124,16 @@ ls lite3_host_control/lite3_controller.py
 
 1. 上述文件均能列出。
 2. 没有 `No such file or directory`。
+3. 上一条 `python -c` 检查中，理想结果应为：
+
+```text
+torch <版本号>
+cuda True
+device <Jetson Orin 对应的 CUDA 设备名>
+```
 
 如果 `lite3_host_control/` 不存在，则说明当前仓库不完整，先不要进入真机部署阶段。
+如果 `cuda False`，对 Orin 来说通常不是“没有显卡”，而是 JetPack / CUDA / PyTorch 版本没有对齐，这时先不要继续后面的真机步骤。
 
 ### 3.4 模型文件准备
 
@@ -241,12 +264,14 @@ python scripts/deployment/orin_standalone_test.py \
 
 4. 同时打印：
    `Device`、`Image size`、`Context size`、`Trajectory length`。
+5. 在 Orin 上的理想结果应是 `CUDA available: True`，并且 `Device` 为 `cuda`。
 
 如果失败：
 
 1. 优先检查 `--policy-config` 路径。
 2. 再检查 `--policy-checkpoint` 路径。
-3. 若 `CUDA available: False`，说明当前仍可能跑 CPU，但真机实时性通常不够。
+3. 若 `CUDA available: False`，脚本会退回 CPU，但这不满足正常真机闭环要求。
+4. 对 Orin 而言，`CUDA available: False` 更常见的原因是 Jetson 版 PyTorch 没装对，或者当前环境没有正确继承 JetPack 对应的 CUDA 运行时，而不是“Orin 没有 NVIDIA 显卡”。
 
 ### 4.3 步骤三：推理基准测试
 
@@ -269,6 +294,7 @@ python scripts/deployment/orin_standalone_test.py \
 
 1. 端到端延迟在 `120 ms - 300 ms` 区间内，说明可以继续做真机尝试。
 2. 如果低于 `3 Hz`，先不要进入真机闭环。
+3. 如果本步骤显示运行设备是 `cpu`，即使数值偶尔可跑，也不要把它当作正式 Orin 部署结果。
 
 优化方法：
 
@@ -346,8 +372,9 @@ python scripts/deployment/nomad_real_deployment_checklist.py \
 
 1. 相机读取正常。
 2. 模型可以成功加载。
-3. 端到端推理至少达到约 `3 Hz`。
-4. 推理输出的 waypoint 数值不是全零，也不是明显发散的异常值。
+3. 模型加载时设备为 `cuda`，而不是 `cpu`。
+4. 端到端推理至少达到约 `3 Hz`。
+5. 推理输出的 waypoint 数值不是全零，也不是明显发散的异常值。
 
 ---
 

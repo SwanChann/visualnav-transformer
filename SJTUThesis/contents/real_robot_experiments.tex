@@ -31,6 +31,8 @@
 \text{Camera} \rightarrow \text{NoMaD Inference} \rightarrow \text{Waypoint-to-Cmd} \rightarrow \text{UDP Bridge} \rightarrow \text{Lite3}.
 \end{equation}
 
+需要特别说明的是，Orin 并不是依赖额外桌面显卡工作的“小型 PC”，而是自带 NVIDIA 集成 GPU 的 Jetson 边缘平台。因此，本文所说的“Orin 上使用 CUDA 推理”，指的是利用其片上集成 GPU 完成 PyTorch 推理，而不是额外接入 RTX 系列独立显卡。从工程实现上看，决定 Orin 能否承担真机推理任务的关键条件，不是“是否存在桌面级 NVIDIA 显卡”，而是当前 JetPack、CUDA 运行时与 Jetson 版 PyTorch 是否正确匹配，使得集成 GPU 能够在程序中被识别为 `cuda` 设备。
+
 这种结构的优势在于：高层 NoMaD 仍保持与仿真阶段一致的策略输入输出定义，而低层机器人通讯和步态细节则被吸收到桥接层与运动主机之中。因此，从系统工程角度看，第五章并不是另起一套真机专用算法，而是在第四章统一闭环系统的基础上切换到真实后端。
 
 \subsection{为何需要真机桥接层}
@@ -45,6 +47,8 @@ Lite3 的运动主机并不直接接受“扩散轨迹”或“视觉目标图�
     \caption{图位占位：Orin 推理、桥接层与 Lite3 运动主机数据流图（待补）}
     \label{fig:real-bridge-placeholder}
 \end{figure}
+
+这也意味着，第五章中的 Orin 独立调试必须把“是否能够以 `cuda` 设备完成推理”作为前置验收条件。若程序在 Orin 上最终退回 CPU，这并不代表平台“没有显卡”，而更可能意味着 JetPack 与 Jetson 版 PyTorch 没有正确对齐。在这种情况下，即使模型可以勉强运行，也不应将其视为满足真机闭环部署要求。
 
 \section{真机部署流程设计}
 

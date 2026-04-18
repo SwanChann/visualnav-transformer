@@ -96,6 +96,10 @@ def test_model(args):
     print(f"  CUDA available: {torch.cuda.is_available()}")
     if torch.cuda.is_available():
         print(f"  GPU: {torch.cuda.get_device_name(0)}")
+        print("  Note: On Jetson Orin this CUDA device is the integrated NVIDIA GPU, not a desktop RTX card.")
+    else:
+        print("  Warning: Orin can still fall back to CPU, but this is usually not suitable for real-time deployment.")
+        print("  Warning: On Jetson Orin, 'CUDA available: False' usually means a JetPack / PyTorch mismatch, not missing hardware.")
 
     t0 = time.time()
     spec = NoMaDInferenceSpec(

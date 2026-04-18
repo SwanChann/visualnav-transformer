@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(wc -l /f/codespace/visualnav-transformer/train/*.py /f/codespace/visualnav-transformer/deployment/src/*.py)"
+      "Bash(wc -l /f/codespace/visualnav-transformer/train/*.py /f/codespace/visualnav-transformer/deployment/src/*.py)",
+      "Bash(git add *)"
     ]
   }
 }
