@@ -488,7 +488,7 @@ if __name__ == "__main__":
 
     # ---- 初始化 ----
     ctrl = Lite3Controller(
-        robot_ip="192.168.1.120",
+        robot_ip="192.168.2.1",
         robot_port=43893,
         local_port=43897,
     )

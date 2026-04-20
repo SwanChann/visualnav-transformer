@@ -1,4 +1,13 @@
-% !TEX root = ../main.tex
+#!/usr/bin/env python3
+"""Expand all thesis chapters to ~2x length."""
+import os
+
+BASE = r"f:\codespace\visualnav-transformer\SJTUThesis\contents"
+
+# ============================================================
+# Chapter 1: intro.tex  (67 lines -> ~130 lines)
+# ============================================================
+intro = r"""% !TEX root = ../main.tex
 
 \chapter{绪论}
 
@@ -27,11 +36,13 @@
 
 \section{研究意义}
 
-本文研究的意义主要体现在三方面。在方法层面，本文将 DDIM 采样加速、Classifier-Free Guidance 条件增强与 Test-Time Scaling 推理时搜索放在同一统计实验框架下进行对比，并系统梳理三者的互补关系与层级组合方式。这些方法本身并非本文首创，但将它们收口到面向足式导航的部署场景下并给出实测口径，对扩散策略在机器人视觉导航中的工程落地具有参考价值。
+本文研究具有以下三方面意义。
 
-在系统层面，本文构建了由统一推理模块、状态机、导航主机到中层控制映射与平台接口的分层闭环架构，使高层扩散策略能够以较小改动从轮式平台迁移到 Lite3 四足平台。这一架构也为 Tron1 等其他平台的后续扩展提供了可复用的接口规范。
+在理论层面，本文系统探讨了扩散策略在视觉导航中的推理优化方法，包括 DDIM 采样加速、Classifier-Free Guidance 条件增强和 Test-Time Scaling 推理时搜索三种互补机制的联合作用关系。这些方法虽非本文首创，但将它们系统性地应用于机器人视觉导航并分析其在真实部署条件下的表现，具有理论推进意义。
 
-在应用层面，面向 Jetson Orin 与 Lite3 的真机部署方案（包括分阶段联调流程、多级安全机制和图像记录规范）使得扩散策略视觉导航具备从实验室走向工程可用的基本条件。
+在技术层面，本文构建了从统一推理模块、状态机、导航主机到平台接口的分层闭环系统，使得高层扩散策略能够与四足机器人的中低层控制形成有效衔接。这种系统化的集成方案为后续类似平台的视觉导航部署提供了可参考的技术路线。
+
+在应用层面，本文的研究面向真实的四足机器人部署场景，所涉及的推理加速、安全机制和分阶段验证流程，对于推动扩散策略从实验室原型走向工程可用具有实际价值。
 
 \section{国内外研究现状}
 
@@ -82,3 +93,9 @@
     \caption{图位占位：本文总体技术路线与章节关系图（待补）}
     \label{fig:intro-roadmap-placeholder}
 \end{figure}
+"""
+
+# Write intro
+with open(os.path.join(BASE, "intro.tex"), "w", encoding="utf-8") as f:
+    f.write(intro.strip() + "\n")
+print(f"intro.tex: {len(intro.strip().splitlines())} lines written")

@@ -12,7 +12,7 @@ from typing import Optional
 # ============================================================================
 # 协议常量
 # ============================================================================
-DEFAULT_MOTION_HOST_IP = "192.168.1.120"
+DEFAULT_MOTION_HOST_IP = "192.168.2.1"
 DEFAULT_MOTION_HOST_PORT = 43893
 DEFAULT_DATA_REPORT_PORT = 43897
 

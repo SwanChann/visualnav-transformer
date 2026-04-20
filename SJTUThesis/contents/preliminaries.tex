@@ -168,8 +168,6 @@ q_\sigma(x_{t-1} \mid x_t, x_0) = \mathcal{N}\!\left(\sqrt{\bar\alpha_{t-1}}\, x
 
 在实际使用中，DDIM 的跳步采样通过选择原始时间步序列 $\{1, 2, \ldots, T\}$ 的一个子序列 $\{\tau_1, \tau_2, \ldots, \tau_S\}$（其中 $S \ll T$）来实现加速。例如当 $T=100$ 而选择 $S=10$ 时，每次去噪跨越约 10 个原始时间步。子序列的选择方式（均匀间隔、二次间隔等）也会影响采样质量。在本文的导航场景中，由于轨迹空间的维度远低于图像空间，扩散模型对跳步采样的容忍度通常较高，这为在边缘设备上实现实时推理提供了可能。
 
-在实际使用中，DDIM 的跳步采样通过选择原始时间步序列 $\{1, 2, \ldots, T\}$ 的一个子序列 $\{\tau_1, \tau_2, \ldots, \tau_S\}$（其中 $S \ll T$）来实现加速。例如当 $T=100$ 而选择 $S=10$ 时，每次去噪跨越约 10 个原始时间步。子序列的选择方式（均匀间隔、二次间隔等）也会影响采样质量。在本文的导航场景中，由于轨迹空间的维度远低于图像空间，扩散模型对跳步采样的容忍度通常较高，这为在边缘设备上实现实时推理提供了可能。
-
 \subsection{Classifier-Free Guidance}
 
 Classifier-Free Guidance（CFG）最初用于条件生成任务中的引导增强\cite{cfg2022}。其思想是在训练阶段同时学习有条件与无条件预测，在推理阶段通过两者线性组合增强条件约束。若条件分支噪声预测为 $\epsilon_{\text{cond}}$，无条件分支为 $\epsilon_{\text{uncond}}$，则引导后的噪声预测写为
@@ -262,8 +260,8 @@ p(\mathbf{A}\mid \mathcal{O}_t, I_g).
 \end{equation}
 经过多层自注意力后，输出的 token 表征即为共享条件空间中的统一条件特征。
 
-在 ViNT 的原始设计中，Transformer 编码器采用 4 层标准自注意力结构，
-隐藏维度为 256，注意力头数为 4。每帧图像经过 EfficientNet-B0 前端后产生 $7 \times 7 = 49$ 个空间 token，经过线性投影后维度对齐为 256。对于 $K = 5$ 帧观察和 1 帧目标图像，Transformer 的输入序列长度为 $(5 + 1) \times 49 = 294$ 个 token。为了区分不同帧的 token，系统为每帧添加可学习的帧级位置编码
+在 ViNT\cite{vint2023} 的原始设计中，Transformer\cite{transformer2017} 编码器采用 4 层标准自注意力结构，
+隐藏维度为 256，注意力头数为 4。每帧图像经过 EfficientNet-B0\cite{efficientnet2019} 前端后产生 $7 \times 7 = 49$ 个空间 token，经过线性投影后维度对齐为 256。对于 $K = 5$ 帧观察和 1 帧目标图像，Transformer 的输入序列长度为 $(5 + 1) \times 49 = 294$ 个 token。为了区分不同帧的 token，系统为每帧添加可学习的帧级位置编码
 （frame-level positional encoding），使模型能够区分不同时间步的观察。Transformer 的输出 token 经过全局平均池化后，产生一个固定维度的条件向量，该向量同时被距离预测头和扩散策略头使用。
 
 \subsection{距离预测头与视觉编码器的直接耦合}

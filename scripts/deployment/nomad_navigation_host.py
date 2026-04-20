@@ -415,6 +415,9 @@ class InteractiveNavigationHost:
             elif tokens[i] == "--tts-verifier" and i + 1 < len(tokens):
                 defaults["tts_verifier"] = tokens[i + 1]
                 i += 2
+            elif tokens[i] == "--image-resize-mode" and i + 1 < len(tokens):
+                defaults["image_resize_mode"] = tokens[i + 1]
+                i += 2
             elif tokens[i] == "--close-threshold" and i + 1 < len(tokens):
                 defaults["close_threshold"] = float(tokens[i + 1])
                 i += 2

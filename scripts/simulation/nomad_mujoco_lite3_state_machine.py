@@ -92,6 +92,12 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Optional policy device override such as cuda, cuda:0, or cpu.",
     )
+    parser.add_argument(
+        "--image-resize-mode",
+        choices=["stretch", "center_crop", "letterbox"],
+        default="stretch",
+        help="Camera/topomap preprocessing before NoMaD inference.",
+    )
     parser.add_argument("--random", action="store_true")
     parser.add_argument("--mission-topomap", action="append", default=None)
     parser.add_argument(

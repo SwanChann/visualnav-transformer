@@ -34,6 +34,8 @@ DEFAULT_ACTION_STATS = {
 }
 IMAGE_MEAN = torch.tensor([0.485, 0.456, 0.406], dtype=torch.float32).view(3, 1, 1)
 IMAGE_STD = torch.tensor([0.229, 0.224, 0.225], dtype=torch.float32).view(3, 1, 1)
+RESAMPLE_BILINEAR = getattr(PILImage, "Resampling", PILImage).BILINEAR
+VALID_IMAGE_RESIZE_MODES = {"stretch", "center_crop", "letterbox"}
 
 
 @dataclass(frozen=True)
@@ -49,6 +51,7 @@ class NoMaDInferenceSpec:
     tts_budget: int = 8
     tts_topk: int = 1
     tts_verifier: str = "heuristic"
+    image_resize_mode: str = "stretch"
 
 
 def resolve_repo_relative(path_value: str | None, default_path: Path | None = None) -> Path:
@@ -118,6 +121,12 @@ class NoMaDInferenceModule:
         self.tts_budget = max(int(self.spec.tts_budget), int(self.spec.num_samples))
         self.tts_topk = max(int(self.spec.tts_topk), 1)
         self.tts_verifier = str(self.spec.tts_verifier)
+        self.image_resize_mode = str(self.spec.image_resize_mode).replace("-", "_").lower()
+        if self.image_resize_mode not in VALID_IMAGE_RESIZE_MODES:
+            raise ValueError(
+                f"Unsupported image_resize_mode={self.image_resize_mode!r}. "
+                f"Choose one of {sorted(VALID_IMAGE_RESIZE_MODES)}."
+            )
         self.last_tts_summary: dict[str, float | int | str] | None = None
         self.model = self._build_model()
 
@@ -204,12 +213,47 @@ class NoMaDInferenceModule:
             policy_name = str(self.config.get("obs_encoder", vision_encoder_name))
         return (
             f"policy={policy_name}, vision_encoder={vision_encoder_name}, "
-            f"checkpoint={self.checkpoint_path}"
+            f"checkpoint={self.checkpoint_path}, resize_mode={self.image_resize_mode}"
         )
+
+    def _resize_image(self, pil_img: PILImage.Image) -> PILImage.Image:
+        """Resize an image with the deployment-time aspect-ratio policy."""
+        image = pil_img.convert("RGB")
+        target_w, target_h = self.image_size
+        if self.image_resize_mode == "stretch":
+            # 中文注释：保持与原始 NoMaD 数据预处理一致，直接拉伸到模型输入尺寸。
+            return image.resize((target_w, target_h), RESAMPLE_BILINEAR)
+
+        src_w, src_h = image.size
+        src_ratio = src_w / max(src_h, 1)
+        target_ratio = target_w / max(target_h, 1)
+
+        if self.image_resize_mode == "center_crop":
+            # 中文注释：保留几何比例，但会裁掉一部分视场，适合畸变较小且目标位于画面中心的场景。
+            if src_ratio > target_ratio:
+                crop_w = int(round(src_h * target_ratio))
+                left = max((src_w - crop_w) // 2, 0)
+                image = image.crop((left, 0, left + crop_w, src_h))
+            else:
+                crop_h = int(round(src_w / max(target_ratio, 1e-6)))
+                top = max((src_h - crop_h) // 2, 0)
+                image = image.crop((0, top, src_w, top + crop_h))
+            return image.resize((target_w, target_h), RESAMPLE_BILINEAR)
+
+        # 中文注释：letterbox 保留完整视场和几何比例，但会引入黑边，需确认模型能接受这种分布。
+        scale = min(target_w / max(src_w, 1), target_h / max(src_h, 1))
+        resized_w = max(int(round(src_w * scale)), 1)
+        resized_h = max(int(round(src_h * scale)), 1)
+        resized = image.resize((resized_w, resized_h), RESAMPLE_BILINEAR)
+        canvas = PILImage.new("RGB", (target_w, target_h), (0, 0, 0))
+        left = (target_w - resized_w) // 2
+        top = (target_h - resized_h) // 2
+        canvas.paste(resized, (left, top))
+        return canvas
 
     def pil_to_tensor(self, pil_img: PILImage.Image) -> torch.Tensor:
         """Convert one PIL image into a normalized tensor."""
-        resized = pil_img.convert("RGB").resize(self.image_size)
+        resized = self._resize_image(pil_img)
         np_img = np.asarray(resized, dtype=np.float32) / 255.0
         tensor = torch.from_numpy(np_img).permute(2, 0, 1).contiguous()
         return (tensor - IMAGE_MEAN) / IMAGE_STD

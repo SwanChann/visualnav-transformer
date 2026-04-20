@@ -1,7 +1,13 @@
 {
     "description": "Lite3 真机桥接配置 — Orin 部署用",
+    "network": {
+        "orin_ip": "192.168.2.17",
+        "lite3_motion_host_ip": "192.168.2.1",
+        "legacy_motion_host_ip": "192.168.1.120",
+        "note": "Orin IP is used for SSH/control from the laptop. bridge_kwargs.robot_ip is the Lite3 motion host."
+    },
     "bridge_kwargs": {
-        "robot_ip": "192.168.1.120",
+        "robot_ip": "192.168.2.1",
         "robot_port": 43893,
         "local_port": 43897,
         "camera_device": 0,

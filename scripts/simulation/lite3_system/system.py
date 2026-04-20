@@ -47,6 +47,7 @@ class Lite3System:
             policy_config=getattr(args, "policy_config", None),
             policy_checkpoint=getattr(args, "policy_checkpoint", None),
             device=getattr(args, "policy_device", None),
+            image_resize_mode=getattr(args, "image_resize_mode", "stretch"),
             waypoint_index=args.waypoint,
             radius=args.radius,
             close_threshold=args.close_threshold,

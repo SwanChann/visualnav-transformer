@@ -36,9 +36,9 @@ WZ_STEP = 0.3    # rad/s
 def main():
     print(HELP_TEXT)
 
-    robot_ip = input("输入运动主机IP (默认 192.168.1.120): ").strip()
+    robot_ip = input("输入运动主机IP (默认 192.168.2.1): ").strip()
     if not robot_ip:
-        robot_ip = "192.168.1.120"
+        robot_ip = "192.168.2.1"
 
     ctrl = Lite3Controller(robot_ip=robot_ip)
 

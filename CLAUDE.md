@@ -28,17 +28,28 @@ Python 3.8.5, PyTorch with CUDA 10+. Key deps: diffusers==0.11.1, efficientnet-p
 
 ## Common Commands
 
+### Data Processing
+
+Before training, raw trajectories must be converted to the dataset layout and split. Run from inside `train/`:
+
+```bash
+python process_bags.py    # ROS bags → images + traj_data.pkl
+python process_recon.py   # RECON HDF5 → images + traj_data.pkl
+python data_split.py      # produces traj_names.txt under data/data_splits/<dataset>/{train,test}/
+```
+
+`process_bag_diff.py` is a diagnostic helper for inspecting bag differences.
+
 ### Training
 
 All training commands run from inside `train/`:
 
 ```bash
-# Train ViNT (default)
-python train.py -c config/vint.yaml
-
-# Train other models
-python train.py -c config/gnm.yaml
-python train.py -c config/nomad.yaml
+python train.py -c config/vint.yaml          # ViNT
+python train.py -c config/gnm.yaml           # GNM
+python train.py -c config/nomad.yaml         # NoMaD (DDPM diffusion head)
+python train.py -c config/nomad_dinov2.yaml  # NoMaD with DINOv2 vision encoder
+python train.py -c config/late_fusion.yaml   # ViNT late-fusion variant
 ```
 
 Config merging: `config/defaults.yaml` is loaded first, then the specified config overrides it. Don't train directly with `defaults.yaml`.
@@ -48,15 +59,30 @@ Config merging: `config/defaults.yaml` is loaded first, then the specified confi
 All deployment scripts run from inside `deployment/src/`:
 
 ```bash
-./record_bag.sh <bag_name>                              # Collect demo trajectory
-./create_topomap.sh <topomap_name> <bag_filename>      # Build topological map
+./record_bag.sh <bag_name>                               # Collect demo trajectory
+./create_topomap.sh <topomap_name> <bag_filename>        # Build topological map
 ./navigate.sh "--model <model_name> --dir <topomap_dir>" # Deploy navigation
-./exploration.sh "--model <model_name>"                  # Deploy exploration (NoMaD only)
+./explore.sh "--model <model_name>"                      # Deploy exploration (NoMaD only)
 ```
 
 ### Experiment Scripts
 
-Scripts in `scripts/` are standalone experiment files (offline inference, DDIM acceleration, classifier-free guidance, DINOv2 adaptation, ablation studies). Each has its own dependencies listed in `scripts/requirements.txt`.
+`scripts/` contains standalone experiments, organized into:
+- `scripts/analysis/` — `offline_inference.py`, `realtime_inference.py`, `check_dataset.py`, `thesis_result_summary.py`
+- `scripts/experiments/` — DDIM acceleration (`ddim_experiment.py`), classifier-free guidance (`cfg_experiment.py`), TTS, gait-shake robustness, encoder comparison, ablations
+- `scripts/models/` — DINOv2 backbone (`nomad_vint_dinov2.py`), backbone suite, encoder weight downloads
+- `scripts/training/` — `train_dinov2.py`, backbone suite training, encoder seed sweep
+- `scripts/configs/` — vision encoder and navigation host configs
+- `scripts/deployment/` and `scripts/simulation/` — MuJoCo sim entrypoints (e.g. `nomad_mujoco_lite3_nav.py`, `nomad_mujoco_tron1_nav.py`, `mujoco_encoder_benchmark.py`)
+
+Root-level scripts are kept as legacy-compatible entrypoints; prefer the categorized paths. Install deps via `scripts/requirements.txt`.
+
+### Quadruped Deployment (Lite3)
+
+Beyond the ROS LoCoBot stack in `deployment/`, the repo ships three Lite3-specific stacks:
+- `Lite3_rl_deploy/` — C++/CMake deployment for the Unitree Lite3 quadruped (policy/, run_policy/, state_machine/, vendored MuJoCo + ONNX Runtime + MotionSDK under `third_party/`). Build with CMake.
+- `sdk_deploy/src/` — Python-side SDK integration glue.
+- `lite3_host_control/` — upper-computer control scripts (`lite3_controller.py`, `lite3_command.py`, `keyboard_demo.py`). See [lite3_host_control/Lite3上位机通讯控制文档.md](lite3_host_control/Lite3上位机通讯控制文档.md).
 
 ## Architecture
 

@@ -173,7 +173,7 @@ class Lite3RealBridge:
 
     def __init__(
         self,
-        robot_ip: str = "192.168.1.120",
+        robot_ip: str = "192.168.2.1",
         robot_port: int = 43893,
         local_port: int = 43897,
         camera_device: int | str = 0,
@@ -387,7 +387,7 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(description="Lite3 Real Bridge 独立测试")
-    parser.add_argument("--robot-ip", default="192.168.1.120")
+    parser.add_argument("--robot-ip", default="192.168.2.1")
     parser.add_argument("--camera-device", default="0")
     parser.add_argument("--use-csi", action="store_true")
     parser.add_argument("--test-camera-only", action="store_true", help="仅测试相机，不连接机器人")

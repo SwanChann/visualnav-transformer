@@ -312,6 +312,44 @@ python scripts/deployment/orin_standalone_test.py \
 2. 换设备号，比如 `--camera-device 1`。
 3. 如果是 CSI，相机链路和 GStreamer 没准备好时会直接报 `相机打开失败`。
 
+#### 4.1.1 USB 相机尺寸与视觉编码器输入对齐
+
+当前 USB 相机实测输出为 `640x480`，而 NoMaD baseline 的视觉编码器输入通常是 `96x96`。这两者不需要在相机驱动层强行改成一致，代码会在进入 NoMaD 前根据策略配置自动做预处理；真正需要保证的是“实时图像、目标图像、topomap 图像使用同一种预处理方式”。
+
+当前统一推理模块支持三种输入对齐方式：
+
+1. `stretch`：默认方式，直接把 `640x480` 拉伸到 `96x96`。优点是保留完整视场，并且与原始 NoMaD 常见训练预处理最一致；缺点是横向几何会被压缩。
+2. `center_crop`：先按中心裁剪成接近方形，再缩放到模型输入尺寸。优点是保持几何比例；缺点是会裁掉左右视场，不适合目标可能出现在画面边缘的走廊/转弯场景。
+3. `letterbox`：保持完整视场和几何比例，再用黑边补齐到方形。优点是几何关系最真实；缺点是黑边分布可能与训练数据不一致，需先做阶段一测试。
+
+建议第一轮真机部署继续使用默认 `stretch`，因为它和模型训练/离线测试链路最一致。如果你发现机器人在真实画面中对横向距离、转弯幅度判断明显异常，再分别测试 `center_crop` 和 `letterbox`。
+
+测试命令：
+
+```bash
+python scripts/deployment/orin_standalone_test.py \
+  --test pipeline \
+  --policy-config scripts/configs/vision_encoder/nomad_encoder_efficientnet_b0.yaml \
+  --policy-checkpoint deployment/model_weights/nomad/nomad.pth \
+  --ddim-steps 5 \
+  --image-resize-mode stretch
+```
+
+如果要对比其他模式，只改最后一项：
+
+```bash
+--image-resize-mode center_crop
+--image-resize-mode letterbox
+```
+
+预期结果：
+
+1. 模型加载测试会打印 `Resize mode: stretch` 或你指定的模式。
+2. `pipeline` 测试仍然能输出非零 waypoint。
+3. 三种模式的 waypoint 不应出现明显发散；如果 `letterbox` 出现不稳定，优先回退到 `stretch`。
+
+注意：相机标定解决的是镜头畸变问题，`image_resize_mode` 解决的是宽高比对齐问题，两者不是同一件事。普通 USB 相机若畸变不明显，可以先不标定；但如果画面边缘直线明显弯曲，则应先做标定，再比较不同输入对齐方式。
+
 ### 4.2 步骤二：模型加载测试
 
 ```bash
@@ -332,7 +370,7 @@ python scripts/deployment/orin_standalone_test.py \
 ```
 
 4. 同时打印：
-   `Device`、`Image size`、`Context size`、`Trajectory length`。
+   `Device`、`Image size`、`Resize mode`、`Context size`、`Trajectory length`。
 5. 在 Orin 上的理想结果应是 `CUDA available: True`，并且 `Device` 为 `cuda`。
 
 在当前 Orin 实测中，可参考如下输出：
@@ -346,6 +384,7 @@ Note: On Jetson Orin this CUDA device is the integrated NVIDIA GPU, not a deskto
 ✅ 模型加载成功 | 耗时: 2.87s
 Device: cuda
 Image size: (96, 96)
+Resize mode: stretch
 Context size: 3
 Trajectory length: 8
 ```
@@ -539,19 +578,35 @@ python scripts/deployment/nomad_real_deployment_checklist.py \
 
 ### 5.1 网络连接
 
-推荐有线直连。
+当前先采用无线方案：Orin 连接 Lite3 的 WiFi 热点后由 Lite3 自动分配 IP，当前已确认 Orin 地址为 `192.168.2.17`。你的电脑也连接到 Lite3 WiFi 后，可以直接通过该地址重新进入 Orin：
+
+```bash
+ssh guest@192.168.2.17
+```
+
+进入 Orin 后，先确认 Orin 自己的地址和到 Lite3 运动主机的连通性：
+
+```bash
+ip addr show wlan0
+ping 192.168.2.1
+```
+
+预期结果：
+
+1. `wlan0` 上能看到 `192.168.2.17`。
+2. `ping 192.168.2.1` 可以收到回复。
+3. 延迟稳定，无大量丢包。
+
+这里需要特别区分两个地址：`192.168.2.17` 是 Orin 导航主机地址，用于你的电脑 SSH 登录和远程控制；`192.168.2.1` 是 Lite3 运动主机地址，用于 `Lite3RealBridge` 发送 UDP 控制命令。不要把 `robot_ip` 改成 `192.168.2.17`，否则控制包会发回 Orin 自己。
+
+如果改回有线直连，可再使用有线网段，例如：
 
 ```bash
 sudo ifconfig eth0 192.168.1.100 netmask 255.255.255.0
 ping 192.168.1.120
 ```
 
-预期结果：
-
-1. `ping` 可以收到回复。
-2. 延迟稳定，无大量丢包。
-
-如果使用 WiFi，则把桥接配置中的 `robot_ip` 改成机器人实际地址。
+有线模式下再把桥接配置中的 `robot_ip` 改回运动主机实际地址。
 
 ### 5.2 桥接配置核对
 
@@ -566,8 +621,13 @@ cat scripts/configs/navigation_host/lite3_real_bridge_config.json
 ```json
 {
   "description": "Lite3 真机桥接配置 — Orin 部署用",
+  "network": {
+    "orin_ip": "192.168.2.17",
+    "lite3_motion_host_ip": "192.168.2.1",
+    "legacy_motion_host_ip": "192.168.1.120"
+  },
   "bridge_kwargs": {
-    "robot_ip": "192.168.1.120",
+    "robot_ip": "192.168.2.1",
     "robot_port": 43893,
     "local_port": 43897,
     "camera_device": 0,
@@ -586,7 +646,7 @@ cat scripts/configs/navigation_host/lite3_real_bridge_config.json
 }
 ```
 
-注意：仓库自带 `lite3_real_bridge_config.json` 的默认值是 `max_linear_x=0.4`、`max_yaw_rate=0.8`，对首次真机调试偏激进。首次必须先手动改小后再启动桥接：
+注意：仓库自带 `lite3_real_bridge_config.json` 当前默认使用 Lite3 WiFi 网段，`robot_ip=192.168.2.1`，并在顶层 `network` 字段记录 Orin 当前地址 `192.168.2.17`。其中只有 `bridge_kwargs.robot_ip` 会传给桥接代码，顶层 `network` 只用于人工核对。默认 `max_linear_x=0.4`、`max_yaw_rate=0.8` 对首次真机调试偏激进。首次必须先手动改小后再启动桥接：
 
 1. `max_linear_x` 改为 `0.2`
 2. `max_yaw_rate` 改为 `0.6`
@@ -599,7 +659,7 @@ cat scripts/configs/navigation_host/lite3_real_bridge_config.json
 
 ```bash
 python scripts/deployment/lite3_real_bridge.py \
-  --robot-ip 192.168.1.120 \
+  --robot-ip 192.168.2.1 \
   --camera-device 0
 ```
 
@@ -608,7 +668,7 @@ python scripts/deployment/lite3_real_bridge.py \
 1. 输出：
 
 ```text
-[Lite3RealBridge] 控制器已连接: 192.168.1.120:43893
+[Lite3RealBridge] 控制器已连接: 192.168.2.1:43893
 === 测试相机 ===
 图像尺寸: (640, 480)
 ```
@@ -624,7 +684,7 @@ python scripts/deployment/lite3_real_bridge.py \
 
 ```bash
 python scripts/deployment/lite3_real_bridge.py \
-  --robot-ip 192.168.1.120 \
+  --robot-ip 192.168.2.1 \
   --camera-device 0 \
   --test-standup
 ```
@@ -645,7 +705,7 @@ python scripts/deployment/lite3_real_bridge.py \
 
 ```bash
 python scripts/deployment/lite3_real_bridge.py \
-  --robot-ip 192.168.1.120 \
+  --robot-ip 192.168.2.1 \
   --camera-device 0 \
   --test-standup \
   --test-twist
@@ -989,13 +1049,13 @@ python scripts/deployment/orin_standalone_test.py \
   --ddim-steps 5
 
 # 5. 桥接通讯测试
-python scripts/deployment/lite3_real_bridge.py --robot-ip 192.168.1.120 --camera-device 0
+python scripts/deployment/lite3_real_bridge.py --robot-ip 192.168.2.1 --camera-device 0
 
 # 6. 起立测试
-python scripts/deployment/lite3_real_bridge.py --robot-ip 192.168.1.120 --camera-device 0 --test-standup
+python scripts/deployment/lite3_real_bridge.py --robot-ip 192.168.2.1 --camera-device 0 --test-standup
 
 # 7. 低速前进测试
-python scripts/deployment/lite3_real_bridge.py --robot-ip 192.168.1.120 --camera-device 0 --test-standup --test-twist
+python scripts/deployment/lite3_real_bridge.py --robot-ip 192.168.2.1 --camera-device 0 --test-standup --test-twist
 
 # 8. 交互式主机
 python scripts/deployment/nomad_navigation_host.py \
@@ -1029,9 +1089,11 @@ quit
 经过核对，当前项目中的 Orin + Lite3 真机部署教程，必须满足以下口径才是正确的：
 
 1. 真实导航一定要提供真实 `topomap-dir`。
-2. `bridge-config` 使用项目自带 JSON 即可，当前代码已兼容其 `bridge_kwargs` 包装格式；但默认 `max_linear_x=0.4 / max_yaw_rate=0.8` 偏激进，首次真机前需先手动改小（见 §5.2）。
-3. 若要保存运行过程中的实时图像，启动导航主机时必须带 `--save-fpv`。
-4. `captures/`、`goal_views/`、`fpv/` 三类图像都已经有对应代码路径，不是纯文档设计。
-5. **交互式主机启动即自动起立**：`nomad_navigation_host.py --interactive` 的 `run()` 会在进入 idle 之前调用一次 `_ensure_standing()`，所以必须在启动命令回车之前就完成安全准备，不能指望"启动后再有时间反应"。
-6. 当前最稳的真机流程是：
+2. 当前无线部署中，Orin 导航主机地址为 `192.168.2.17`，Lite3 运动主机地址为 `192.168.2.1`；`robot_ip` 必须写运动主机地址，不能写 Orin 地址。
+3. `bridge-config` 使用项目自带 JSON 即可，当前代码已兼容其 `bridge_kwargs` 包装格式；但默认 `max_linear_x=0.4 / max_yaw_rate=0.8` 偏激进，首次真机前需先手动改小（见 §5.2）。
+4. `640x480` USB 相机可以先用默认 `stretch` 进入 NoMaD；若真实闭环出现横向几何异常，再测试 `center_crop` 或 `letterbox`。
+5. 若要保存运行过程中的实时图像，启动导航主机时必须带 `--save-fpv`。
+6. `captures/`、`goal_views/`、`fpv/` 三类图像都已经有对应代码路径，不是纯文档设计。
+7. **交互式主机启动即自动起立**：`nomad_navigation_host.py --interactive` 的 `run()` 会在进入 idle 之前调用一次 `_ensure_standing()`，所以必须在启动命令回车之前就完成安全准备，不能指望"启动后再有时间反应"。
+8. 当前最稳的真机流程是：
    先独立调试，再桥接通讯（仅连接），再用 `--test-standup/--test-twist` 手工验证起立与低速前进，再打开交互式主机（注意其会自动起立），再探索，最后再做基于真实 topomap 的单目标导航。

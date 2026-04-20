@@ -116,6 +116,7 @@ class Lite3HighLevelNoMaD:
         policy_config: str | None = None,
         policy_checkpoint: str | None = None,
         device: str | None = None,
+        image_resize_mode: str = "stretch",
     ) -> None:
         self.legacy = load_legacy()
         self.inference = NoMaDInferenceModule(
@@ -130,6 +131,7 @@ class Lite3HighLevelNoMaD:
                 tts_topk=tts_topk,
                 tts_verifier=tts_verifier,
                 device=device,
+                image_resize_mode=image_resize_mode,
             )
         )
         self.device = self.inference.device

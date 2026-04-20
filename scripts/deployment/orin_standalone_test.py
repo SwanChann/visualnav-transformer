@@ -109,6 +109,7 @@ def test_model(args):
         policy_checkpoint=args.policy_checkpoint,
         scheduler_kind="ddim",
         ddim_steps=args.ddim_steps,
+        image_resize_mode=args.image_resize_mode,
     )
     inference = NoMaDInferenceModule(spec)
     load_time = time.time() - t0
@@ -116,6 +117,7 @@ def test_model(args):
     print(f"\n  ✅ 模型加载成功 | 耗时: {load_time:.2f}s")
     print(f"  Device: {inference.device}")
     print(f"  Image size: {inference.image_size}")
+    print(f"  Resize mode: {inference.image_resize_mode}")
     print(f"  Context size: {inference.context_size}")
     print(f"  Trajectory length: {inference.len_traj_pred}")
     return True
@@ -139,6 +141,7 @@ def test_benchmark(args):
         policy_checkpoint=args.policy_checkpoint,
         scheduler_kind="ddim",
         ddim_steps=args.ddim_steps,
+        image_resize_mode=args.image_resize_mode,
     )
     inference = NoMaDInferenceModule(spec)
 
@@ -215,6 +218,7 @@ def test_pipeline(args):
         policy_checkpoint=args.policy_checkpoint,
         scheduler_kind="ddim",
         ddim_steps=args.ddim_steps,
+        image_resize_mode=args.image_resize_mode,
     )
     inference = NoMaDInferenceModule(spec)
 
@@ -299,6 +303,7 @@ def test_pipeline_v2(args):
         policy_checkpoint=args.policy_checkpoint,
         scheduler_kind="ddim",
         ddim_steps=args.ddim_steps,
+        image_resize_mode=args.image_resize_mode,
     )
     inference = NoMaDInferenceModule(spec)
 
@@ -363,6 +368,12 @@ def main():
     parser.add_argument("--use-csi", action="store_true")
     parser.add_argument("--camera-calibration-path", type=str, default=None)
     parser.add_argument("--undistort-alpha", type=float, default=0.0)
+    parser.add_argument(
+        "--image-resize-mode",
+        choices=["stretch", "center_crop", "letterbox"],
+        default="stretch",
+        help="Preprocess camera images before NoMaD inference.",
+    )
     args = parser.parse_args()
 
     tests = {
