@@ -116,11 +116,20 @@ from collections import deque
 import numpy as np
 import torch
 from PIL import Image as PILImage
-from torchvision import transforms
 import cv2
-import mujoco
-import mujoco.viewer
-import onnxruntime as ort
+
+try:
+    import mujoco
+    import mujoco.viewer
+except ImportError:
+    # 中文注释：真机部署只复用本文件中的轻量工具函数，不应强制依赖 MuJoCo。
+    mujoco = None
+
+try:
+    import onnxruntime as ort
+except ImportError:
+    # 中文注释：ONNX Runtime 只在 MuJoCo 底层运动策略仿真中使用。
+    ort = None
 
 # ── 项目路径 ──────────────────────────────────────────────
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -170,12 +179,8 @@ ACTION_STATS = {
     "max": np.array([5.0, 4.0]),
 }
 
-_TRANSFORM = transforms.Compose(
-    [
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-    ]
-)
+IMAGE_MEAN = torch.tensor([0.485, 0.456, 0.406], dtype=torch.float32).view(3, 1, 1)
+IMAGE_STD = torch.tensor([0.229, 0.224, 0.225], dtype=torch.float32).view(3, 1, 1)
 
 # ── RL 运动策略参数（来自 lite3_policy_runner.hpp）────────
 SIM_DT = 0.001  # MuJoCo physics timestep (1000 Hz)
@@ -331,6 +336,9 @@ def load_lite3_model_with_scene(xml_path, scene_config=None):
         xml_path: Lite3.xml 路径
         scene_config: 场景配置字典（默认使用全局 SCENE_CONFIG）
     """
+    if mujoco is None:
+        raise ImportError("MuJoCo is required for simulation mode, but it is not installed.")
+
     if scene_config is None:
         scene_config = SCENE_CONFIG
     xml_dir = os.path.dirname(os.path.abspath(xml_path))
@@ -435,6 +443,11 @@ class MuJoCoLite3Env:
     """
 
     def __init__(self, xml_path=LITE3_XML, onnx_path=ONNX_POLICY, gui=True):
+        if mujoco is None:
+            raise ImportError("MuJoCo is required for MuJoCoLite3Env, but it is not installed.")
+        if ort is None:
+            raise ImportError("onnxruntime is required for MuJoCoLite3Env, but it is not installed.")
+
         # ── 加载 MuJoCo 模型（含场景） ──
         print(f"[MuJoCo] Loading model with scene from: {xml_path}")
         self.model = load_lite3_model_with_scene(xml_path)
@@ -908,7 +921,9 @@ def build_nomad_model(device):
 def pil_to_tensor(pil_img):
     """PIL Image → [3, 96, 96] 归一化张量。"""
     pil_img = pil_img.convert("RGB").resize(IMAGE_SIZE)
-    return _TRANSFORM(pil_img)
+    np_img = np.asarray(pil_img, dtype=np.float32) / 255.0
+    tensor = torch.from_numpy(np_img).permute(2, 0, 1).contiguous()
+    return (tensor - IMAGE_MEAN) / IMAGE_STD
 
 
 def build_obs_tensor(frame_buffer):

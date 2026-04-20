@@ -1051,6 +1051,38 @@ scripts/configs/navigation_host/lite3_real_bridge_config.json
 
 仅仅进入 idle 或只执行 `capture`，不会产生整段 `fpv/`。
 
+### 9.6 交互式主机任务时报 `No module named 'torchvision'`
+
+如果交互式主机已经完成相机打开、Lite3 连接、自动起立，并在输入 `stand`、`explore`、`estop` 后出现：
+
+```text
+[Host] Task error: No module named 'torchvision'
+```
+
+说明桥接通信本身是正常的，问题出在任务系统加载旧版 MuJoCo 工具脚本时触发了历史遗留的 `torchvision` import。当前真机部署链路不应依赖 `torchvision`，也不建议直接执行 `pip install torchvision`，因为通用 PyPI 版本可能把 Jetson 官方 `torch 2.0.0+nv23.05` 替换成 `cuda False` 的通用包。
+
+处理方式是同步当前项目代码，然后验证旧工具脚本已经可以在无 `torchvision` 环境下被加载：
+
+```bash
+python - <<'PY'
+import sys
+sys.path.insert(0, "scripts/simulation")
+from lite3_system.legacy_bridge import load_legacy
+legacy = load_legacy()
+print("legacy loaded")
+print("pd", legacy.pd_controller([1.0, 0.0]))
+PY
+```
+
+预期结果：
+
+```text
+legacy loaded
+pd (...)
+```
+
+如果这里仍然报 `torchvision`，说明 Orin 上代码还不是当前版本；重新 `git fetch` 并切到 `new` 分支最新提交后再运行。只有在你额外运行训练脚本或研究脚本时，才考虑单独准备带 Jetson 兼容 `torchvision` 的实验环境。
+
 ---
 
 ## 10. 推荐的完整执行顺序
