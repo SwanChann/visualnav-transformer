@@ -46,6 +46,7 @@ def platform_rules(platform: str) -> Dict[str, List[tuple]]:
     common = [
         ("base", "NoMaD checkpoint", first_weight_path(), True, "High-level navigation checkpoint"),
         ("base", "navigation host", repo_path("scripts", "deployment", "nomad_navigation_host.py"), True, "Task scheduling and backend entry for MuJoCo / real robot"),
+        ("base", "real topomap capture helper", repo_path("scripts", "deployment", "capture_real_topomap.py"), True, "Capture real-world topomap images with the Orin camera"),
         ("base", "navigation node", repo_path("deployment", "src", "navigate.py"), True, "Topomap localization and waypoint generation"),
         ("base", "pd controller", repo_path("deployment", "src", "pd_controller.py"), True, "Waypoint-to-velocity bridge"),
         ("base", "model config", repo_path("deployment", "config", "models.yaml"), True, "Checkpoint and model parameter registry"),
@@ -108,11 +109,12 @@ def render_markdown(platform: str, items: List[ChecklistItem]) -> str:
             "",
             "## Deployment Review Steps",
             "",
-            "1. Confirm the camera topic, robot command topic, and topomap input path.",
+            "1. Confirm the camera topic, robot command topic, and real topomap input path.",
             "2. Verify the NoMaD checkpoint and the platform-specific low-level controller are both available.",
-            "3. Run a static camera test before enabling closed-loop locomotion.",
-            "4. Enable velocity limits and recovery mode before the first autonomous run.",
-            "5. Record logs, images, and platform exceptions for thesis evidence collection.",
+            "3. Capture or verify a real-world topomap before running navigate mode.",
+            "4. Run a static camera test before enabling closed-loop locomotion.",
+            "5. Enable velocity limits and recovery mode before the first autonomous run.",
+            "6. Record logs, images, and platform exceptions for thesis evidence collection.",
         ]
     )
     return "\n".join(lines)

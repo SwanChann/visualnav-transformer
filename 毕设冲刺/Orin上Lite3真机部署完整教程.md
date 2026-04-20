@@ -35,6 +35,7 @@ Orin Camera -> NoMaDInferenceModule -> waypoint sequence
 | 文件 | 作用 |
 |------|------|
 | `scripts/deployment/orin_standalone_test.py` | Orin 端独立调试 |
+| `scripts/deployment/capture_real_topomap.py` | 用 Orin 相机采集真实 topomap |
 | `scripts/deployment/lite3_real_bridge.py` | Lite3 真机桥接 |
 | `scripts/deployment/nomad_navigation_host.py` | 导航主机 |
 | `scripts/configs/navigation_host/lite3_real_bridge_config.json` | 真机桥接配置 |
@@ -48,9 +49,10 @@ Orin Camera -> NoMaDInferenceModule -> waypoint sequence
 
 1. Orin 上读取 USB/CSI 相机。
 2. 加载 NoMaD checkpoint，在 Orin 上执行 DDIM 推理。
-3. 通过 `Lite3RealBridge` 把高层命令转成 Lite3 的 UDP Twist 控制。
-4. 用导航主机启动交互式 `stand`、`explore`、`navigate`、`estop`。
-5. 保存运行目录下的 `captures/`、`goal_views/`、`fpv/`。
+3. 用 Orin 相机采集真实环境 topomap，并写入 `topomap_meta.json`。
+4. 通过 `Lite3RealBridge` 把高层命令转成 Lite3 的 UDP Twist 控制。
+5. 用导航主机启动交互式 `stand`、`explore`、`navigate`、`estop`。
+6. 保存运行目录下的 `captures/`、`goal_views/`、`fpv/`。
 
 ### 2.4 当前代码不应误写的限制
 
@@ -222,18 +224,45 @@ ls scripts/configs/vision_encoder/nomad_encoder_efficientnet_b0.yaml
 
 ### 3.5 真实 topomap 准备
 
-真实导航必须使用真实环境采集的 topomap。建议为每个场景建立独立目录。
+真实导航必须使用真实环境采集的 topomap。这里的 topomap 不是数据集，也不是 MuJoCo 仿真图，而是机器人即将部署的真实场景图像序列。运行时系统会同时使用两类图像：一类是 Orin 相机实时采集的当前画面，另一类是提前采集好的真实 topomap 候选节点图像。NoMaD 会把实时画面和候选节点一起编码，用距离预测选择局部目标，再用扩散策略输出 waypoint。
+
+这意味着：`navigate` 模式需要真实 topomap 作为视觉目标导航先验；`explore` 模式不加载 topomap，只依赖当前相机图像进行无目标探索。真机代码不会在导航时自动从空气中生成全局地图，也不会自动使用训练数据集图像。
+
+建议为每个场景建立独立目录。
 
 ```bash
 mkdir -p deployment/topomaps/images/real_hallway
 ```
 
-采集方法：
+推荐直接用 Orin 相机采集，保证 topomap 图像和部署时相机视角、畸变、曝光尽量一致。自动间隔采集命令如下：
+
+```bash
+python scripts/deployment/capture_real_topomap.py \
+  --output-dir deployment/topomaps/images/real_hallway \
+  --map-name real_hallway \
+  --camera-device 0 \
+  --count 40 \
+  --interval 0.5
+```
+
+如果场地狭窄、需要每移动一段距离再手动保存一帧，使用手动模式：
+
+```bash
+python scripts/deployment/capture_real_topomap.py \
+  --output-dir deployment/topomaps/images/real_hallway \
+  --map-name real_hallway \
+  --camera-device 0 \
+  --count 40 \
+  --manual
+```
+
+采集操作要求：
 
 1. 先确定起点和目标点。
-2. 手持相机沿着机器人未来将要行走的路线缓慢前进。
-3. 每隔约 0.5 m 到 1.0 m 拍一张图。
-4. 图像按路线顺序重命名为：
+2. 相机高度和朝向尽量接近 Lite3 头部视角。
+3. 沿着机器人未来将要行走的路线缓慢前进。
+4. 每隔约 `0.5 m` 到 `1.0 m` 保存一张图。
+5. 图像会自动按路线顺序保存为：
 
 ```text
 000.png
@@ -246,13 +275,15 @@ mkdir -p deployment/topomaps/images/real_hallway
 
 ```bash
 ls deployment/topomaps/images/real_hallway | head
+cat deployment/topomaps/images/real_hallway/topomap_meta.json
 ```
 
 预期结果：
 
 1. 能看到 `000.png`、`001.png` 这类顺序图像。
 2. 图像不是空文件。
-3. 路径中不要混入 MuJoCo 生成的仿真图像。
+3. `topomap_meta.json` 中存在 `"domain": "real"`。
+4. 路径中不要混入 MuJoCo 生成的仿真图像。
 
 ---
 
@@ -646,7 +677,7 @@ cat scripts/configs/navigation_host/lite3_real_bridge_config.json
 }
 ```
 
-注意：仓库自带 `lite3_real_bridge_config.json` 当前默认使用 Lite3 WiFi 网段，`robot_ip=192.168.2.1`，并在顶层 `network` 字段记录 Orin 当前地址 `192.168.2.17`。其中只有 `bridge_kwargs.robot_ip` 会传给桥接代码，顶层 `network` 只用于人工核对。默认 `max_linear_x=0.4`、`max_yaw_rate=0.8` 对首次真机调试偏激进。首次必须先手动改小后再启动桥接：
+注意：仓库自带 `lite3_real_bridge_config.json` 当前默认使用 Lite3 WiFi 网段，`robot_ip=192.168.2.1`，并在顶层 `network` 字段记录 Orin 当前地址 `192.168.2.17`。其中只有 `bridge_kwargs.robot_ip` 会传给桥接代码，顶层 `network` 只用于人工核对。当前默认限幅已经按首次真机调试改为保守值：
 
 1. `max_linear_x` 改为 `0.2`
 2. `max_yaw_rate` 改为 `0.6`
@@ -785,7 +816,8 @@ estop
 
 1. 机器人保持站立。
 2. 任务结束后主机返回 idle。
-3. 终端出现：
+3. 任务正常结束时只发送零速度保持，不应触发 `soft_estop`。
+4. 终端出现：
 
 ```text
 [Host] Task #1 finished: success
@@ -822,7 +854,9 @@ estop
 预期结果：
 
 1. 机器人停止。
-2. 软件层记录急停。
+2. 终端出现 `[Lite3RealBridge] ⚠️ 执行急停!` 和 `[Lite3Controller] ⚠️ 软急停!`。
+3. 交互式主机会退出 idle 循环并释放资源；如果还要继续实验，需要重新启动导航主机。
+4. 软件层记录急停。
 
 ---
 
@@ -1083,6 +1117,24 @@ pd (...)
 
 如果这里仍然报 `torchvision`，说明 Orin 上代码还不是当前版本；重新 `git fetch` 并切到 `new` 分支最新提交后再运行。只有在你额外运行训练脚本或研究脚本时，才考虑单独准备带 Jetson 兼容 `torchvision` 的实验环境。
 
+### 9.7 输入 `stand` 后立刻软急停
+
+如果交互式主机启动后已经自动起立，并且输入 `stand` 后出现：
+
+```text
+[Lite3RealBridge] ⚠️ 执行急停!
+[Lite3Controller] ⚠️ 软急停!
+```
+
+这不是相机窗口导致的故障，而是旧版状态机把普通任务完成态 `completed` 也当成了 `safe_stop` 处理。对 MuJoCo 来说这只是停住仿真机器人，但对 Lite3 真机会触发 `soft_estop`，导致后续 idle 或下一条命令被打断。
+
+当前代码已经拆分为两类停止：
+
+1. 普通任务完成：`completed -> controlled_stop()`，只发送零速度保持站立。
+2. 明确急停或失败：`estop/failed -> safe_stop()`，才调用 `soft_estop`。
+
+修复后，`stand --stand-steps 20` 的正常结果应是任务成功并返回 idle，不应再打印软急停日志。只有你输入 `estop`、`stop`，或系统检测到失败状态时，才应该看到 `[Lite3Controller] ⚠️ 软急停!`。当前交互式主机会在 `estop/stop` 执行完成后退出循环并释放资源，避免急停后下一轮 idle 又重新启动零速度 Twist。
+
 ---
 
 ## 10. 推荐的完整执行顺序
@@ -1109,16 +1161,24 @@ python scripts/deployment/orin_standalone_test.py \
   --policy-checkpoint deployment/model_weights/nomad/nomad.pth \
   --ddim-steps 5
 
-# 5. 桥接通讯测试
+# 5. 采集真实 topomap
+python scripts/deployment/capture_real_topomap.py \
+  --output-dir deployment/topomaps/images/real_hallway \
+  --map-name real_hallway \
+  --camera-device 0 \
+  --count 40 \
+  --manual
+
+# 6. 桥接通讯测试
 python scripts/deployment/lite3_real_bridge.py --robot-ip 192.168.2.1 --camera-device 0
 
-# 6. 起立测试
+# 7. 起立测试
 python scripts/deployment/lite3_real_bridge.py --robot-ip 192.168.2.1 --camera-device 0 --test-standup
 
-# 7. 低速前进测试
+# 8. 低速前进测试
 python scripts/deployment/lite3_real_bridge.py --robot-ip 192.168.2.1 --camera-device 0 --test-standup --test-twist
 
-# 8. 交互式主机
+# 9. 交互式主机
 python scripts/deployment/nomad_navigation_host.py \
   --interactive \
   --backend real \
@@ -1140,7 +1200,6 @@ capture
 explore --max-steps 30 --scheduler ddim --ddim-steps 5 --cfg-weight 0.0
 navigate --topomap-dir deployment/topomaps/images/real_hallway --max-steps 200 --scheduler ddim --ddim-steps 5 --cfg-weight 0.0
 estop
-quit
 ```
 
 ---
@@ -1150,11 +1209,12 @@ quit
 经过核对，当前项目中的 Orin + Lite3 真机部署教程，必须满足以下口径才是正确的：
 
 1. 真实导航一定要提供真实 `topomap-dir`。
-2. 当前无线部署中，Orin 导航主机地址为 `192.168.2.17`，Lite3 运动主机地址为 `192.168.2.1`；`robot_ip` 必须写运动主机地址，不能写 Orin 地址。
-3. `bridge-config` 使用项目自带 JSON 即可，当前代码已兼容其 `bridge_kwargs` 包装格式；但默认 `max_linear_x=0.4 / max_yaw_rate=0.8` 偏激进，首次真机前需先手动改小（见 §5.2）。
-4. `640x480` USB 相机可以先用默认 `stretch` 进入 NoMaD；若真实闭环出现横向几何异常，再测试 `center_crop` 或 `letterbox`。
-5. 若要保存运行过程中的实时图像，启动导航主机时必须带 `--save-fpv`。
-6. `captures/`、`goal_views/`、`fpv/` 三类图像都已经有对应代码路径，不是纯文档设计。
-7. **交互式主机启动即自动起立**：`nomad_navigation_host.py --interactive` 的 `run()` 会在进入 idle 之前调用一次 `_ensure_standing()`，所以必须在启动命令回车之前就完成安全准备，不能指望"启动后再有时间反应"。
-8. 当前最稳的真机流程是：
-   先独立调试，再桥接通讯（仅连接），再用 `--test-standup/--test-twist` 手工验证起立与低速前进，再打开交互式主机（注意其会自动起立），再探索，最后再做基于真实 topomap 的单目标导航。
+2. 真实 topomap 应由 Orin 相机或同等视角相机在真实场景采集，目录中需要有 `"domain": "real"` 的 `topomap_meta.json`。
+3. 当前无线部署中，Orin 导航主机地址为 `192.168.2.17`，Lite3 运动主机地址为 `192.168.2.1`；`robot_ip` 必须写运动主机地址，不能写 Orin 地址。
+4. `bridge-config` 使用项目自带 JSON 即可，当前代码已兼容其 `bridge_kwargs` 包装格式；默认已使用首次真机推荐限幅 `max_linear_x=0.2 / max_yaw_rate=0.6`（见 §5.2）。
+5. `640x480` USB 相机可以先用默认 `stretch` 进入 NoMaD；若真实闭环出现横向几何异常，再测试 `center_crop` 或 `letterbox`。
+6. 若要保存运行过程中的实时图像，启动导航主机时必须带 `--save-fpv`。
+7. `captures/`、`goal_views/`、`fpv/` 三类图像都已经有对应代码路径，不是纯文档设计。
+8. **交互式主机启动即自动起立**：`nomad_navigation_host.py --interactive` 的 `run()` 会在进入 idle 之前调用一次 `_ensure_standing()`，所以必须在启动命令回车之前就完成安全准备，不能指望"启动后再有时间反应"。
+9. 当前最稳的真机流程是：
+   先独立调试，再用 Orin 相机采集真实 topomap，再桥接通讯（仅连接），再用 `--test-standup/--test-twist` 手工验证起立与低速前进，再打开交互式主机（注意其会自动起立），再探索，最后再做基于真实 topomap 的单目标导航。

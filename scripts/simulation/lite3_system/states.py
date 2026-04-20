@@ -157,7 +157,9 @@ class CompletedState(BaseState):
     name = "completed"
 
     def on_enter(self, system) -> None:
-        system.safe_stop()
+        if system.args.mode == "estop" or system.session.estop_requested:
+            return
+        system.controlled_stop()
 
     def step(self, system):
         return "completed"

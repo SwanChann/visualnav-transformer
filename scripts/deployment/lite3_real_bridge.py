@@ -204,8 +204,8 @@ class Lite3RealBridge:
         camera_calibration_path: str | None = None,
         undistort_alpha: float = 0.0,
         twist_hz: float = 25.0,
-        max_linear_x: float = 0.4,
-        max_yaw_rate: float = 0.8,
+        max_linear_x: float = 0.2,
+        max_yaw_rate: float = 0.6,
         gait: str = "low",
         standup_wait: float = 3.0,
     ) -> None:

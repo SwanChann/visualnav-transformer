@@ -129,7 +129,7 @@ def resolve_navigation_topomap_dir(args, expected_domain: str, legacy=None) -> P
         if not default_dir.is_dir():
             raise FileNotFoundError(
                 f"MuJoCo topomap directory not found: {default_dir}. "
-                f"Run `python scripts/simulation/nomad_mujoco_lite3_nav.py --mode generate-topomap --map {args.map}` first."
+                f"Run `python scripts/nomad_mujoco_lite3_nav.py --mode generate-topomap --map {args.map}` first."
             )
         return validate_topomap_dir_for_domain(default_dir, expected_domain, legacy)
     raise ValueError("Real backend requires an explicit real-world --topomap-dir; dataset fallback is disabled.")

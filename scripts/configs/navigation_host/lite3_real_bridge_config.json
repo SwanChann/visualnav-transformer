@@ -20,8 +20,8 @@
         "csi_sensor_id": 0,
         "csi_flip": 0,
         "twist_hz": 25.0,
-        "max_linear_x": 0.4,
-        "max_yaw_rate": 0.8,
+        "max_linear_x": 0.2,
+        "max_yaw_rate": 0.6,
         "gait": "low",
         "standup_wait": 3.0
     }

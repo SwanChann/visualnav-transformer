@@ -298,7 +298,7 @@ INTERACTIVE_HELP = """
 ║             NoMaD 导航主机 — 在线交互模式                  ║
 ╠═══════════════════════════════════════════════════════════╣
 ║ 命令:                                                     ║
-║   navigate [--max-steps N]  使用默认 topomap 导航到目标    ║
+║   navigate --topomap-dir DIR 使用真实 topomap 导航到目标   ║
 ║   explore [--max-steps N]   无目标探索                     ║
 ║   stand [--stand-steps N]   原地站立                       ║
 ║   estop                     紧急停止                       ║
@@ -444,6 +444,7 @@ class InteractiveNavigationHost:
         self.task_count += 1
         self.session.clear_estop()
         task_args.capture_enabled = True
+        validate_task_topomap_args(task_args, expected_domain=self.host_args.backend)
         platform = self._ensure_platform()
 
         system = Lite3System(
@@ -542,6 +543,9 @@ class InteractiveNavigationHost:
                               f"max_steps={task_args.max_steps}")
                         result = self._run_task(task_args)
                         print(f"[Host] Task #{result.index} finished: {result.status} (exit={result.exit_code})")
+                        if task_args.mode == "estop":
+                            print("[Host] EStop completed; leaving interactive loop.")
+                            break
                     except Exception as e:
                         print(f"[Host] Task error: {e}")
                 else:

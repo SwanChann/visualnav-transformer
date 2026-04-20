@@ -107,6 +107,10 @@ class Lite3System:
     def safe_stop(self) -> None:
         self.platform.emergency_stop()
 
+    def controlled_stop(self) -> None:
+        # 中文注释：普通任务结束只发送零速度，不能触发真机软急停。
+        self.platform.apply_command(MotionCommand(0.0, 0.0, 0.0))
+
     def _footer_lines(self) -> list[str]:
         if not self.capture_enabled:
             return ["e estop | capture handled by navigation host"]
