@@ -718,12 +718,12 @@ python scripts/deployment/lite3_real_bridge.py \
 
 ```text
 === 测试低速前进 (2秒) ===
-停止
+  停止
 ```
 
 3. 机器人前进距离应较短且可控。
 
-如果移动过快或不稳定，立刻降低配置中的 `max_linear_x`。
+如果移动过快或不稳定，立刻降低配置中的 `max_linear_x`。如果旧版本脚本在这里报 `ModuleNotFoundError: No module named 'lite3_system'`，说明低速前进测试分支仍在依赖仿真侧接口；更新到当前版本后，`--test-twist` 会直接构造真机速度命令，不再依赖 `lite3_system`。
 
 ---
 
@@ -976,6 +976,35 @@ v4l2-ctl --list-devices
 ```bash
 python scripts/deployment/orin_standalone_test.py --test camera --camera-device 1
 ```
+
+如果出现下面这种错误：
+
+```text
+can't open camera by index
+Camera index out of range
+RuntimeError: 无法打开相机: device=0, use_csi=False
+```
+
+先不要直接判断代码错误。USB 相机在刚插入、刚被上一个进程释放、或系统刚切换网络/电源状态后，可能会短时间无法被 OpenCV 打开。当前代码已经在 `OrinCamera` 中加入 3 次打开重试；如果仍失败，按下面顺序检查：
+
+```bash
+ls /dev/video*
+v4l2-ctl --list-devices
+fuser -v /dev/video0
+sudo fuser -k /dev/video0
+python scripts/deployment/lite3_real_bridge.py --test-camera-only --camera-device 0
+```
+
+预期结果是相机独立测试能够连续打印 30 帧尺寸，例如：
+
+```text
+[OrinCamera] 相机已打开: 640x480@30fps, CSI=False
+  帧 0: (640, 480)
+  ...
+相机测试完成
+```
+
+如果 `/dev/video0` 被占用，`sudo fuser -k /dev/video0` 会结束占用进程；如果没有 `/dev/video0`，需要重新插拔 USB 相机或更换 `--camera-device` 编号。
 
 ### 9.2 Orin 上推理太慢
 

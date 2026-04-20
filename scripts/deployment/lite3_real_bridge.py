@@ -19,17 +19,22 @@ import json
 import sys
 import time
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Optional
 
 import cv2
 import numpy as np
 from PIL import Image
 
-# 确保 lite3_host_control 在 sys.path 中
+# 确保真机控制与状态机相关模块在 sys.path 中
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+SCRIPTS_ROOT = REPO_ROOT / "scripts"
+SIM_ROOT = SCRIPTS_ROOT / "simulation"
 LITE3_CTRL_DIR = REPO_ROOT / "lite3_host_control"
-if str(LITE3_CTRL_DIR) not in sys.path:
-    sys.path.insert(0, str(LITE3_CTRL_DIR))
+for candidate in (LITE3_CTRL_DIR, SCRIPTS_ROOT, SIM_ROOT):
+    candidate_str = str(candidate)
+    if candidate_str not in sys.path:
+        sys.path.insert(0, candidate_str)
 
 from lite3_controller import Lite3Controller, Twist
 
@@ -85,25 +90,38 @@ class OrinCamera:
         self._map2: np.ndarray | None = None
         self._rectify_ready = False
 
-        if use_csi:
-            # Jetson CSI 相机通过 GStreamer pipeline
-            pipeline = (
-                f"nvarguscamerasrc sensor-id={csi_sensor_id} ! "
-                f"video/x-raw(memory:NVMM), width={width}, height={height}, "
-                f"format=NV12, framerate={fps}/1 ! "
-                f"nvvidconv flip-method={csi_flip} ! "
-                f"video/x-raw, width={width}, height={height}, format=BGRx ! "
-                f"videoconvert ! video/x-raw, format=BGR ! appsink"
-            )
-            self.cap = cv2.VideoCapture(pipeline, cv2.CAP_GSTREAMER)
-        else:
-            # USB 相机
-            self.cap = cv2.VideoCapture(int(device) if isinstance(device, (int, str)) and str(device).isdigit() else device)
-            self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
-            self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
-            self.cap.set(cv2.CAP_PROP_FPS, fps)
+        def open_capture():
+            if use_csi:
+                # Jetson CSI 相机通过 GStreamer pipeline
+                pipeline = (
+                    f"nvarguscamerasrc sensor-id={csi_sensor_id} ! "
+                    f"video/x-raw(memory:NVMM), width={width}, height={height}, "
+                    f"format=NV12, framerate={fps}/1 ! "
+                    f"nvvidconv flip-method={csi_flip} ! "
+                    f"video/x-raw, width={width}, height={height}, format=BGRx ! "
+                    f"videoconvert ! video/x-raw, format=BGR ! appsink"
+                )
+                return cv2.VideoCapture(pipeline, cv2.CAP_GSTREAMER)
 
-        if not self.cap.isOpened():
+            # USB 相机偶尔会在刚释放或刚插入时打开失败，重试可避免误判。
+            cap = cv2.VideoCapture(int(device) if isinstance(device, (int, str)) and str(device).isdigit() else device)
+            cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
+            cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
+            cap.set(cv2.CAP_PROP_FPS, fps)
+            return cap
+
+        self.cap = None
+        for attempt in range(1, 4):
+            self.cap = open_capture()
+            if self.cap.isOpened():
+                break
+            self.cap.release()
+            self.cap = None
+            if attempt < 3:
+                print(f"[OrinCamera] 相机打开失败，重试 {attempt}/3: device={device}, CSI={use_csi}")
+                time.sleep(0.5)
+
+        if self.cap is None or not self.cap.isOpened():
             raise RuntimeError(f"无法打开相机: device={device}, use_csi={use_csi}")
 
         if calibration_path:
@@ -305,8 +323,8 @@ class Lite3RealBridge:
 
     def send_command(self, linear_x: float, linear_y: float, yaw_rate: float) -> None:
         """兼容接口：ExternalBridgePlatform 可能调用 send_command。"""
-        from lite3_system.interfaces import MotionCommand
-        self.apply_command(MotionCommand(linear_x, linear_y, yaw_rate))
+        # 独立真机部署脚本不强依赖仿真侧 lite3_system 包，避免 Orin 上路径缺失。
+        self.apply_command(SimpleNamespace(linear_x=linear_x, linear_y=linear_y, yaw_rate=yaw_rate))
 
     def get_pose(self):
         """
@@ -424,10 +442,9 @@ if __name__ == "__main__":
 
             if args.test_twist:
                 print("\n=== 测试低速前进 (2秒) ===")
-                from lite3_system.interfaces import MotionCommand
-                bridge.apply_command(MotionCommand(0.15, 0.0, 0.0))
+                bridge.apply_command(SimpleNamespace(linear_x=0.15, linear_y=0.0, yaw_rate=0.0))
                 time.sleep(2.0)
-                bridge.apply_command(MotionCommand(0.0, 0.0, 0.0))
+                bridge.apply_command(SimpleNamespace(linear_x=0.0, linear_y=0.0, yaw_rate=0.0))
                 print("  停止")
 
         pos, yaw = bridge.get_pose()
