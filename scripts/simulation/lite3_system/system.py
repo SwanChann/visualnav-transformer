@@ -284,12 +284,17 @@ class Lite3System:
             self.platform.apply_command(MotionCommand(0.0, 0.0, 0.0))
             return self._common_failure_check() or "navigate"
 
-        result = self.high_level.predict_navigation(
-            self.context.frames,
-            mission.topomap,
-            self.missions.closest_node,
-            self.missions.goal_node,
-        )
+        try:
+            result = self.high_level.predict_navigation(
+                self.context.frames,
+                mission.topomap,
+                self.missions.closest_node,
+                self.missions.goal_node,
+            )
+        except Exception as exc:
+            print(f"[System] ⚠️ predict_navigation raised {type(exc).__name__}: {exc}; issuing safe stop and failing")
+            self.safe_stop()
+            return "failed"
         self.missions.closest_node = result.closest_node
         command = self.middle_layer.waypoint_to_command(result.chosen_waypoint)
         pre_position, pre_yaw = self.platform.get_pose()
@@ -335,7 +340,12 @@ class Lite3System:
             self.platform.apply_command(MotionCommand(0.0, 0.0, 0.0))
             return self._common_failure_check() or "explore"
 
-        result = self.high_level.predict_exploration(self.context.frames)
+        try:
+            result = self.high_level.predict_exploration(self.context.frames)
+        except Exception as exc:
+            print(f"[System] ⚠️ predict_exploration raised {type(exc).__name__}: {exc}; issuing safe stop and failing")
+            self.safe_stop()
+            return "failed"
         command = self.middle_layer.waypoint_to_command(result.chosen_waypoint)
         self.platform.apply_command(command)
         position, _ = self.platform.get_pose()
@@ -376,7 +386,19 @@ class Lite3System:
             self.refresh_goal_visualization()
 
         current_name = self.state_name
+        _safeguarded_states = {"estop", "failed", "completed", "recovery"}
         while current_name not in {"completed", "failed"}:
+            # 全局摔倒保护：除了已在 estop/failed/recovery 的状态外，任何状态
+            # 检测到 is_fallen 都立刻切 failed，避免 stand/idle 等状态
+            # 遗漏摔倒判定。
+            if current_name not in _safeguarded_states and self.platform.is_fallen():
+                print(
+                    f"[System] Global safety trip: platform reported fallen in state={current_name}, "
+                    f"tick={self.tick}, height={self.platform.get_height():.3f}"
+                )
+                self.transition_to("failed")
+                current_name = self.state_name
+                continue
             next_name = self.state.step(self)
             self.transition_to(next_name)
             current_name = self.state_name

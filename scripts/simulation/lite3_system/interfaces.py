@@ -212,13 +212,32 @@ class Lite3HighLevelNoMaD:
 
 
 class Lite3MiddleLayerPD:
+    # 硬上限：扩散采样偶尔会输出远离观察尺度的 waypoint，中层在喂给 PD 控制器前先压住。
+    MAX_WAYPOINT_NORM = 2.0  # 米
+
     def __init__(self, yaw_sign: float = 1.0) -> None:
         self.legacy = load_legacy()
         self.yaw_sign = float(yaw_sign)
 
     def waypoint_to_command(self, waypoint: np.ndarray) -> MotionCommand:
+        waypoint = np.asarray(waypoint, dtype=float)
+        # NaN/Inf 守卫：扩散或编码层异常时可能产出非有限值，必须拦在进 PD 前
+        if not np.all(np.isfinite(waypoint)):
+            print(f"[MiddleLayer] ⚠️ waypoint contains non-finite values: {waypoint}; issuing zero command")
+            return MotionCommand(linear_x=0.0, linear_y=0.0, yaw_rate=0.0)
+
+        norm = float(np.linalg.norm(waypoint))
+        if norm > self.MAX_WAYPOINT_NORM:
+            waypoint = waypoint * (self.MAX_WAYPOINT_NORM / norm)
+
         linear_x, yaw_rate = self.legacy.pd_controller(waypoint, yaw_sign=self.yaw_sign)
-        return MotionCommand(linear_x=float(linear_x), linear_y=0.0, yaw_rate=float(yaw_rate))
+        linear_x = float(linear_x)
+        yaw_rate = float(yaw_rate)
+        # 二次守卫：PD 输出本身也可能被上游的 NaN 传染
+        if not (np.isfinite(linear_x) and np.isfinite(yaw_rate)):
+            print(f"[MiddleLayer] ⚠️ PD output non-finite: lx={linear_x}, wz={yaw_rate}; issuing zero command")
+            return MotionCommand(linear_x=0.0, linear_y=0.0, yaw_rate=0.0)
+        return MotionCommand(linear_x=linear_x, linear_y=0.0, yaw_rate=yaw_rate)
 
 
 class Lite3LowLevelPlatform(NavigationPlatformBase):

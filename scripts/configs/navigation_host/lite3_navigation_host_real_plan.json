@@ -1,0 +1,35 @@
+{
+  "_intended_backend": "real",
+  "_note": "Lite3 real-robot plan template. Real-robot navigation requires pre-captured topomap directories (see scripts/deployment/capture_real_topomap.py). Fill in the mission_topomap list with real topomap dirs under deployment/topomaps/images/. goal_source=random_points/capture_queue are MuJoCo-only and will be rejected on real.",
+  "defaults": {
+    "scheduler": "ddim",
+    "ddim_steps": 2,
+    "cfg_weight": 0.0,
+    "no_gui": true,
+    "camera": "on",
+    "standup_time": 3.0,
+    "max_steps": 200
+  },
+  "tasks": [
+    {
+      "mode": "stand",
+      "map": "easy",
+      "stand_steps": 20,
+      "max_steps": 20
+    },
+    {
+      "mode": "navigate",
+      "map": "easy",
+      "mission_topomap": [
+        "deployment/topomaps/images/real_hallway"
+      ],
+      "max_steps": 320,
+      "close_threshold": 3.0
+    },
+    {
+      "mode": "estop",
+      "map": "easy",
+      "max_steps": 1
+    }
+  ]
+}

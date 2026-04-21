@@ -189,93 +189,6 @@ def test_benchmark(args):
 
 
 def test_pipeline(args):
-    """完整流水线测试：相机 + 推理。"""
-    print("=" * 60)
-    print("测试四：完整流水线 (相机 + 推理)")
-    print("=" * 60)
-
-    if not args.policy_config or not args.policy_checkpoint:
-        print("❌ 需要 --policy-config 和 --policy-checkpoint")
-        return False
-
-    import torch
-    from shared.nomad_inference import NoMaDInferenceModule, NoMaDInferenceSpec
-    from deployment.lite3_real_bridge import OrinCamera
-
-    # 初始化相机
-    cam = OrinCamera(
-        device=args.camera_device,
-        width=args.camera_width,
-        height=args.camera_height,
-        use_csi=args.use_csi,
-        calibration_path=args.camera_calibration_path,
-        undistort_alpha=args.undistort_alpha,
-    )
-
-    # 初始化推理模块
-    spec = NoMaDInferenceSpec(
-        policy_config=args.policy_config,
-        policy_checkpoint=args.policy_checkpoint,
-        scheduler_kind="ddim",
-        ddim_steps=args.ddim_steps,
-        image_resize_mode=args.image_resize_mode,
-    )
-    inference = NoMaDInferenceModule(spec)
-
-    # 构造帧缓冲
-    context_size = inference.context_size
-    frame_buffer = deque(maxlen=context_size + 1)
-
-    # 填充帧缓冲
-    print(f"  填充帧缓冲 (需要 {context_size + 1} 帧)...")
-    for i in range(context_size + 1):
-        img = cam.read()
-        tensor = inference.pil_to_tensor(img)
-        frame_buffer.append(tensor)
-        print(f"    帧 {i+1}/{context_size+1}")
-
-    # 运行端到端推理
-    n_runs = 10
-    latencies = []
-    print(f"\n  运行 {n_runs} 次端到端流水线...")
-
-    for i in range(n_runs):
-        t0 = time.time()
-
-        # 1. 采集图像
-        img = cam.read()
-        tensor = inference.pil_to_tensor(img)
-        frame_buffer.append(tensor)
-
-        # 2. 构造观测张量
-        obs_tensor = inference.build_obs_tensor(frame_buffer).to(inference.device)
-
-        # 3. 构造虚拟目标（探索模式）
-        h, w = int(inference.image_size[1]), int(inference.image_size[0])
-        fake_goal = torch.randn(1, 3, h, w).to(inference.device)
-
-        # 4. 编码
-        obs_cond = inference.encode_condition(obs_tensor, fake_goal, goal_mask_value=1)
-
-        # 5. 采样
-        actions = inference.sample_actions(obs_cond)
-        mean_action = actions.mean(axis=0)
-        waypoint = mean_action[min(2, inference.len_traj_pred - 1)]
-
-        dt = (time.time() - t0) * 1000
-        latencies.append(dt)
-        print(f"    [{i+1}/{n_runs}] {dt:.1f}ms | waypoint=({waypoint[0]:.3f}, {waypoint[1]:.3f})")
-
-    cam.close()
-
-    print(f"\n  📊 端到端流水线结果:")
-    print(f"     平均延迟: {np.mean(latencies):.1f} ± {np.std(latencies):.1f} ms")
-    print(f"     推理频率: ~{1000/np.mean(latencies):.1f} Hz")
-    print(f"\n  ✅ 流水线测试完成")
-    return True
-
-
-def test_pipeline_v2(args):
     """End-to-end pipeline test with steady-state latency reporting."""
     print("=" * 60)
     print("测试四：完整流水线 (相机 + 推理)")
@@ -380,7 +293,7 @@ def main():
         "camera": test_camera,
         "model": test_model,
         "benchmark": test_benchmark,
-        "pipeline": test_pipeline_v2,
+        "pipeline": test_pipeline,
     }
 
     if args.test == "all":

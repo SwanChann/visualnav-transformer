@@ -499,6 +499,32 @@ class InteractiveNavigationHost:
         except (ValueError, OSError):
             return False
 
+    def _should_auto_exit(self) -> tuple[bool, str]:
+        """真机模式下，检测需要自动退出 idle 循环的安全条件。
+
+        返回 (should_exit, reason)。MuJoCo 后端永远返回 (False, "")
+        （退出靠 viewer 关闭或用户 quit）。
+        """
+        if self.host_args.backend != "real":
+            return False, ""
+        platform = self._platform
+        bridge = getattr(platform, "bridge", None) if platform is not None else None
+        if bridge is None:
+            return False, ""
+        try:
+            if hasattr(bridge, "is_fallen") and bridge.is_fallen():
+                return True, "bridge.is_fallen() == True"
+        except Exception as exc:  # noqa: BLE001
+            print(f"[Host] is_fallen check raised {type(exc).__name__}: {exc}")
+        ctrl = getattr(bridge, "ctrl", None)
+        if ctrl is not None and hasattr(ctrl, "is_connection_stale"):
+            try:
+                if ctrl.is_connection_stale(timeout=2.0):
+                    return True, "Lite3 motion host state stale > 2s"
+            except Exception as exc:  # noqa: BLE001
+                print(f"[Host] is_connection_stale check raised {type(exc).__name__}: {exc}")
+        return False, ""
+
     def run(self) -> int:
         print(INTERACTIVE_HELP)
         self._ensure_platform()
@@ -508,6 +534,17 @@ class InteractiveNavigationHost:
         print("\n[Host] IDLE — 等待命令 (输入 help 查看帮助):")
         try:
             while True:
+                # 真机安全自动退出：摔倒 / 运动主机链路陈旧
+                should_exit, reason = self._should_auto_exit()
+                if should_exit:
+                    print(f"[Host] ⚠️ 自动退出: {reason}")
+                    if self._platform is not None:
+                        try:
+                            self._platform.emergency_stop()
+                        except Exception as exc:  # noqa: BLE001
+                            print(f"[Host] emergency_stop during auto-exit raised: {exc}")
+                    break
+
                 # idle 步进（保持站立，渲染相机）
                 self._idle_step()
 

@@ -87,6 +87,12 @@ class Lite3Controller:
         self.robot_state: Optional[RobotStateUpload] = None
         self.joint_angle: Optional[RobotJointAngle] = None
         self.joint_vel: Optional[RobotJointVel] = None
+        # 连接健康：记录最近一次成功收到 ROBOT_STATE 的墙钟时间；
+        # 若长期未更新意味着与运动主机链路异常（断网 / 运动主机崩溃）。
+        self._last_state_received_ts: Optional[float] = None
+        # 发送侧错误计数与最近一次错误 log 时间（限频，避免刷屏）
+        self._send_error_count = 0
+        self._last_send_error_log_ts: float = 0.0
 
         # --- 回调 ---
         self._state_callback: Optional[Callable] = None
@@ -145,13 +151,23 @@ class Lite3Controller:
     # 低层发送
     # ========================================================================
     def _send_raw(self, data: bytes):
-        """原始发送 UDP 数据包"""
+        """原始发送 UDP 数据包。
+
+        网络异常静默会掩盖 Lite3 断联，这里改为：仍不抛出（否则心跳/twist
+        线程直接崩），但累加错误计数并按节流频率打印 warning，让上层可以
+        通过 get_send_error_count() 观察链路状态。
+        """
         try:
             self._send_sock.sendto(data, (self.robot_ip, self.robot_port))
-        except OSError as e:
-            # 捕获网络异常 (如 Windows 上的 ConnectionResetError_10054)，防止线程直接崩溃
-            if self._running:
-                pass # 静默忽略单纯的网络波动，或记录日志
+        except OSError as exc:
+            if not self._running:
+                return
+            self._send_error_count += 1
+            now = time.time()
+            # 至多每 3 秒打印一次，避免刷屏
+            if now - self._last_send_error_log_ts > 3.0:
+                print(f"[Lite3Controller] ⚠️ UDP 发送失败 (累计 {self._send_error_count}): {exc}")
+                self._last_send_error_log_ts = now
 
     def send_simple_cmd(self, code: int, value: int = 0):
         """发送简单指令"""
@@ -211,6 +227,7 @@ class Lite3Controller:
         if code == RecvCmd.ROBOT_STATE:
             try:
                 self.robot_state = RobotStateUpload.from_bytes(data)
+                self._last_state_received_ts = time.time()
                 if self._state_callback:
                     self._state_callback(self.robot_state)
             except Exception as e:
@@ -338,10 +355,11 @@ class Lite3Controller:
         Args:
             twist: 目标速度
             hz:    下发频率 (≥20Hz, 文档要求轴指令≥20Hz, 超时250ms自动停止)
+                   上限 clamp 到 100Hz，避免误传大值导致线程忙等。
         """
         with self._twist_lock:
             self._current_twist = twist
-            self._twist_hz = max(20.0, hz)
+            self._twist_hz = min(100.0, max(20.0, hz))
 
         if not self._twist_active:
             self._twist_active = True
@@ -449,6 +467,24 @@ class Lite3Controller:
         time.sleep(0.5)
 
         print("[Lite3Controller] === 准备完成, 可以发送 Twist 指令 ===")
+
+    # ========================================================================
+    #  连接健康
+    # ========================================================================
+    def is_connection_stale(self, timeout: float = 2.0) -> bool:
+        """检查与运动主机的链路是否陈旧。
+
+        True 表示自上次收到 ROBOT_STATE 以来已经超过 timeout 秒（或还从未
+        收到过状态）。上层（桥接、导航主机）可以据此触发 emergency_stop 或
+        自动退出。
+        """
+        if self._last_state_received_ts is None:
+            return True
+        return (time.time() - self._last_state_received_ts) > float(timeout)
+
+    def get_send_error_count(self) -> int:
+        """返回累计 UDP 发送错误次数（用于上层监控）。"""
+        return int(self._send_error_count)
 
     # ========================================================================
     #  状态查询

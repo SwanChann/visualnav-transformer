@@ -1,4 +1,6 @@
 {
+  "_intended_backend": "mujoco",
+  "_note": "This plan targets the MuJoCo backend (goal_source=random_points depends on online topomap generation, which only the MuJoCo platform supports). For real-robot deployment see lite3_navigation_host_real_plan.json.",
   "defaults": {
     "scheduler": "ddim",
     "ddim_steps": 2,

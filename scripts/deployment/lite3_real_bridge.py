@@ -20,7 +20,6 @@ import sys
 import time
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Optional
 
 import cv2
 import numpy as np
@@ -258,7 +257,7 @@ class Lite3RealBridge:
         self.ctrl.start()
         print(f"[Lite3RealBridge] 控制器已连接: {robot_ip}:{robot_port}")
 
-        # 里程计累积 (简单积分，精度有限)
+        # 里程计累积 (命令自积分，精度有限)
         self._odom_x = 0.0
         self._odom_y = 0.0
         self._odom_yaw = 0.0
@@ -272,33 +271,85 @@ class Lite3RealBridge:
         """获取当前相机图像。"""
         return self.camera.read()
 
-    def standup(self, duration: float = 3.0) -> None:
-        """控制机器人起立并准备接收速度指令。"""
+    def standup(self, duration: float | None = None) -> None:
+        """控制机器人起立并准备接收速度指令。
+
+        幂等：若机器人已处于站立态（通过运动主机上报的 basic_state 判定），
+        只补齐自主/移动/步态切换，不再下发 stand_up_or_down 切换指令，
+        避免对已经站着的机器人意外发出"趴下/起立切换"。
+
+        Args:
+            duration: 覆盖默认的等待时间（秒）。实际等待时间的下限为
+                      底层协议固定的 3 秒（prepare_for_twist_control 内部 sleep），
+                      额外时长取 max(0, duration - 3)。None 时使用 self.standup_wait。
+        """
+        total_wait = float(duration) if duration is not None else float(self.standup_wait)
+
         if self._is_standing:
-            print("[Lite3RealBridge] 已经处于站立状态")
+            print("[Lite3RealBridge] 已经处于站立状态（bridge 内部标志）")
             return
 
-        print("[Lite3RealBridge] 执行起立序列...")
-        self.ctrl.prepare_for_twist_control()
-        time.sleep(max(0, self.standup_wait - 3.0))  # prepare_for_twist_control 内已等待3秒
+        # 允许运动主机上报状态稍晚到达
+        wait_start = time.time()
+        while self.ctrl.robot_state is None and time.time() - wait_start < 2.0:
+            time.sleep(0.05)
 
-        # 设置步态
+        state = self.ctrl.robot_state
+        already_up = False
+        if state is not None and hasattr(state, "robot_basic_state"):
+            # 6 = 力控(站立)，5 = 正在起立
+            if state.robot_basic_state in (5, 6):
+                already_up = True
+                print(
+                    f"[Lite3RealBridge] 机器人运动主机上报 basic_state={state.robot_basic_state}，"
+                    "已处于站立/起立态，跳过 stand_up_or_down 切换指令"
+                )
+
+        if not already_up:
+            print("[Lite3RealBridge] 机器人处于非站立态，执行起立序列...")
+            # 复用底层协议流程：心跳 -> 起立 -> 固定 3 秒等待
+            self.ctrl.prepare_for_twist_control()
+            extra_wait = max(0.0, total_wait - 3.0)
+            if extra_wait > 0:
+                time.sleep(extra_wait)
+        else:
+            # 机器人已站立，只做模式切换（这些指令是幂等的）
+            self.ctrl.set_auto_mode()
+            time.sleep(0.3)
+            self.ctrl.set_walk_mode()
+            time.sleep(0.3)
+
+        # 设置步态（幂等）
         self.ctrl.set_gait(self.gait)
         time.sleep(0.5)
 
         self._is_standing = True
         self._last_odom_time = time.time()
-        print("[Lite3RealBridge] 起立完成，已进入自主+移动模式")
+        print("[Lite3RealBridge] 起立/模式切换完成，已进入自主+移动模式")
 
     def apply_command(self, command) -> None:
         """
         接收 MotionCommand 并发送到 Lite3。
 
         command 包含 linear_x, linear_y, yaw_rate 三个属性。
+
+        安全护栏：
+          1. NaN/Inf 检测：任一字段非有限时强制改写为零速度，避免 NaN 经过
+             np.clip 再打包成 UDP 帧下发。
+          2. 幅值 clip 到 bridge 的安全范围。
+          3. 不在此处 sleep；控制循环节拍由上层决定。
         """
-        vx = float(np.clip(command.linear_x, -self.max_linear_x, self.max_linear_x))
-        vy = float(np.clip(command.linear_y, -0.3, 0.3))
-        wz = float(np.clip(command.yaw_rate, -self.max_yaw_rate, self.max_yaw_rate))
+        raw = (float(command.linear_x), float(command.linear_y), float(command.yaw_rate))
+        if not all(np.isfinite(v) for v in raw):
+            print(
+                f"[Lite3RealBridge] ⚠️ 检测到非有限命令 (vx={raw[0]}, vy={raw[1]}, wz={raw[2]})，"
+                "改为下发零速度"
+            )
+            raw = (0.0, 0.0, 0.0)
+
+        vx = float(np.clip(raw[0], -self.max_linear_x, self.max_linear_x))
+        vy = float(np.clip(raw[1], -0.3, 0.3))
+        wz = float(np.clip(raw[2], -self.max_yaw_rate, self.max_yaw_rate))
 
         twist = Twist(linear_x=vx, linear_y=vy, angular_z=wz)
 
@@ -308,7 +359,7 @@ class Lite3RealBridge:
         else:
             self.ctrl.update_twist(twist)
 
-        # 更新里程计
+        # 更新里程计（命令自积分，精度有限，仅供导航粗略参考）
         now = time.time()
         dt = now - self._last_odom_time
         self._odom_x += self._last_vx * np.cos(self._odom_yaw) * dt
@@ -317,9 +368,6 @@ class Lite3RealBridge:
         self._last_odom_time = now
         self._last_vx = vx
         self._last_wz = wz
-
-        # NoMaD 导航周期约 67ms，这里 sleep 模拟一个控制周期
-        time.sleep(0.067)
 
     def send_command(self, linear_x: float, linear_y: float, yaw_rate: float) -> None:
         """兼容接口：ExternalBridgePlatform 可能调用 send_command。"""
@@ -330,18 +378,18 @@ class Lite3RealBridge:
         """
         返回 (position, yaw)。
 
-        position: np.ndarray shape (2,)，基于里程计的 (x, y) 估计
-        yaw: float，偏航角 (rad)
+        position: np.ndarray shape (2,)，基于命令自积分的 (x, y) 粗估
+        yaw: float，偏航角 (rad)。若运动主机上报了 rpy，优先使用上报值；
+             否则退回命令自积分的 yaw。
 
-        注意：真机里程计精度有限，仅供导航参考。
-        如果运动主机有状态上报，优先使用上报数据。
+        注意：position 目前始终使用命令自积分，机器人实际受外力或控制未跟上时
+              会产生显著漂移，仅可用于 waypoint 局部导航的粗粒度参考，不可
+              作为全局定位。
         """
         state = self.ctrl.robot_state
-        if state is not None:
-            # 使用运动主机上报的体速度更新里程计
-            # state.vel_body[0] = 前后速度, state.rpy[2] = yaw (度)
-            yaw_rad = np.deg2rad(state.rpy[2]) if hasattr(state, 'rpy') else self._odom_yaw
-            return np.array([self._odom_x, self._odom_y]), float(yaw_rad)
+        if state is not None and hasattr(state, "rpy"):
+            yaw_rad = float(np.deg2rad(state.rpy[2]))
+            return np.array([self._odom_x, self._odom_y]), yaw_rad
 
         return np.array([self._odom_x, self._odom_y]), float(self._odom_yaw)
 
@@ -351,11 +399,21 @@ class Lite3RealBridge:
         return 0.35
 
     def get_forward_speed(self) -> float:
-        """返回当前前向速度。"""
+        """
+        返回当前前向速度（m/s）。
+
+        优先使用运动主机上报的 vel_body[0]；若状态尚未上报或状态陈旧，
+        返回 0.0 并打印一次 warning，让上层的 stuck detector 自然判定
+        "未在前进"——而不是用命令速度冒充实测速度导致检测失效。
+        """
         state = self.ctrl.robot_state
-        if state is not None and hasattr(state, 'vel_body'):
+        if state is not None and hasattr(state, "vel_body"):
             return float(state.vel_body[0])
-        return float(self._last_vx)
+        # 不用 self._last_vx 冒充——会骗过 stuck detector
+        if not getattr(self, "_warned_no_vel", False):
+            print("[Lite3RealBridge] ⚠️ 运动主机状态未上报 vel_body，get_forward_speed 返回 0")
+            self._warned_no_vel = True
+        return 0.0
 
     def is_fallen(self) -> bool:
         """检查机器人是否摔倒。"""
@@ -368,6 +426,40 @@ class Lite3RealBridge:
             if hasattr(state, 'rpy') and abs(state.rpy[0]) > 45:
                 return True
         return False
+
+    def prepare_task(self, mode: str) -> None:
+        """任务切换前的前置清理（由 Lite3System 在构造时调用）。
+
+        场景：上一个任务以 estop/failed 结束，机器人可能处于趴下或失控保护
+        状态。如果不重置站立标志，下一轮 StandState 会跳过起立，直接进入
+        navigate/explore 对一个趴着的机器人发 Twist，导致"以为在动实际没动"。
+
+        行为：
+          - 读取 robot_state.robot_basic_state，若为趴下(1)/正在趴下(7)/失控保护(8)，
+            清除 bridge 的 _is_standing 以及 Lite3System 读取的 _nomad_is_standing 标志，
+            让后续 StandState 重新真正起立。
+          - 若状态未知，保守地不改动标志，交给 StandState 自行处理。
+          - 若 twist 后台线程仍在运行而机器人已进入非站立态，顺便停掉 twist，
+            避免 close 前持续发送速度指令。
+        """
+        state = self.ctrl.robot_state
+        if state is None or not hasattr(state, "robot_basic_state"):
+            return
+
+        basic = int(state.robot_basic_state)
+        # 1 = 趴下, 7 = 正在趴下, 8 = 失控保护
+        if basic in (1, 7, 8):
+            if self._is_standing:
+                print(
+                    f"[Lite3RealBridge] prepare_task(mode={mode}): "
+                    f"机器人实际状态 basic={basic}，清除站立标志以便后续重新起立"
+                )
+            self._is_standing = False
+            if hasattr(self, "_nomad_is_standing"):
+                self._nomad_is_standing = False
+            if self._twist_active:
+                self.ctrl.stop_twist_control()
+                self._twist_active = False
 
     def viewer_alive(self) -> bool:
         """真机模式下始终返回 True（没有 MuJoCo viewer）。"""
