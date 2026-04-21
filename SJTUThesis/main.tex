@@ -3,7 +3,7 @@
 % !TeX TXS-program:recompile-bibliography = txs:///latexmk/{} -v
 
 % 载入 SJTUThesis 模版
-\documentclass[type=master]{sjtuthesis}
+\documentclass[type=bachelor,preset=jwc]{sjtuthesis}
 % 选项
 %   type=[doctor|master|bachelor],     % 可选（默认：master），论文类型
 %   zihao=[-4|5],                      % 可选（默认：-4），正文字号大小
@@ -86,6 +86,9 @@
 
 % 简历
 \input{contents/resume}
+
+% 学士学位论文要求在最后有一个大摘要，单独编页码
+\input{contents/digest}
 
 %TC:endignore
 

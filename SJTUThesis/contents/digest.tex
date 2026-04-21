@@ -1,0 +1,146 @@
+% !TEX root = ../main.tex
+
+% 学士学位论文大摘要
+% 相较于前置摘要，大摘要需要更完整地呈现研究背景、动机、方法、实验与结论。
+% 本文件在前置中英文摘要之外，补充了对三章核心工作和系统验证结果的展开介绍。
+
+\begin{digest}[zh]
+
+\subsection*{研究背景与动机}
+
+视觉目标导航是具身智能中连接感知与决策的核心任务。给定机器人当前视觉观察与目标图像，
+策略需要在无高精度地图、无全局定位先验的前提下输出可执行的局部运动，
+从而完成从起点到目标视角的自主移动。近年来，以 NoMaD 为代表的通用导航模型
+将扩散策略引入视觉导航，把未来局部轨迹建模为条件分布，通过去噪采样生成多模态候选，
+相比回归单步速度的端到端策略具有显著更强的表达能力。但现有工作的闭环验证主要集中于
+轮式平台（如 LoCoBot、TurtleBot、Jackal），面向四足机器人的部署链路仍缺乏系统研究。
+四足平台在步态抖动、控制频率、身体姿态耦合等方面与轮式平台差异明显，
+这为高层扩散策略与中低层控制接口的协同提出了新的问题。
+
+\subsection*{研究目标与技术路线}
+
+本文以 NoMaD 为高层视觉导航核心，以云深处 Lite3 四足机器人为目标部署平台，
+回答三个面向部署的问题：第一，NoMaD 的视觉编码器、距离预测头与扩散策略头在代码
+实现上如何耦合，推理层有哪些优化空间；第二，是否可以在不重新训练模型的前提下，
+通过采样加速、条件引导、测试时搜索与视觉编码器替换等手段显著提升策略可用性；
+第三，这些优化能否整合进面向 Lite3 的分层闭环系统，并完成 MuJoCo 仿真与
+Jetson Orin 真机部署的完整验证。技术路线沿"算法层优化—系统层集成—部署层验证"
+三级递进展开，对应论文第三、四、五章。
+
+\subsection*{主要工作与创新点}
+
+\textbf{算法层}：建立了统一的离线统计实验链路，对 DDIM 推理加速、Classifier-Free
+Guidance (CFG) 引导增强、Test-Time Scaling (TTS) 推理时搜索与视觉编码器升级进行了
+系统对比。DDIM 实验中 \texttt{ddim\_2} 配置相对 DDPM-10 基线实现约 4.84 倍加速且
+轨迹质量无显著退化；CFG 实验通过 score function 修改分析给出引导尺度选择准则，
+指出其有效范围有限、宜作为可调参数；TTS 实验提出将总收益分解为"评分筛选"
+（近乎零时延代价）与"候选池扩容"（时延线性增长但边际递减）两部分，TTS-8 在三因素
+联合排序中以最小代价取得综合最优，为推理预算分配提供了新的诠释；视觉编码器升级
+采用两阶段框架比较 EfficientNet-B0、ResNet-50、DINOv2-Small、ConvNeXt-Tiny 的
+离线指标，为后续部署筛选出候选组合。
+
+\textbf{系统层}：将统一推理模块、状态机、导航主机、中层控制映射与平台接口整合为
+分层闭环系统，支持 MuJoCo 仿真与真机两种后端。状态机由 idle / stand / navigate /
+explore / recovery / estop / completed / failed 组成，通过统一接口与平台解耦；
+导航主机支持批量计划（JSON）和交互式任务两种模式，允许在同一会话内完成拍照、建图、
+导航、探索等组合任务。MuJoCo 闭环实验中，Lite3 在 easy/medium/hard 三张地图上均
+成功完成定点导航、多目标导航、自由探索任务，所有目标均被到达。
+
+\textbf{部署层}：针对 Jetson Orin 与 Lite3 上位机链路，形成了分阶段联调流程、
+多级安全机制与图像记录规范。Orin 阶段一（独立调试）验证了相机采集、模型加载、
+推理基准与端到端流水线；在桥接层对速度命令加入 NaN/Inf 守卫、幅值限幅与
+连接健康监测，任意推理异常自动走安全急停；状态机层加入全局摔倒保护，使
+idle/stand 等状态也不再遗漏摔倒判定。
+
+\subsection*{实验与结论}
+
+离线实验表明，DDIM-2 + 可选 CFG + 可配置 TTS 是当前最值得进入闭环验证的组合；
+MuJoCo 闭环表明分层系统能够稳定完成四足导航与探索任务，多目标任务中的任务切换
+不会破坏视觉上下文；Orin 阶段一的独立测试验证了真机流水线的基础可用性。
+本文将 NoMaD 从轮式平台的实验框架扩展为面向四足平台的可分析、可仿真、可部署的
+研究链路，并沉淀出一套可复用的推理优化实验协议、闭环系统组织方式以及真机部署
+安全护栏清单，为后续基于扩散策略的足式机器人导航研究提供了参考基础。
+
+\end{digest}
+
+\begin{digest}[en]
+
+\subsection*{Background and Motivation}
+
+Visual goal navigation is a core task in embodied intelligence that connects perception
+with decision-making. Given the current visual observation and a goal image, the policy
+must output executable local motion without relying on high-precision maps or global
+localization, thereby achieving autonomous movement from the current viewpoint to the
+goal viewpoint. Recently, general navigation models such as NoMaD have introduced
+diffusion policies into visual navigation, modelling the future local trajectory as a
+conditional distribution and generating multi-modal candidates through denoising
+sampling, with significantly stronger expressive power than regression-based end-to-end
+policies. However, closed-loop validation of these models has so far concentrated on
+wheeled platforms (LoCoBot, TurtleBot, Jackal), while deployment pipelines targeting
+legged robots remain underexplored. Legged platforms differ substantially from wheeled
+ones in gait-induced jitter, control-loop frequency, and body-posture coupling, which
+poses new challenges for the collaboration between high-level diffusion policies and
+mid-/low-level control interfaces.
+
+\subsection*{Objectives and Approach}
+
+This thesis takes NoMaD as the high-level navigation core and the DeepRobotics Lite3
+quadruped as the target deployment platform, and addresses three deployment-oriented
+questions: (i) how the visual encoder, distance-prediction head, and diffusion policy
+head are coupled in the NoMaD implementation and where inference-level optimizations are
+possible; (ii) whether, without retraining, sampling acceleration, conditional guidance,
+test-time search, and encoder replacement can meaningfully improve policy usability; and
+(iii) whether these optimizations can be integrated into a hierarchical closed-loop
+system for Lite3 and validated through MuJoCo simulation and Jetson Orin real-robot
+deployment. The technical roadmap proceeds through algorithm-level optimization,
+system-level integration, and deployment-level validation, corresponding respectively
+to Chapters 3, 4, and 5.
+
+\subsection*{Main Contributions}
+
+\textbf{Algorithm layer.} A unified offline statistical pipeline is built to compare
+DDIM inference acceleration, Classifier-Free Guidance (CFG) enhancement, Test-Time
+Scaling (TTS) search, and visual encoder upgrades. DDIM-2 attains about $4.84\times$
+speedup over the DDPM-10 baseline without notable trajectory-quality degradation. The
+CFG analysis, derived from score-function modification, establishes a guidance-scale
+selection rule and shows that CFG is best used as a tunable knob rather than a default.
+The TTS analysis decomposes total gain into a nearly zero-latency \emph{scoring-based
+selection} component and a linearly priced but rapidly diminishing \emph{candidate-pool
+expansion} component; TTS-8 wins the three-factor joint ranking at minimal cost,
+providing a novel interpretation of inference-budget allocation. Encoder upgrades use
+a two-stage framework to compare EfficientNet-B0, ResNet-50, DINOv2-Small, and
+ConvNeXt-Tiny on offline metrics.
+
+\textbf{System layer.} A hierarchical closed-loop system---comprising a unified
+inference module, state machine, navigation host, mid-level control mapping, and
+platform interface---supports both MuJoCo and real-robot backends. The state machine
+(idle / stand / navigate / explore / recovery / estop / completed / failed) is decoupled
+from platforms through a uniform interface. The navigation host supports both batched
+JSON plans and interactive commands, allowing capture, topomap building, navigation,
+and exploration to be composed within one session. In MuJoCo closed-loop experiments,
+Lite3 successfully completes point navigation, multi-goal navigation, and free
+exploration on easy / medium / hard maps, reaching every goal.
+
+\textbf{Deployment layer.} For the Jetson Orin host and the Lite3 upper-computer link,
+the thesis develops a staged commissioning procedure, multi-level safety mechanisms,
+and an image-recording convention. Orin Stage 1 (standalone commissioning) validates
+camera capture, model loading, inference benchmarking, and the end-to-end pipeline. The
+bridging layer adds NaN/Inf guards, amplitude clamping, and connection-health checks to
+the velocity commands, routing any inference anomaly to a safe stop. A global fall check
+is added at the state-machine level so that idle / stand states no longer miss
+fallen-robot situations.
+
+\subsection*{Experiments and Conclusions}
+
+Offline results indicate that DDIM-2 plus optional CFG and configurable TTS is the most
+promising configuration to bring into closed-loop validation. MuJoCo experiments confirm
+that the hierarchical system can robustly complete quadruped navigation and exploration
+tasks, and that multi-goal task switching preserves visual context. Orin Stage-1
+validation demonstrates the baseline feasibility of the real-robot pipeline. The thesis
+extends NoMaD from a wheeled-platform framework into an analyzable, simulatable, and
+deployable research pipeline for quadruped platforms, and distills a reusable
+inference-optimization protocol, a closed-loop system organization, and a real-robot
+safety-guard checklist---providing a practical basis for subsequent research on
+diffusion-policy-based visual navigation for legged robots.
+
+\end{digest}
