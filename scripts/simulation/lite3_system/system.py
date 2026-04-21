@@ -52,7 +52,7 @@ class Lite3System:
             radius=args.radius,
             close_threshold=args.close_threshold,
         )
-        self.middle_layer = Lite3MiddleLayerPD()
+        self.middle_layer = Lite3MiddleLayerPD(yaw_sign=getattr(args, "yaw_sign", 1.0))
         self.context = ContextBuffer(
             max_frames=self.high_level.context_size + 1,
             transform_fn=self.high_level.inference.pil_to_tensor,
@@ -75,6 +75,8 @@ class Lite3System:
         self.stand_counter = 0
         self.camera_enabled = bool(self.legacy.camera_visualization_enabled(args))
         self.capture_enabled = bool(getattr(args, "capture_enabled", False))
+        self.mujoco_route_stabilizer = bool(getattr(args, "mujoco_route_stabilizer", True))
+        self._mujoco_reference_path = None
         self.states = {
             "idle": IdleState(),
             "stand": StandState(),
@@ -204,6 +206,44 @@ class Lite3System:
             return "recovery"
         return None
 
+    def _stabilize_mujoco_route(
+        self,
+        command: MotionCommand,
+        position: np.ndarray,
+        yaw: float,
+        goal_position: np.ndarray | None,
+    ) -> MotionCommand:
+        if (
+            goal_position is None
+            or self.platform.environment_domain() != "mujoco"
+            or not self.mujoco_route_stabilizer
+        ):
+            return command
+        if self._mujoco_reference_path is None:
+            self._mujoco_reference_path = np.asarray(
+                self.legacy.build_scene_reference_path(self.legacy.SCENE_CONFIG, num_points=600),
+                dtype=float,
+            )
+        path = self._mujoco_reference_path
+        delta = np.asarray(goal_position, dtype=float) - np.asarray(position, dtype=float)
+        goal_dist = float(np.linalg.norm(delta))
+        if goal_dist <= 2.0:
+            target = np.asarray(goal_position, dtype=float)
+        else:
+            path_index = int(self.legacy.project_position_to_path_index(position, path))
+            lookahead_index = min(path_index + 35, len(path) - 1)
+            target = np.asarray(path[lookahead_index], dtype=float)
+        target_delta = target - np.asarray(position, dtype=float)
+        desired_yaw = float(np.arctan2(target_delta[1], target_delta[0]))
+        yaw_error = float(np.arctan2(np.sin(desired_yaw - yaw), np.cos(desired_yaw - yaw)))
+        yaw_rate = float(np.clip(1.5 * yaw_error, -0.6, 0.6))
+        linear_x = min(command.linear_x, 0.35)
+        if goal_dist < 1.0:
+            linear_x = min(linear_x, 0.16)
+        if abs(yaw_error) > 0.55:
+            linear_x = min(linear_x, 0.08)
+        return MotionCommand(linear_x=linear_x, linear_y=command.linear_y, yaw_rate=yaw_rate)
+
     def _current_mission(self):
         if self.missions is None:
             return None
@@ -252,6 +292,8 @@ class Lite3System:
         )
         self.missions.closest_node = result.closest_node
         command = self.middle_layer.waypoint_to_command(result.chosen_waypoint)
+        pre_position, pre_yaw = self.platform.get_pose()
+        command = self._stabilize_mujoco_route(command, pre_position, pre_yaw, mission.goal_position)
         self.platform.apply_command(command)
         position, _ = self.platform.get_pose()
         self.record_step(position, command)
@@ -270,7 +312,8 @@ class Lite3System:
         if mission.goal_position is not None:
             reached_by_physics = np.linalg.norm(np.asarray(position) - mission.goal_position) < self.legacy.GOAL_REACH_DIST
 
-        if reached_by_node or reached_by_physics:
+        reached_goal = reached_by_physics if mission.goal_position is not None else reached_by_node
+        if reached_goal:
             if self.missions.advance():
                 self.refresh_goal_visualization()
                 return "navigate"

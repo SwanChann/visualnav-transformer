@@ -106,7 +106,7 @@ NoMaD 由视觉编码器、距离预测头和扩散策略头三部分组成\cite
 
 GoStanford 数据集的场景多样性是其作为标准评估数据集的重要优势。数据采集覆盖了斯坦福大学校园中的室内走廊、室外道路、建筑入口、停车区域等多种环境类型。每条轨迹的长度从几十帧到数百帧不等，对应数十米到数百米的实际行驶距离。图像帧的采集频率约为 4\,Hz，位姿信息由里程计或 GPS 提供，精度足以用于轨迹级别的训练监督。
 
-本文使用的本地数据集包含来自 GoStanford 的多条轨迹（如 \texttt{no10vc\_*} 系列），涵盖走廊、拐角、开阔区域等多种场景。在离线实验中，每次推理从轨迹中提取连续观察帧与目标帧，构建 24 个标准化测试 case，用于 DDIM、CFG、编码器等所有实验的统一评估。
+本文使用的本地数据集包含来自 GoStanford 的多条轨迹（如 \texttt{no10vc\_*} 系列），涵盖走廊、拐角、开阔区域等多种场景。在离线实验中，每次推理从轨迹中提取连续观察帧与目标帧，构建标准化测试 case。DDIM、CFG 与编码器实验使用 24 个 case；TTS 补充实验为控制组合规模使用 12 个 case，但保持相同的 case 构造规则和统计口径。
 
 \subsection{数据预处理流程}
 
@@ -306,7 +306,7 @@ CFG 的目标是在推理阶段增强轨迹对目标条件的响应\cite{cfg2022
 
 \begin{table}[htbp]
     \centering
-    \caption{CFG 引导实验结果占位}
+    \caption{CFG 引导实验结果}
     \label{tab:cfg-results}
     \begin{tabular}{lcccc}
         \toprule
@@ -349,7 +349,7 @@ TTS 的核心在于评分函数的设计。本文采用加权多目标评分函�
 
 \subsection{计算预算分配策略}
 
-TTS 的计算开销与候选轨迹数（budget）成正比。设单次采样耗时为 $\tau$，则 TTS-$K$ 的总耗时约为 $K \cdot \tau + \tau_{\text{score}}$，其中 $\tau_{\text{score}}$ 为评分与选择的开销（通常可忽略）。因此，DDIM 加速节省的时间预算可以部分重新分配给 TTS，形成"用更快的单次采样换取更多候选"的策略。例如，DDIM-2 的单次耗时约 8\,ms，则 TTS-8 的总耗时约 64\,ms，仍低于原始 DDPM-10 的 40\,ms 单次推理。
+TTS 的计算开销与候选轨迹数（budget）总体正相关。设单次采样耗时为 $\tau$，则 TTS-$K$ 的总耗时可近似表示为候选生成开销与评分开销之和，其中评分与排序通常只占很小比例。由于实际实现会复用批量张量计算，耗时不会严格等于 $K \cdot \tau$。因此，DDIM 加速节省的时间预算可以部分重新分配给 TTS，形成"用更快的单次采样换取更多候选"的策略。
 
 这种预算分配思路可以形式化为一个受约束的优化问题：在总时延预算 $T_{\max}$ 的约束下，选择 DDIM 步数 $S$ 和 TTS budget $K$ 以最大化轨迹质量。由于 $K \cdot \tau(S) \leq T_{\max}$，减少 $S$（加速单次采样）就能增大 $K$（增加候选数量），两者之间存在自然的折中关系。
 
@@ -359,33 +359,52 @@ TTS 的计算开销与候选轨迹数（budget）成正比。设单次采样耗�
 
 三层实验设计的逻辑是：单因素实验确认 TTS 本身的有效性和最优 budget 范围；两两组合实验检验 TTS 与其他优化手段之间是否存在交互效应（即是否"1+1>2"或"1+1<2"）；三因素联合实验给出面向实际部署的推荐配置。这种从简单到复杂的实验递进策略，避免了直接在高维配置空间中盲目搜索。
 
-\subsection{结果占位与预期结论}
+\subsection{结果与分析}
 
-TTS 实验的核心问题不是"是否绝对提升所有指标"，而是"是否值得把 DDIM 节省下来的预算重新分配给候选搜索"。若实验表明少步 DDIM 结合中等预算 TTS 能在总延迟可接受的前提下显著改善目标一致性与轨迹稳定性，则说明三者具有互补性；若实验表明 CFG 与 TTS 同时增强会引入过强偏置，则说明二者需要更精细的配平。
+TTS 实验的核心问题不是"是否绝对提升所有指标"，而是"是否值得把 DDIM 节省下来的预算重新分配给候选搜索"。本次补充实验使用 \texttt{scripts/tts\_stat\_experiment.py}，在 12 个统一离线 case 上比较 DDIM 步数、CFG 权重与 TTS budget 的组合，结果保存于 \texttt{results/day4/20260421\_140601\_tts\_stat\_experiment}。表~\ref{tab:tts-results} 给出在 \texttt{DDIM-2}、$w=0$ 条件下的单因素结果。
 
-从理论上分析，CFG 和 TTS 对轨迹质量的改善机制是正交的：CFG 通过修改采样分布来增强条件响应，作用于"生成"阶段；TTS 通过候选筛选来提高轨迹质量，作用于"选择"阶段。因此，二者在原理上可以叠加使用。但实际效果是否如此，需要通过实验数据来验证——可能存在 CFG 已经将分布集中到高质量区域，使得 TTS 的筛选空间变小、边际收益递减的情况。
+从表中可以看出，TTS-8 与 TTS-16 均显著提升前进性并降低平滑性代价。TTS-16 的综合评分最高，但时延约为 TTS-8 的 2 倍；TTS-32 虽然进一步提高前进性，但时延增加到 26.50\,ms，综合评分反而下降。这说明 TTS 的收益存在边际递减，部署时更适合选择中等 budget，而不是简单增大搜索规模。
 
 \begin{table}[htbp]
     \centering
-    \caption{TTS 推理时搜索实验结果占位}
+    \caption{TTS 推理时搜索单因素实验结果（DDIM-2, $w=0$）}
     \label{tab:tts-results}
     \begin{tabular}{lcccc}
         \toprule
         配置 & Latency/ms & Forward Progress & Smoothness & 综合评分 \\
         \midrule
-        No TTS & 待补 & 待补 & 待补 & 待补 \\
-        TTS-8 & 待补 & 待补 & 待补 & 待补 \\
-        TTS-16 & 待补 & 待补 & 待补 & 待补 \\
-        TTS-32 & 待补 & 待补 & 待补 & 待补 \\
+        No TTS & 7.00 & 9.010 & 0.0811 & 8.157 \\
+        TTS-8 & 6.89 & 9.697 & 0.0692 & 9.024 \\
+        TTS-16 & 13.86 & 10.050 & 0.0627 & 9.124 \\
+        TTS-32 & 26.50 & 10.344 & 0.0527 & 8.825 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+进一步观察 DDIM、CFG 与 TTS 的三因素联合结果，综合排名前列的配置均集中在 DDIM-2 或 DDIM-3，并采用 TTS-8 或 TTS-16。表~\ref{tab:tts-joint-top} 给出 Top-5 组合。最优配置为 \texttt{ddim2\_cfg2.0\_tts8}，其综合评分达到 9.143；但与 \texttt{ddim2\_cfg0.0\_tts16} 和 \texttt{ddim2\_cfg0.0\_tts8} 的差距较小。考虑 CFG 会额外增加一次条件/无条件推理，实际部署中更稳妥的推荐是以 \texttt{DDIM-2 + TTS-8/16} 为默认候选，再把 CFG 作为可调开关。
+
+\begin{table}[htbp]
+    \centering
+    \caption{DDIM $\times$ CFG $\times$ TTS 联合配置 Top-5 结果}
+    \label{tab:tts-joint-top}
+    \begin{tabular}{clcccc}
+        \toprule
+        排名 & 配置 & Latency/ms & Forward Progress & Smoothness & 综合评分 \\
+        \midrule
+        1 & \texttt{ddim2\_cfg2.0\_tts8} & 12.55 & 10.173 & 0.0553 & 9.143 \\
+        2 & \texttt{ddim2\_cfg0.0\_tts16} & 13.86 & 10.050 & 0.0627 & 9.124 \\
+        3 & \texttt{ddim2\_cfg0.0\_tts8} & 6.89 & 9.697 & 0.0692 & 9.024 \\
+        4 & \texttt{ddim2\_cfg1.0\_tts8} & 12.52 & 9.941 & 0.0628 & 9.003 \\
+        5 & \texttt{ddim2\_cfg2.0\_tts16} & 24.60 & 10.495 & 0.0521 & 8.987 \\
         \bottomrule
     \end{tabular}
 \end{table}
 
 \begin{figure}[htbp]
     \centering
-    \fbox{\rule{0pt}{52mm}\rule{0.84\linewidth}{0pt}}
-    \caption{图位占位：TTS 联合实验结果图（待补）}
-    \label{fig:algo-tts-placeholder}
+    \includegraphics[width=0.84\linewidth]{tts_combo_tradeoff_20260421.png}
+    \caption{TTS 联合实验的时延与轨迹质量折中}
+    \label{fig:algo-tts-tradeoff}
 \end{figure}
 
 \section{视觉编码器升级实验}
@@ -430,33 +449,37 @@ ConvNeXt-Tiny\cite{convnext2022} 作为"现代化 CNN"的代表被纳入实验�
 
 \subsection{已有结果与分析}
 
-已有离线结果表明，DINOv2-Small 在部分单步代理指标上优于原始 EfficientNet-B0，说明更强视觉表征对局部条件建模具有潜力。但在闭环层面，原始 baseline 仍然表现最稳，ConvNeXt-Tiny 具有继续优化空间，而 DINOv2-Small 与 ResNet-50 目前尚不能写成"已经成功升级"的最终部署结论。其原因更可能来自当前统一替换框架与原始 NoMaD 结构之间的归纳偏置差异、冻结策略偏保守、以及距离预测头与编码器耦合导致的适配不足，而不能简单归因于"大模型编码器更差"。
+本次补充实验使用 \texttt{deployment/model\_weights} 下的四个训练权重：\texttt{nomad\_efficientb0.pth}、\texttt{nomad\_dinvo2\_small.pth}、\texttt{nomad\_convnext\_tiny.pth} 和 \texttt{nomad\_resnet50.pth}。实验脚本为 \texttt{scripts/encoder\_comparison\_experiment.py}，结果保存于 \texttt{results/day4/20260421\_151228\_encoder\_comparison\_experiment}。表~\ref{tab:encoder-results} 汇总了四种编码器在相同离线 case、相同 DDPM-10 采样设置下的代理指标。
+
+离线结果表明，四种编码器在不同指标上各有侧重。EfficientNet-B0 的 smoothness 最低，说明其生成轨迹最平滑；ResNet-50 的 diversity 和 forward progress 最高，说明其候选轨迹更分散、前进性更强；DINOv2-Small 与 ConvNeXt-Tiny 的指标处于中间区间。由于这些指标仍是离线代理量，不能直接等价为闭环成功率，因此本文在第四章进一步补充 MuJoCo 闭环验证，而不是仅凭表~\ref{tab:encoder-results} 给出最终部署推荐。
 
 具体来说，冻结策略的影响值得深入讨论。在第一阶段的统一配置中，所有编码器均采用部分冻结策略（冻结浅层、微调深层），这对于在 ImageNet 上预训练的 CNN 编码器通常是合理的，因为浅层特征（边缘、纹理）具有良好的跨任务迁移性。然而，对于 DINOv2 这样的 ViT 编码器，浅层的 patch embedding 和早期 Transformer block 可能编码了与 CNN 浅层不同类型的信息，统一的冻结层数划分可能不是最优的。此外，DINOv2 的自监督预训练目标（DINO loss + iBOT loss）与导航任务的距离预测目标之间的 domain gap 也可能需要更多的微调轮数来弥合。
 
-从定量数据来看，DINOv2-Small 在 Diversity 指标上达到 0.5417，远高于 EfficientNet-B0 baseline 的 0.2609，这说明 ViT 架构的全局注意力机制确实为轨迹采样带来了更丰富的多模态表达。Forward Progress 从 7.353 提升至 8.777，表明 DINOv2 的特征更有利于生成前进性强的轨迹。然而，Smoothness 的差异较小（0.1215 vs 0.1276），说明轨迹平滑性主要由扩散策略头决定，而非视觉编码器。
+从定量数据来看，ResNet-50 在 diversity 指标上达到 0.9824，高于 EfficientNet-B0 的 0.5818；forward progress 也从 7.356 提升至 7.980。但 EfficientNet-B0 的 smoothness 为 0.0725，明显低于其他编码器，说明原始 CNN baseline 仍具有更稳定的局部轨迹生成特性。由此可见，视觉编码器升级不是单一指标最大化问题，而需要在多样性、前进性、平滑性和闭环执行稳定性之间折中。
 
-因此，本文对视觉编码器实验的表述采用更谨慎的口径：第一阶段工作已经建立了统一比较框架，并识别出 DINOv2-Small 等候选方案；但"最终部署最优编码器"的结论仍需第二阶段面向部署的训练与闭环验证完成后才能正式写出。
+因此，本文对视觉编码器实验采用更谨慎的口径：四个训练权重已经完成统一离线统计，并进入 MuJoCo 闭环对比；但"最终部署最优编码器"仍需结合真实平台时延、相机分布偏移和真机安全约束共同判断。
 
 \begin{table}[htbp]
     \centering
-    \caption{视觉编码器升级实验结果占位}
+    \caption{视觉编码器升级离线统计结果}
     \label{tab:encoder-results}
     \begin{tabular}{lcccc}
         \toprule
         编码器 & Latency/ms & Diversity & Forward Progress & Smoothness \\
         \midrule
-        EfficientNet-B0 (baseline) & 47.93 & 0.2609 & 7.353 & 0.1276 \\
-        DINOv2-Small & 42.97 & 0.5417 & 8.777 & 0.1215 \\
+        EfficientNet-B0 & 35.54 & 0.5818 & 7.356 & 0.0725 \\
+        DINOv2-Small & 35.88 & 0.3182 & 7.097 & 0.1158 \\
+        ConvNeXt-Tiny & 37.10 & 0.3017 & 7.014 & 0.1322 \\
+        ResNet-50 & 34.81 & 0.9824 & 7.980 & 0.0980 \\
         \bottomrule
     \end{tabular}
 \end{table}
 
 \begin{figure}[htbp]
     \centering
-    \fbox{\rule{0pt}{52mm}\rule{0.84\linewidth}{0pt}}
-    \caption{图位占位：视觉编码器升级实验结果图（待补）}
-    \label{fig:algo-encoder-placeholder}
+    \includegraphics[width=0.84\linewidth]{encoder_comparison_20260421.png}
+    \caption{四种视觉编码器离线统计对比}
+    \label{fig:algo-encoder-comparison}
 \end{figure}
 
 \section{联合结论与进入闭环的候选方案}
@@ -480,7 +503,7 @@ ConvNeXt-Tiny\cite{convnext2022} 作为"现代化 CNN"的代表被纳入实验�
     \end{tabular}
 \end{table}
 
-基于上述结果，可得到三点阶段性结论。第一，在不改动训练结果的前提下，\texttt{ddim\_2} 是当前最值得进入闭环验证的加速配置。第二，CFG 的有效范围有限，更适合作为可调参数而不是默认固定设置。第三，视觉编码器升级工作已经完成第一阶段筛选框架搭建，但最终部署结论必须通过第二阶段训练和闭环验证给出。
+基于上述结果，可得到三点阶段性结论。第一，在不改动训练结果的前提下，\texttt{ddim\_2} 是当前最值得进入闭环验证的加速配置。第二，CFG 的有效范围有限，更适合作为可调参数而不是默认固定设置。第三，TTS-8/16 能够在可接受时延内提升候选轨迹质量，适合作为 DDIM 加速后的预算再分配方式。第四，视觉编码器升级已完成四个训练权重的离线统计，但最终部署选择仍需结合闭环验证与真机条件共同判断。
 
 值得注意的是，联合配置的 Top-5 中有三个为 $w=0.0$（即不开启 CFG），这进一步印证了 CFG 在当前任务中的边际收益有限。\texttt{ddim3\_w1.0} 和 \texttt{ddim3\_w0.5} 虽然进入了 Top-5，但其时延（约 27\,ms）已接近 \texttt{ddim5\_w0.0}（24.63\,ms），且综合评分并未显著超越后者，说明 CFG 引入的质量提升被时延代价部分抵消。
 
@@ -492,4 +515,4 @@ ConvNeXt-Tiny\cite{convnext2022} 作为"现代化 CNN"的代表被纳入实验�
 
 其中，DDIM 实验从 ODE 求解的理论角度解释了加速机制与失效边界，确认 \texttt{ddim\_2} 为最优加速配置；CFG 实验通过 score function 修改的理论分析揭示了时延翻倍的根本原因，并建立了引导尺度选择准则；TTS 实验设计了基于多目标评分的候选搜索框架，分析了计算预算分配策略；视觉编码器实验通过特征维度对齐和两阶段设计保证了对比公平性。
 
-当前结论表明，NoMaD 的部署潜力主要取决于推理层优化与视觉条件建模的共同效果，而不是单个指标的局部提升。本章所有离线实验基于 24 个统一测试 case，并通过 CI95 报告均值稳定性；联合实验进一步验证了 DDIM、CFG 与 TTS 三者之间的层级组合关系。下一章将在此基础上把这些候选方案接入统一闭环系统，并通过 MuJoCo 仿真验证它们在 Lite3 平台上的系统级可行性。
+当前结论表明，NoMaD 的部署潜力主要取决于推理层优化与视觉条件建模的共同效果，而不是单个指标的局部提升。本章离线实验均使用统一 case 构造方式，其中 DDIM、CFG 与编码器实验使用 24 个测试 case，TTS 补充实验使用 12 个测试 case 并报告均值与 CI95；联合实验进一步验证了 DDIM、CFG 与 TTS 三者之间的层级组合关系。下一章将在此基础上把这些候选方案接入统一闭环系统，并通过 MuJoCo 仿真验证它们在 Lite3 平台上的系统级可行性。

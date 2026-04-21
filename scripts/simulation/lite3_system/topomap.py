@@ -432,7 +432,19 @@ def build_mission_queue(args, platform, session: "NavigationSession | None" = No
     if not missions and getattr(args, "mode", "") == "navigate":
         topo_path = resolve_navigation_topomap_dir(args, expected_domain, legacy)
         topomap = legacy.load_topomap_from_dir(str(topo_path))
-        missions.append(MissionTarget(label=topo_path.name, topomap=topomap, goal_view=topomap[-1]))
+        goal_position = None
+        if expected_domain == "mujoco":
+            scene_config = legacy.SCENE_MAPS.get(getattr(args, "map", ""), legacy.SCENE_CONFIG)
+            goal_position = np.asarray(scene_config["goal_pos"], dtype=float)
+            platform.set_scene_goal(goal_position)
+        missions.append(
+            MissionTarget(
+                label=topo_path.name,
+                topomap=topomap,
+                goal_view=topomap[-1],
+                goal_position=goal_position,
+            )
+        )
 
     if not missions:
         return None

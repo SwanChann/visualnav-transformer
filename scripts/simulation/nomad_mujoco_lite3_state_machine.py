@@ -2,8 +2,12 @@
 from __future__ import annotations
 
 import argparse
+import random
 import sys
 from pathlib import Path
+
+import numpy as np
+import torch
 
 CURRENT_DIR = Path(__file__).resolve().parent
 SCRIPTS_ROOT = CURRENT_DIR.parent
@@ -57,6 +61,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--stand-steps", type=int, default=20, help="How many control steps the stand task should hold position.")
     parser.add_argument("--radius", type=int, default=4)
     parser.add_argument("--close-threshold", type=float, default=3.0)
+    parser.add_argument("--yaw-sign", type=float, choices=[-1.0, 1.0], default=1.0)
     parser.add_argument("--scheduler", choices=["ddpm", "ddim"], default="ddpm")
     parser.add_argument("--ddim-steps", type=int, default=10)
     parser.add_argument(
@@ -109,6 +114,14 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--random-goal-min-dist", type=float, default=2.0, help="Minimum distance from current pose to sampled MuJoCo goal.")
     parser.add_argument("--random-goal-min-separation", type=float, default=1.0, help="Minimum separation between sampled MuJoCo goal points.")
     parser.add_argument("--goal-seed", type=int, default=0, help="Deterministic seed for same-map random goal selection.")
+    parser.add_argument("--seed", type=int, default=0, help="Random seed for reproducible diffusion sampling.")
+    parser.add_argument(
+        "--no-mujoco-route-stabilizer",
+        dest="mujoco_route_stabilizer",
+        action="store_false",
+        help="Disable the MuJoCo-only reference-path stabilizer used to keep the quadruped inside the simulated corridor.",
+    )
+    parser.set_defaults(mujoco_route_stabilizer=True)
     return parser
 
 
@@ -117,6 +130,11 @@ def main() -> int:
     args = parser.parse_args()
     from lite3_system.system import Lite3System
 
+    random.seed(args.seed)
+    np.random.seed(args.seed)
+    torch.manual_seed(args.seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(args.seed)
     system = Lite3System(args)
     return system.run()
 

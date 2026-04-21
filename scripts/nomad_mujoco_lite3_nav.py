@@ -994,7 +994,7 @@ def diffusion_inference(
     return np.cumsum(ndeltas, axis=1)
 
 
-def pd_controller(waypoint, dt=1.0 / NOMAD_HZ, max_v=MAX_V, max_w=MAX_W):
+def pd_controller(waypoint, dt=1.0 / NOMAD_HZ, max_v=MAX_V, max_w=MAX_W, yaw_sign=1.0):
     """路径点 (dx, dy) → 速度指令 (v, ω)。"""
     dx, dy = float(waypoint[0]), float(waypoint[1])
     EPS = 1e-8
@@ -1002,10 +1002,10 @@ def pd_controller(waypoint, dt=1.0 / NOMAD_HZ, max_v=MAX_V, max_w=MAX_W):
         return 0.0, 0.0
     elif abs(dx) < EPS:
         v = 0.0
-        w = np.sign(dy) * np.pi / (2 * dt)
+        w = yaw_sign * np.sign(dy) * np.pi / (2 * dt)
     else:
         v = dx / dt
-        w = np.arctan2(dy, dx) / dt
+        w = yaw_sign * np.arctan2(dy, dx) / dt
     v = float(np.clip(v, 0, max_v))
     w = float(np.clip(w, -max_w, max_w))
     return v, w
@@ -1472,7 +1472,7 @@ def run_explore(args):
         chosen_wp = mean_action[wp_idx]
 
         # 4. PD 速度控制器 → (v, ω)
-        v, w = pd_controller(chosen_wp)
+        v, w = pd_controller(chosen_wp, yaw_sign=getattr(args, "yaw_sign", 1.0))
 
         # 5. 设置命令 → 执行一个 NoMaD 周期的 RL 策略步
         env.set_command(v, 0.0, w)
@@ -1732,7 +1732,7 @@ def run_navigate(args):
         wp_idx = min(args.waypoint, LEN_TRAJ_PRED - 1)
         chosen_wp = mean_action[wp_idx]
 
-        v, w = pd_controller(chosen_wp)
+        v, w = pd_controller(chosen_wp, yaw_sign=getattr(args, "yaw_sign", 1.0))
 
         env.set_command(v, 0.0, w)
         env.step_nomad_period()
@@ -1856,6 +1856,13 @@ def main():
                         help="最大 NoMaD 步数 (默认 200 ≈ 50s 仿真时间)")
     parser.add_argument("--waypoint", type=int, default=2,
                         help="选择扩散轨迹第几个路径点 (默认 2, 范围 0~7)")
+    parser.add_argument(
+        "--yaw-sign",
+        type=float,
+        choices=[-1.0, 1.0],
+        default=1.0,
+        help="Yaw command sign for waypoint-to-velocity mapping; keep 1.0 unless validating simulator coordinates.",
+    )
     parser.add_argument(
         "--standup-time", type=float, default=3.0, help="站立预热时间 (s)"
     )

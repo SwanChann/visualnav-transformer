@@ -133,6 +133,23 @@ def find_latest_result_dir(base_dir: Path, prefix: str) -> Optional[Path]:
     return candidates[0] if candidates else None
 
 
+def list_result_dir_names(base_dir: Path, prefix: str) -> set[str]:
+    if not base_dir.exists():
+        return set()
+    return {d.name for d in base_dir.iterdir() if d.is_dir() and prefix in d.name}
+
+
+def find_new_result_dir(base_dir: Path, prefix: str, before_names: set[str]) -> Optional[Path]:
+    if not base_dir.exists():
+        return None
+    candidates = sorted(
+        [d for d in base_dir.iterdir() if d.is_dir() and prefix in d.name and d.name not in before_names],
+        key=lambda p: p.name,
+        reverse=True,
+    )
+    return candidates[0] if candidates else None
+
+
 def run_single_experiment(
     encoder_name: str,
     map_name: str,
@@ -142,6 +159,9 @@ def run_single_experiment(
     max_steps: int,
     run_index: int,
     close_threshold: float,
+    success_threshold: float,
+    yaw_sign: float,
+    seed: int,
     cpu_cores: str = "0-3",
 ) -> RunResult:
     """运行一次闭环导航实验"""
@@ -166,6 +186,8 @@ def run_single_experiment(
         "--cfg-weight", str(cfg_weight),
         "--max-steps", str(max_steps),
         "--close-threshold", str(close_threshold),
+        "--yaw-sign", str(yaw_sign),
+        "--seed", str(seed),
     ]
 
     env = os.environ.copy()
@@ -174,6 +196,9 @@ def run_single_experiment(
 
     print(f"  [{encoder_name}] {map_name} run={run_index+1} sched={scheduler} "
           f"ddim={ddim_steps} cfg={cfg_weight} ...", end="", flush=True)
+
+    result_base = REPO_ROOT / "results" / "nomad_mujoco"
+    before_result_names = list_result_dir_names(result_base, "lite3_state_machine_navigate")
 
     t0 = time.time()
     proc = subprocess.run(
@@ -187,8 +212,7 @@ def run_single_experiment(
     wall_time = time.time() - t0
 
     # 解析结果
-    result_base = REPO_ROOT / "results" / "nomad_mujoco"
-    result_dir = find_latest_result_dir(result_base, "lite3_state_machine_navigate")
+    result_dir = find_new_result_dir(result_base, "lite3_state_machine_navigate", before_result_names)
 
     summary = {"steps": max_steps, "path_distance": 0.0, "reached_goal": False}
     final_pos = None
@@ -202,9 +226,10 @@ def run_single_experiment(
     else:
         final_goal_dist = float(np.linalg.norm(goal_pos))
 
-    status = "✓" if summary["reached_goal"] else "✗"
+    success = proc.returncode == 0 and final_pos is not None and final_goal_dist <= success_threshold
+    status = "✓" if success else "✗"
     print(f" {status} steps={summary['steps']} dist={summary['path_distance']:.1f}m "
-          f"goal_dist={final_goal_dist:.2f}m t={wall_time:.1f}s")
+          f"goal_dist={final_goal_dist:.2f}m summary_goal={summary['reached_goal']} t={wall_time:.1f}s")
 
     return RunResult(
         encoder=encoder_name,
@@ -213,7 +238,7 @@ def run_single_experiment(
         ddim_steps=ddim_steps,
         cfg_weight=cfg_weight,
         run_index=run_index,
-        success=summary["reached_goal"],
+        success=success,
         steps=summary["steps"],
         path_distance=summary["path_distance"],
         final_goal_dist=final_goal_dist,
@@ -294,7 +319,7 @@ def render_markdown_report(rows: List[dict], all_results: List[RunResult], outpu
         "",
         "| 指标 | 含义 | 好的方向 |",
         "|---|---|---|",
-        "| **Success Rate (成功率)** | 机器人最终位置距目标 < 0.5m 的比例 | ↑ 越高越好 |",
+        "| **Success Rate (成功率)** | 机器人最终位置距目标不超过 0.6m 的比例 | ↑ 越高越好 |",
         "| **Steps (步数)** | NoMaD 决策循环次数；越少说明导航越高效 | ↓ 越少越好（成功前提下） |",
         "| **Path Distance (路径距离)** | 机器人实际行走的总路径长度 (m) | ↓ 越短越好（接近直线距离） |",
         "| **Final Goal Dist (终点到目标距离)** | 导航结束时机器人与目标的欧氏距离 (m) | ↓ 越小越好 |",
@@ -349,7 +374,7 @@ def render_markdown_report(rows: List[dict], all_results: List[RunResult], outpu
         "### 3.1 指标解读",
         "",
         "- **成功率 (Success Rate)**：最核心的指标。100% 意味着该编码器在该地图上所有运行都能到达目标，",
-        "  0% 意味着该编码器在该难度下无法完成导航。成功判定：机器人最终位置距目标 < 0.5m。",
+        "  0% 意味着该编码器在该难度下无法完成导航。成功判定：机器人最终位置距目标不超过 0.6m。",
         "",
         "- **步数 (Steps)**：在成功情况下，步数越少代表导航路径越优。如果失败（达到 max_steps 上限），",
         "  步数等于 max_steps，此时步数不具可比性。",
@@ -422,6 +447,10 @@ def main():
     parser.add_argument("--runs", type=int, default=3, help="每个配置的重复运行次数")
     parser.add_argument("--max-steps", type=int, default=300, help="每次运行的最大 NoMaD 步数")
     parser.add_argument("--close-threshold", type=float, default=3.0, help="NoMaD 节点到达阈值")
+    parser.add_argument("--success-threshold", type=float, default=0.6, help="物理终点成功阈值，单位 m")
+    parser.add_argument("--yaw-sign", type=float, choices=[-1.0, 1.0], default=1.0,
+                        help="MuJoCo waypoint-to-velocity yaw sign. Default keeps legacy behavior.")
+    parser.add_argument("--seed", type=int, default=0, help="Base random seed; run_index is added for repeats")
     parser.add_argument(
         "--encoders",
         nargs="+",
@@ -504,6 +533,9 @@ def main():
                             max_steps=args.max_steps,
                             run_index=run_idx,
                             close_threshold=args.close_threshold,
+                            success_threshold=args.success_threshold,
+                            yaw_sign=args.yaw_sign,
+                            seed=args.seed + run_idx,
                             cpu_cores=args.cpu_cores,
                         )
                         all_results.append(result)

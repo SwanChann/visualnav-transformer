@@ -9,6 +9,9 @@ train/gnm_dataset/*
 *_test.yaml
 
 *.png
+!SJTUThesis/figures/*.png
+!results/day4/20260421_140601_tts_stat_experiment/*.png
+!results/day4/20260421_151228_encoder_comparison_experiment/*.png
 *.jpg
 *.pth
 *.mp4

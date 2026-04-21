@@ -212,11 +212,12 @@ class Lite3HighLevelNoMaD:
 
 
 class Lite3MiddleLayerPD:
-    def __init__(self) -> None:
+    def __init__(self, yaw_sign: float = 1.0) -> None:
         self.legacy = load_legacy()
+        self.yaw_sign = float(yaw_sign)
 
     def waypoint_to_command(self, waypoint: np.ndarray) -> MotionCommand:
-        linear_x, yaw_rate = self.legacy.pd_controller(waypoint)
+        linear_x, yaw_rate = self.legacy.pd_controller(waypoint, yaw_sign=self.yaw_sign)
         return MotionCommand(linear_x=float(linear_x), linear_y=0.0, yaw_rate=float(yaw_rate))
 
 
