@@ -507,9 +507,61 @@ ConvNeXt-Tiny\cite{convnext2022} 作为"现代化 CNN"的代表被纳入实验�
 
 基于上述结果，可得到四点阶段性结论。第一，在不改动训练结果的前提下，\texttt{ddim\_2} 是当前最值得进入闭环验证的加速配置。第二，CFG 的有效范围有限，更适合作为可调参数而不是默认固定设置。第三，TTS 的收益可进一步分解为"评分筛选"（在固有 8 条候选上做排序与 top-$k$ 选择，几乎零时延代价）与"候选池扩容"（$K>8$ 时多批次采样，时延线性增长且边际收益快速衰减）两部分，TTS-8 以筛选为主、代价可忽略，TTS-16 追加小规模扩容取得有限增益，TTS-32 则被扩容代价吞噬，因此部署上推荐以 TTS-8 为默认档位、TTS-16 作为时延预算充足时的可选增强。第四，视觉编码器升级已完成四个训练权重的离线统计，但最终部署选择仍需结合闭环验证与真机条件共同判断。
 
-值得注意的是，联合配置的 Top-5 中有三个为 $w=0.0$（即不开启 CFG），这进一步印证了 CFG 在当前任务中的边际收益有限。\texttt{ddim3\_w1.0} 和 \texttt{ddim3\_w0.5} 虽然进入了 Top-5，但其时延（约 27\,ms）已接近 \texttt{ddim5\_w0.0}（24.63\,ms），且综合评分并未显著超越后者，说明 CFG 引入的质量提升被时延代价部分抵消。
+\subsection{优化方法之间的关系}
 
-从推理层组合关系看，DDIM、CFG 与 TTS 可以统一收口在同一推理模块内，但不能简单看作并列开关。更合理的组合方式是：先由 DDIM 决定采样调度，再由 CFG 决定条件引导强度，最后由 TTS 在候选轨迹层进行搜索与筛选。这种层级关系可以用以下伪代码描述：DDIM 控制每条轨迹的生成速度，CFG 控制每条轨迹的生成质量偏好，TTS 在多条轨迹之间做最终决策。因此，本文建议后续闭环优先验证的主方案为"DDIM-2 + 可选 CFG + 可配置 TTS"，并以此作为第四章系统与仿真验证的输入。
+从算法结构看，四类优化并不处在同一层级。视觉编码器升级位于视觉条件层，改变的是历史观察和目标图像进入模型后的特征表达；DDIM 与 CFG 位于扩散采样层，改变的是给定视觉条件后轨迹样本的生成方式；TTS 位于候选选择层，改变的是生成多条候选轨迹之后如何筛选最终执行轨迹。表~\ref{tab:optimization-role-summary} 总结了各方法的作用位置与实验含义。
+
+\begin{table}[htbp]
+    \centering
+    \small
+    \caption{算法优化方法的作用层级与当前结论}
+    \label{tab:optimization-role-summary}
+    \begin{tabular}{p{0.18\linewidth}p{0.21\linewidth}p{0.16\linewidth}p{0.34\linewidth}}
+        \toprule
+        优化方法 & 作用层级 & 是否改变训练 & 当前结论 \\
+        \midrule
+        DDIM & 扩散采样调度 & 否 & 有效，\texttt{DDIM-2} 推荐默认使用 \\
+        CFG & 条件引导强度 & 否 & 有边际收益，但默认不开启更稳妥 \\
+        TTS & 候选轨迹筛选 & 否 & \texttt{TTS-8} 有效，\texttt{TTS-16} 可选 \\
+        视觉编码器升级 & 视觉条件建模 & 是 & 已验证可替换，最终部署需结合真机 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+因此，DDIM、CFG 与 TTS 更适合被写成统一推理层内部的层级组合：先由 DDIM 决定每条候选轨迹的去噪步数与生成速度，再由 CFG 决定采样过程中条件信号的放大程度，最后由 TTS 在候选轨迹集合上进行评分和选择。三者并不是简单并列相加，而是在"生成单条轨迹--增强条件响应--筛选候选轨迹"的流水线上依次发挥作用。
+
+视觉编码器升级与前三者既相对独立，又存在间接联系。独立性体现在工程接口上：编码器由 \texttt{policy\_config} 与 \texttt{policy\_checkpoint} 决定，而 DDIM、CFG、TTS 由推理参数决定，只要模型保持 NoMaD 兼容输出，下游状态机和平台接口无需修改。联系则体现在条件分布上：更换编码器会改变观察图像和目标图像的 token 表达，进而同时影响距离预测头和扩散策略头，因此也可能改变 DDIM 步数、CFG 权重和 TTS 评分的最优组合。换言之，前三个优化是在既定视觉条件空间内调整推理过程，视觉编码器升级则是在源头上改变条件空间。
+
+\subsection{消融验证与待补实验}
+
+从已有结果看，本章已经完成了主要算法变量的单因素消融和部分联合消融。DDIM 实验固定模型与数据 case，仅改变采样步数，验证了 \texttt{DDIM-2} 的速度收益与 \texttt{DDIM-1} 的失效边界；CFG 实验固定模型，仅改变引导强度，说明其质量收益不足以抵消默认开启时的时延代价；TTS 实验固定 DDIM 与 CFG 条件，比较不同候选预算，说明主要收益来自 TTS-8 的低成本筛选；视觉编码器实验在统一训练配置下比较四个训练权重，证明了编码器替换框架可训练、可评估、可接入闭环。
+
+\begin{table}[htbp]
+    \centering
+    \small
+    \caption{已完成的算法层消融与证据状态}
+    \label{tab:ablation-status}
+    \begin{tabular}{p{0.18\linewidth}p{0.25\linewidth}p{0.33\linewidth}p{0.13\linewidth}}
+        \toprule
+        消融对象 & 控制变量 & 已有结论 & 证据状态 \\
+        \midrule
+        DDIM 步数 & 模型、case、CFG、TTS 固定 & \texttt{DDIM-2} 有效，\texttt{DDIM-1} 失效 & 已完成 \\
+        CFG 权重 & 模型与 case 固定 & 有边际收益但时延代价大 & 已完成 \\
+        TTS budget & \texttt{DDIM-2}, $w=0$ 固定 & \texttt{TTS-8/16} 有效，\texttt{TTS-32} 边际下降 & 已完成 \\
+        DDIM $\times$ CFG & 同一离线 case & \texttt{ddim2\_w0.0} 综合最优 & 已完成 \\
+        DDIM $\times$ CFG $\times$ TTS & 同一离线 case & Top-5 集中在 \texttt{DDIM-2/3} 与 \texttt{TTS-8/16} & 已完成 \\
+        视觉编码器 & 训练配置与评估脚本统一 & 四个权重均可接入闭环 & 已完成但需真机复核 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+目前仍值得补充的是跨视觉编码器的联合消融，即在不同编码器权重下重新扫描 DDIM、CFG 和 TTS 的组合。这一实验的必要性来自前文所述的条件分布变化：如果视觉编码器改变了候选轨迹的多样性和平滑性，那么 TTS 的评分选择、CFG 的目标引导强度和 DDIM 的少步近似误差都可能随之改变。受当前实验时间限制，本文已完成四编码器离线对比和 MuJoCo 闭环接入验证，但尚未完成完整的"编码器 $\times$ DDIM/CFG/TTS"联合矩阵；该项应进入后续待补实验清单。若论文定稿前只能补一类实验，应优先补真机最终配置对照，即比较原始 DDPM-10、\texttt{DDIM-2} 和 \texttt{DDIM-2+TTS-8} 在 Lite3 真机上的成功率与时延。
+
+\subsection{最终算法框架确定}
+
+综合离线统计、联合实验和第四章 MuJoCo 闭环结果，本文将当前默认算法框架确定为：EfficientNet-B0 视觉编码器、\texttt{DDIM-2} 采样、默认 \texttt{CFG=0}、\texttt{TTS-8} 候选筛选。该方案的依据是：EfficientNet-B0 在闭环扫描中成功率为 9/9 且时延最低；\texttt{DDIM-2} 提供主要推理加速；\texttt{CFG=0} 避免额外条件/无条件双前向开销；\texttt{TTS-8} 在不扩展采样批次数的情况下利用评分筛选获得主要收益。
+
+对于不同部署需求，可以进一步给出三个配置层级。低时延默认方案为 EfficientNet-B0 视觉编码器、\texttt{DDIM-2}、\texttt{CFG=0} 与 \texttt{TTS-8}；保守稳定方案将 DDIM 步数提高到 3 或 5，并保持 \texttt{CFG=0} 与 \texttt{TTS-8}；复杂场景增强方案保留 \texttt{CFG=0.5/1.0} 或 \texttt{TTS-16} 作为可调项，但不作为默认固定配置。视觉编码器升级在当前论文中应被定位为"已建立可替换训练与评测框架，并发现潜在候选"，而不是直接宣称 DINOv2 或 ResNet-50 已经全面优于原始 EfficientNet-B0。
 
 \section{本章小结}
 

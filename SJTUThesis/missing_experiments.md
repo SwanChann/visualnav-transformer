@@ -18,10 +18,15 @@
 | TTS 单因素、DDIM×TTS、CFG×TTS、DDIM×CFG×TTS | §3.8 tab:tts-results / tab:tts-joint-top | ✅ `results/day4/20260421_140601_tts_stat_experiment` |
 | 四编码器离线对比（EfficientNet-B0 / DINOv2-Small / ConvNeXt-Tiny / ResNet-50） | §3.8 tab:encoder-results | ✅ `results/day4/20260421_151228_encoder_comparison_experiment` |
 | 视觉编码器第二阶段训练结果接入 | §3.8 末段 / 结论 §6.3 | ✅ 已使用 `deployment/model_weights/nomad_*.pth` 四个训练权重进行统计与闭环验证 |
+| 优化关系、消融状态与最终方案确定 | §3.9 tab:optimization-role-summary / tab:ablation-status | ✅ 已补充“EfficientNet-B0 + DDIM-2 + CFG=0 + TTS-8”为当前默认方案 |
 
 ### 1.2 待补
 | 实验 | 章节 | 优先级 | 说明 |
 |---|---|---|---|
+| **真机最终配置对照**（DDPM-10 vs DDIM-2 vs DDIM-2+TTS-8） | §5.6 / 结论 | 高 | 验证第三章最终算法方案能否迁移到 Lite3 真机，记录成功率、时延、轨迹长度和失败模式 |
+| 编码器 × DDIM 联合消融 | §3.9 / §4.5 | 中 | 4 个编码器分别扫描 DDIM-2/3/5，验证“DDIM-2 默认最优”是否受视觉条件分布影响 |
+| 编码器 × TTS 联合消融 | §3.9 / §4.5 | 中 | 4 个编码器分别测试 TTS-0/8/16，验证 TTS 筛选收益是否依赖候选轨迹质量 |
+| 编码器 × CFG 小规模联合消融 | §3.9 / §4.5 | 低 | EfficientNet-B0 / ResNet-50 分别测试 CFG-0/1/2，验证目标引导是否放大编码器差异 |
 | Diversity 指标扩列 | §3.6 tab:ddim-results | 低 | 当前 DDIM 表缺 Diversity 列，可选补充 |
 
 ---
