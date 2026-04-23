@@ -234,9 +234,9 @@ ls scripts/configs/vision_encoder/nomad_encoder_efficientnet_b0.yaml
 mkdir -p deployment/topomaps/images/real_hallway
 ```
 
-推荐直接用 Orin 相机采集，保证 topomap 图像和部署时相机视角、畸变、曝光尽量一致。当前 `capture_real_topomap.py` 会检查导航主机是否已经处于 `keyboard` 模式，确保采集时机器狗由导航主机接管、可以用键盘移动。
+推荐直接用 Orin 相机采集，保证 topomap 图像和部署时相机视角、畸变、曝光尽量一致。`capture_real_topomap.py` 只负责拍摄与写入 topomap，不再检测导航主机是否处于 `keyboard` 模式。
 
-采集前先打开一个终端启动导航主机，并在交互提示符中输入 `keyboard`。由于拍摄脚本会直接占用 Orin 相机，采集 topomap 时建议主机使用 `--camera off`：
+如果希望采集时用导航主机的 `keyboard` 模式移动机器狗，可以先打开一个终端启动导航主机，并在交互提示符中输入 `keyboard`。由于拍摄脚本会直接占用 Orin 相机，采集 topomap 时建议主机使用 `--camera off`，避免两个进程抢同一个相机：
 
 ```bash
 python scripts/deployment/nomad_navigation_host.py \
@@ -1182,8 +1182,8 @@ python scripts/deployment/orin_standalone_test.py \
   --ddim-steps 5
 
 # 5. 采集真实 topomap
-# 先在另一个终端启动交互式导航主机，使用 --camera off，并输入 keyboard；
-# capture_real_topomap.py 会检查 keyboard heartbeat，确认主机仍在键盘控制模式。
+# 如果要边键盘控制机器狗边拍摄，先在另一个终端启动交互式导航主机，
+# 使用 --camera off，并输入 keyboard，避免与拍摄脚本抢相机。
 python scripts/deployment/capture_real_topomap.py \
   --output-dir deployment/topomaps/images/real_hallway \
   --map-name real_hallway \

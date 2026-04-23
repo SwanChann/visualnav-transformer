@@ -105,6 +105,9 @@ class NavigationPlatformBase:
     def prepare_for_twist_control(self) -> None:
         return None
 
+    def release_manual_control(self) -> None:
+        return None
+
     def close(self) -> None:
         return None
 
@@ -408,6 +411,11 @@ class ExternalBridgePlatform(NavigationPlatformBase):
 
     def prepare_for_twist_control(self) -> None:
         self._call("prepare_for_twist_control", required=False)
+
+    def release_manual_control(self) -> None:
+        self._call("release_manual_control", required=False)
+        if hasattr(self, "_nomad_is_standing"):
+            self._nomad_is_standing = False
 
     def close(self) -> None:
         self._call("close", required=False)

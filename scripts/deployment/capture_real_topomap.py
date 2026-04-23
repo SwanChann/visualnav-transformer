@@ -18,9 +18,6 @@ if str(SCRIPTS_ROOT) not in sys.path:
 from deployment.lite3_real_bridge import OrinCamera
 
 
-DEFAULT_KEYBOARD_HEARTBEAT_FILE = REPO_ROOT / "results" / "deployment" / "navigation_host_keyboard_active.json"
-
-
 def _next_index(output_dir: Path) -> int:
     existing_indices = []
     for image_path in output_dir.glob("*.png"):
@@ -31,49 +28,7 @@ def _next_index(output_dir: Path) -> int:
     return max(existing_indices, default=-1) + 1
 
 
-def _resolve_path(path_value: str | Path) -> Path:
-    path = Path(path_value).expanduser()
-    if not path.is_absolute():
-        path = REPO_ROOT / path
-    return path.resolve()
-
-
-def _assert_navigation_host_keyboard_active(args: argparse.Namespace) -> dict | None:
-    if not args.require_navigation_host:
-        return None
-
-    heartbeat_path = _resolve_path(args.navigation_host_heartbeat_file)
-    if not heartbeat_path.is_file():
-        raise RuntimeError(
-            "Navigation host keyboard heartbeat is missing. Start the host first, enter keyboard mode, "
-            "then run this capture script. Recommended host camera setting: --camera off."
-        )
-
-    try:
-        heartbeat = json.loads(heartbeat_path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError as exc:
-        raise RuntimeError(f"Navigation host heartbeat is not valid JSON: {heartbeat_path}") from exc
-
-    if heartbeat.get("mode") != "keyboard":
-        raise RuntimeError(f"Navigation host is not in keyboard mode: {heartbeat_path}")
-
-    updated_at_epoch = float(heartbeat.get("updated_at_epoch", 0.0))
-    age = time.time() - updated_at_epoch
-    if age > float(args.navigation_host_timeout):
-        raise RuntimeError(
-            f"Navigation host keyboard heartbeat is stale ({age:.1f}s old). "
-            "Make sure the host is still running in keyboard mode."
-        )
-
-    return heartbeat
-
-
-def _write_metadata(
-    output_dir: Path,
-    args: argparse.Namespace,
-    saved_files: list[Path],
-    navigation_host_heartbeat: dict | None,
-) -> None:
+def _write_metadata(output_dir: Path, args: argparse.Namespace, saved_files: list[Path]) -> None:
     metadata = {
         "domain": "real",
         "generated_by": "scripts/deployment/capture_real_topomap.py",
@@ -85,9 +40,6 @@ def _write_metadata(
         "image_height": int(args.camera_height),
         "capture_count": len(saved_files),
         "total_png_count": len(list(output_dir.glob("*.png"))),
-        "navigation_host_required": bool(args.require_navigation_host),
-        "navigation_host_heartbeat_file": str(_resolve_path(args.navigation_host_heartbeat_file)),
-        "navigation_host_heartbeat": navigation_host_heartbeat,
         "note": "Real-world topomap captured by Orin camera. Use this directory with --topomap-dir on the real backend.",
     }
     (output_dir / "topomap_meta.json").write_text(
@@ -113,30 +65,6 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--interval", type=float, default=0.5)
     parser.add_argument("--manual", action="store_true", help="Press Enter before each capture.")
     parser.add_argument("--start-index", type=int, default=None)
-    parser.add_argument(
-        "--require-navigation-host",
-        dest="require_navigation_host",
-        action="store_true",
-        default=True,
-        help="Require the navigation host to be running in keyboard mode while capturing.",
-    )
-    parser.add_argument(
-        "--no-require-navigation-host",
-        dest="require_navigation_host",
-        action="store_false",
-        help="Allow capture without a navigation-host keyboard heartbeat.",
-    )
-    parser.add_argument(
-        "--navigation-host-heartbeat-file",
-        default=str(DEFAULT_KEYBOARD_HEARTBEAT_FILE),
-        help="Heartbeat file written by navigation-host keyboard mode.",
-    )
-    parser.add_argument(
-        "--navigation-host-timeout",
-        type=float,
-        default=3.0,
-        help="Maximum allowed heartbeat age in seconds.",
-    )
     return parser
 
 
@@ -146,7 +74,6 @@ def main() -> int:
     if not output_dir.is_absolute():
         output_dir = REPO_ROOT / output_dir
 
-    navigation_host_heartbeat = _assert_navigation_host_keyboard_active(args)
     output_dir.mkdir(parents=True, exist_ok=True)
     start_index = _next_index(output_dir) if args.start_index is None else int(args.start_index)
     camera = OrinCamera(
@@ -164,12 +91,6 @@ def main() -> int:
     print(f"[TopomapCapture] 输出目录: {output_dir}")
     print(f"[TopomapCapture] 起始编号: {start_index:03d}")
     print("[TopomapCapture] 沿真实路线缓慢移动相机，保持高度和朝向接近机器人第一视角。")
-    if args.require_navigation_host:
-        print(
-            "[TopomapCapture] Navigation host keyboard heartbeat verified. "
-            "Keep the host in keyboard mode while capturing."
-        )
-
     saved_files: list[Path] = []
     try:
         for offset in range(max(int(args.count), 1)):
@@ -180,7 +101,6 @@ def main() -> int:
                 if offset > 0:
                     time.sleep(max(float(args.interval), 0.0))
 
-            navigation_host_heartbeat = _assert_navigation_host_keyboard_active(args)
             image = camera.read()
             image_path = output_dir / f"{image_index:03d}.png"
             image.save(image_path)
@@ -189,7 +109,7 @@ def main() -> int:
     finally:
         camera.close()
 
-    _write_metadata(output_dir, args, saved_files, navigation_host_heartbeat)
+    _write_metadata(output_dir, args, saved_files)
     print(f"[TopomapCapture] 完成: 新增 {len(saved_files)} 张图像")
     print(f"[TopomapCapture] 已写入: {output_dir / 'topomap_meta.json'}")
     print(f"[TopomapCapture] 导航时使用: --topomap-dir {output_dir}")

@@ -128,6 +128,7 @@ class Lite3System:
     def controlled_stop(self) -> None:
         # 中文注释：普通任务结束只发送零速度，不能触发真机软急停。
         self.platform.stop_motion()
+        self.platform.release_manual_control()
 
     def _resolve_keyboard_heartbeat_path(self) -> Path:
         raw_path = getattr(self.args, "keyboard_heartbeat_file", None)
@@ -179,6 +180,7 @@ class Lite3System:
     def exit_keyboard_mode(self) -> None:
         self._restore_terminal_keyboard_mode()
         self.platform.stop_motion()
+        self.platform.release_manual_control()
         self._clear_keyboard_heartbeat()
 
     def _enable_terminal_keyboard_mode(self) -> None:
@@ -259,9 +261,12 @@ class Lite3System:
         max_vy = float(getattr(self.args, "keyboard_max_vy", 0.5))
         max_wz = float(getattr(self.args, "keyboard_max_wz", 1.5))
 
-        if key in ("\x1b", "\x03"):
+        if key == "\x1b":
             print("[Keyboard] ESC pressed; leaving keyboard mode and returning to idle.")
             self.keyboard_exit_requested = True
+            return
+        if key == "\x03":
+            print("[Keyboard] Ctrl+C ignored in keyboard mode; press ESC to return to idle.")
             return
         if key == " ":
             self.keyboard_vx = self.keyboard_vy = self.keyboard_wz = 0.0
@@ -338,6 +343,13 @@ class Lite3System:
             self.platform.stop_motion()
             return "idle"
 
+        if self.platform.is_fallen():
+            self.keyboard_vx = self.keyboard_vy = self.keyboard_wz = 0.0
+            self.platform.stop_motion()
+            print("[Keyboard] Platform reported fallen; motion stopped, staying in keyboard mode until ESC.")
+            time.sleep(float(getattr(self.args, "keyboard_dt", 0.05)))
+            return "keyboard"
+
         command = MotionCommand(self.keyboard_vx, self.keyboard_vy, self.keyboard_wz)
         self.platform.apply_command(command)
         self._write_keyboard_heartbeat()
@@ -345,9 +357,6 @@ class Lite3System:
         self.record_step(position, command)
         self.tick += 1
 
-        failure_state = self._common_failure_check()
-        if failure_state is not None:
-            return failure_state
         time.sleep(float(getattr(self.args, "keyboard_dt", 0.05)))
         return "keyboard"
 
@@ -624,7 +633,7 @@ class Lite3System:
             self.refresh_goal_visualization()
 
         current_name = self.state_name
-        _safeguarded_states = {"estop", "failed", "completed", "recovery"}
+        _safeguarded_states = {"estop", "failed", "completed", "recovery", "keyboard"}
         while current_name not in {"completed", "failed"}:
             # 全局摔倒保护：除了已在 estop/failed/recovery 的状态外，任何状态
             # 检测到 is_fallen 都立刻切 failed，避免 stand/idle 等状态

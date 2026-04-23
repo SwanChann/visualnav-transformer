@@ -1,6 +1,6 @@
 {
   "_intended_backend": "real",
-  "_note": "Lite3 real-robot plan template. Real-robot navigation requires pre-captured topomap directories (see scripts/deployment/capture_real_topomap.py). Capture now expects the navigation host to be running in keyboard mode so the robot is controlled through the host while images are collected. Fill in the mission_topomap list with real topomap dirs under deployment/topomaps/images/. goal_source=random_points/capture_queue are MuJoCo-only and will be rejected on real.",
+  "_note": "Lite3 real-robot plan template. Real-robot navigation requires pre-captured topomap directories (see scripts/deployment/capture_real_topomap.py). If you drive the robot with keyboard mode while collecting images, start the navigation host with camera off so capture_real_topomap.py can own the camera. Fill in the mission_topomap list with real topomap dirs under deployment/topomaps/images/. goal_source=random_points/capture_queue are MuJoCo-only and will be rejected on real.",
   "defaults": {
     "scheduler": "ddim",
     "ddim_steps": 2,

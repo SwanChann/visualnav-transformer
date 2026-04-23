@@ -291,25 +291,24 @@ class Lite3RealBridge:
         """
         total_wait = float(duration) if duration is not None else float(self.standup_wait)
 
-        if self._is_standing:
-            print("[Lite3RealBridge] 已经处于站立状态（bridge 内部标志）")
-            return
-
         # 允许运动主机上报状态稍晚到达
         wait_start = time.time()
-        while self.ctrl.robot_state is None and time.time() - wait_start < 2.0:
-            time.sleep(0.05)
+        already_up = bool(self._is_standing)
+        if already_up:
+            print("[Lite3RealBridge] 已经处于站立状态，补齐自主/移动模式切换")
+        else:
+            while self.ctrl.robot_state is None and time.time() - wait_start < 2.0:
+                time.sleep(0.05)
 
-        state = self.ctrl.robot_state
-        already_up = False
-        if state is not None and hasattr(state, "robot_basic_state"):
-            # 6 = 力控(站立)，5 = 正在起立
-            if state.robot_basic_state in (5, 6):
-                already_up = True
-                print(
-                    f"[Lite3RealBridge] 机器人运动主机上报 basic_state={state.robot_basic_state}，"
-                    "已处于站立/起立态，跳过 stand_up_or_down 切换指令"
-                )
+            state = self.ctrl.robot_state
+            if state is not None and hasattr(state, "robot_basic_state"):
+                # 6 = 力控(站立)，5 = 正在起立
+                if state.robot_basic_state in (5, 6):
+                    already_up = True
+                    print(
+                        f"[Lite3RealBridge] 机器人运动主机上报 basic_state={state.robot_basic_state}，"
+                        "已处于站立/起立态，跳过 stand_up_or_down 切换指令"
+                    )
 
         if not already_up:
             print("[Lite3RealBridge] 机器人处于非站立态，执行起立序列...")
@@ -393,9 +392,16 @@ class Lite3RealBridge:
 
     def stop_motion(self) -> None:
         """温和停止当前 Twist 控制。"""
-        if self._twist_active:
-            self.ctrl.stop_twist_control()
-            self._twist_active = False
+        self.ctrl.stop_twist_control()
+        self._twist_active = False
+        self._last_vx = 0.0
+        self._last_wz = 0.0
+
+    def release_manual_control(self) -> None:
+        """释放自主速度控制，让 Lite3 自带手柄恢复运动控制权。"""
+        self.stop_motion()
+        self.ctrl.set_manual_mode()
+        print("[Lite3RealBridge] 已切回手动模式，自带手柄可接管运动控制")
 
     def get_pose(self):
         """
@@ -503,9 +509,7 @@ class Lite3RealBridge:
     def close(self) -> None:
         """释放所有资源。"""
         print("[Lite3RealBridge] 正在释放资源...")
-        if self._twist_active:
-            self.ctrl.stop_twist_control()
-            self._twist_active = False
+        self.release_manual_control()
         self.ctrl.stop()
         if self.camera is not None:
             self.camera.close()

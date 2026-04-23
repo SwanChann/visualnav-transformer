@@ -378,6 +378,8 @@ class InteractiveNavigationHost:
         """idle 状态：站立并渲染相机"""
         from lite3_system.interfaces import MotionCommand
         platform = self._ensure_platform()
+        if self.host_args.backend == "real":
+            return
         platform.apply_command(MotionCommand(0.0, 0.0, 0.0))
 
     def _build_task_args(self, tokens: list[str]) -> argparse.Namespace:
@@ -580,6 +582,8 @@ class InteractiveNavigationHost:
         print(INTERACTIVE_HELP)
         self._ensure_platform()
         self._ensure_standing()
+        if self.host_args.backend == "real" and self._platform is not None:
+            self._platform.release_manual_control()
 
         # idle 循环：执行 stand 步进，同时轮询 stdin
         print("\n[Host] IDLE — 等待命令 (输入 help 查看帮助):")
