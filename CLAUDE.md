@@ -68,14 +68,16 @@ All deployment scripts run from inside `deployment/src/`:
 ### Experiment Scripts
 
 `scripts/` contains standalone experiments, organized into:
-- `scripts/analysis/` — `offline_inference.py`, `realtime_inference.py`, `check_dataset.py`, `thesis_result_summary.py`
+- `scripts/analysis/` — `offline_inference.py`, `realtime_inference.py`, `check_dataset.py`, `result_collector.py`, `thesis_result_summary.py`
 - `scripts/experiments/` — DDIM acceleration (`ddim_experiment.py`), classifier-free guidance (`cfg_experiment.py`), TTS, gait-shake robustness, encoder comparison, ablations
 - `scripts/models/` — DINOv2 backbone (`nomad_vint_dinov2.py`), backbone suite, encoder weight downloads
 - `scripts/training/` — `train_dinov2.py`, backbone suite training, encoder seed sweep
+- `scripts/shared/` — cross-script inference helpers (`nomad_eval_common.py`, `nomad_inference.py`); import from here rather than duplicating loaders
+- `scripts/tooling/` — repo hygiene helpers (`env_check.py`, `path_audit.py`, `project_paths.py` which is the canonical path-resolution module)
 - `scripts/configs/` — vision encoder and navigation host configs
 - `scripts/deployment/` and `scripts/simulation/` — MuJoCo sim entrypoints (e.g. `nomad_mujoco_lite3_nav.py`, `nomad_mujoco_tron1_nav.py`, `mujoco_encoder_benchmark.py`)
 
-Root-level scripts are kept as legacy-compatible entrypoints; prefer the categorized paths. Install deps via `scripts/requirements.txt`.
+Root-level scripts are kept as legacy-compatible entrypoints; prefer the categorized paths. See `scripts/README.md` for the authoritative inventory. Install deps via `scripts/requirements.txt`.
 
 ### Quadruped Deployment (Lite3)
 

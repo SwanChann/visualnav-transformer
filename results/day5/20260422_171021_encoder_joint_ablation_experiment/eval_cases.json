@@ -1,0 +1,98 @@
+[
+  {
+    "dataset_name": "go_stanford",
+    "suite_name": "short",
+    "traj_name": "no4vcF_86_0",
+    "traj_path": "/home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no4vcF_86_0",
+    "obs_time": 24,
+    "goal_time": 32
+  },
+  {
+    "dataset_name": "go_stanford",
+    "suite_name": "short",
+    "traj_name": "no5vcF_119_0",
+    "traj_path": "/home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no5vcF_119_0",
+    "obs_time": 17,
+    "goal_time": 25
+  },
+  {
+    "dataset_name": "go_stanford",
+    "suite_name": "short",
+    "traj_name": "no5vcF_64_2",
+    "traj_path": "/home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no5vcF_64_2",
+    "obs_time": 12,
+    "goal_time": 20
+  },
+  {
+    "dataset_name": "go_stanford",
+    "suite_name": "short",
+    "traj_name": "sim2hF_0_13",
+    "traj_path": "/home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/sim2hF_0_13",
+    "obs_time": 21,
+    "goal_time": 29
+  },
+  {
+    "dataset_name": "go_stanford",
+    "suite_name": "short",
+    "traj_name": "sim12hF_1_4",
+    "traj_path": "/home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/sim12hF_1_4",
+    "obs_time": 16,
+    "goal_time": 24
+  },
+  {
+    "dataset_name": "go_stanford",
+    "suite_name": "short",
+    "traj_name": "sim2hF_0_11",
+    "traj_path": "/home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/sim2hF_0_11",
+    "obs_time": 18,
+    "goal_time": 26
+  },
+  {
+    "dataset_name": "go_stanford",
+    "suite_name": "medium",
+    "traj_name": "no4vcF_86_0",
+    "traj_path": "/home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no4vcF_86_0",
+    "obs_time": 22,
+    "goal_time": 38
+  },
+  {
+    "dataset_name": "go_stanford",
+    "suite_name": "medium",
+    "traj_name": "no5vcF_119_0",
+    "traj_path": "/home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no5vcF_119_0",
+    "obs_time": 13,
+    "goal_time": 29
+  },
+  {
+    "dataset_name": "go_stanford",
+    "suite_name": "medium",
+    "traj_name": "no5vcF_64_2",
+    "traj_path": "/home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no5vcF_64_2",
+    "obs_time": 6,
+    "goal_time": 22
+  },
+  {
+    "dataset_name": "go_stanford",
+    "suite_name": "medium",
+    "traj_name": "sim2hF_0_13",
+    "traj_path": "/home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/sim2hF_0_13",
+    "obs_time": 19,
+    "goal_time": 35
+  },
+  {
+    "dataset_name": "go_stanford",
+    "suite_name": "medium",
+    "traj_name": "sim12hF_1_4",
+    "traj_path": "/home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/sim12hF_1_4",
+    "obs_time": 12,
+    "goal_time": 28
+  },
+  {
+    "dataset_name": "go_stanford",
+    "suite_name": "medium",
+    "traj_name": "sim2hF_0_11",
+    "traj_path": "/home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/sim2hF_0_11",
+    "obs_time": 12,
+    "goal_time": 28
+  }
+]

@@ -60,23 +60,27 @@ p(\mathbf{A}_t \mid \mathcal{O}_t, I_g) = p(\mathbf{a}_1, \mathbf{a}_2, \ldots, 
 
 \subsection{视觉编码器架构}
 
-NoMaD 默认采用 EfficientNet-B0 作为视觉编码器\cite{efficientnet2019}。EfficientNet-B0 是 EfficientNet 系列的基础模型，通过复合缩放（compound scaling）策略在深度、宽度和分辨率三个维度上进行统一缩放，在 ImageNet 上以约 5.3M 参数量达到了优异的精度-效率平衡。其核心构建块为 MBConv（Mobile Inverted Bottleneck Convolution），采用深度可分离卷积和 Squeeze-and-Excitation 注意力模块。
+NoMaD 默认采用 EfficientNet-B0 作为视觉编码器骨干\cite{efficientnet2019}。EfficientNet-B0 是 EfficientNet 系列的基础模型，通过复合缩放（compound scaling）策略在深度、宽度和分辨率三个维度上进行统一缩放，在 ImageNet 上以约 5.3\,M 参数量达到了优异的精度-效率平衡。其核心构建块为 MBConv（Mobile Inverted Bottleneck Convolution），采用深度可分离卷积和 Squeeze-and-Excitation 注意力模块。
 
-在 NoMaD 中，EfficientNet-B0 接收 $96 \times 96$ 的 RGB 图像作为输入，经过特征提取后输出一个固定维度的特征向量。该特征向量随后被投影为标准化的 token 表示，用于后续的条件拼接。具体而言，每帧观察图像经过编码器后得到特征 $\mathbf{z}_i \in \mathbb{R}^d$，其中 $d$ 为 token 维度。
+原始 NoMaD 实现中，\texttt{NoMaD\_ViNT} 内部实例化了两个 EfficientNet-B0：一个只处理单帧观察（3 通道输入），另一个处理"最后一帧观察 + 目标图像"的 6 通道拼接输入。二者权重独立、架构几乎相同，只在输入卷积的通道数上有差别。这一设计使得目标分支在特征层就完成了当前帧与目标帧的早期融合，但也使得视觉编码器部分的参数量近似等于两个 EfficientNet-B0 之和，再加上一个输出投影层（将 1280 维 backbone 特征压缩到 256 维 token 维度）。
 
-选择 EfficientNet-B0 而非更大的 EfficientNet 变体（如 B3 或 B5）是出于推理效率的考虑。在边缘设备上，视觉编码器的计算开销直接影响整体推理频率，而 B0 的 5.3M 参数量在精度与效率之间提供了合理的折中。
+两个 EfficientNet-B0 接收 $96 \times 96$ 的 RGB 图像作为输入，提取特征后分别输出一个固定维度的视觉表示。该特征向量随后被投影为标准化的 token 表示，用于后续的条件拼接。具体而言，每帧观察图像经过 \texttt{obs\_encoder} 后得到特征 $\mathbf{z}_i \in \mathbb{R}^d$，其中 $d$ 为 token 维度（本文配置下 $d=256$）；目标 token $\mathbf{z}_g$ 由 \texttt{goal\_encoder} 以相同方式得到。
+
+选择 EfficientNet-B0 而非更大的 EfficientNet 变体（如 B3 或 B5）是出于推理效率的考虑。在边缘设备上，视觉编码器的计算开销直接影响整体推理频率，而 B0 的 5.3\,M 参数量在精度与效率之间提供了合理的折中；由于 NoMaD 中需要同时维护两个 EfficientNet-B0 实例，骨干规模的选择对整体部署时延具有放大效应，这进一步佐证了 B0 作为默认选型的合理性。
 
 \subsection{Token 构建与条件拼接}
 
-NoMaD 采用基于 token 序列的条件构建方式。对于 \texttt{context\_size=3} 的配置，模型将当前帧及前两帧共 3 帧历史观察分别通过视觉编码器，得到观察 token 序列 $[\mathbf{z}_{t-2}, \mathbf{z}_{t-1}, \mathbf{z}_t]$。同时，目标图像 $I_g$ 也通过同一编码器得到目标 token $\mathbf{z}_g$。
+NoMaD 的视觉条件编码器 \texttt{NoMaD\_ViNT} 由两个相互独立的 EfficientNet-B0 实例组成：一个为观察编码器 \texttt{obs\_encoder}，输入 3 通道单帧图像，用来独立编码每一个历史观察帧；另一个为目标编码器 \texttt{goal\_encoder}，输入 6 通道图像，其输入是将当前帧（即观察窗口的最后一帧）与目标图像沿通道维度拼接而成。这样设计的原因是目标 token 天然需要同时携带"当前在哪"和"要去哪"两种信息，因此在特征提取层就进行早期融合能减轻后续 self-attention 的负担。因此严格地说，并不存在一个"统一的视觉编码器实例"同时服务于观察和目标——在原始 NoMaD 代码中，二者是两个独立权重的网络。
 
-最终的条件向量通过拼接所有 token 构成：
+对于 \texttt{context\_size=3} 的配置，模型一次前向会产生四个 token：由 \texttt{obs\_encoder} 独立编码的三个观察 token $[\mathbf{z}_{t-2}, \mathbf{z}_{t-1}, \mathbf{z}_t]$，以及由 \texttt{goal\_encoder} 编码的一个融合了当前帧与目标图像的目标 token $\mathbf{z}_g$。四个 token 经位置编码后送入 Transformer self-attention encoder，再对所得序列做掩码加权平均池化，得到固定维度的视觉条件向量：
 \begin{equation}
-\mathbf{c} = \text{Concat}(\mathbf{z}_{t-2}, \mathbf{z}_{t-1}, \mathbf{z}_t, \mathbf{z}_g).
+\mathbf{c} = \text{AvgPool}\bigl(\text{SA}\bigl([\mathbf{z}_{t-2}, \mathbf{z}_{t-1}, \mathbf{z}_t, \mathbf{z}_g]\bigr)\bigr).
 \end{equation}
-这一拼接向量同时作为距离预测头和扩散策略头的输入条件。值得注意的是，所有观察帧和目标帧共享同一个视觉编码器实例，权重完全共享。这种设计简化了训练流程，但也意味着编码器需要同时学习"描述当前场景"和"表征目标位置"两种功能。
+这一条件向量同时作为距离预测头和扩散策略头的输入。
 
-这种权重共享策略的理论基础在于：观察帧和目标帧本质上都是同一环境中不同视角或不同时刻的 RGB 图像，因此低层和中层视觉特征（如边缘、纹理、物体轮廓）具有高度相似性。共享编码器可以避免参数冗余，同时通过后续的条件拼接机制让模型在高层语义上区分"当前在哪"和"要去哪"。然而，这种设计也带来了一个潜在问题：如果训练数据中的目标图像与当前观察在视觉外观上差异较大（如光照变化、季节变化），共享编码器可能难以同时适应两种分布。
+需要特别说明的是，NoMaD 通过目标掩码（goal mask）实现导航模式与探索模式的切换。当 goal mask 取 0 时，目标 token $\mathbf{z}_g$ 正常参与 self-attention，模型处于"带目标导航"模式；当 goal mask 取 1 时，$\mathbf{z}_g$ 所在位置被置为 padding 并在池化时去掉权重，模型退化为"无目标探索"模式。这一机制使得同一套权重既可用于导航也可用于探索，也是后续 CFG 引导能同时使用"带目标"与"不带目标"两次前向的直接原因。
+
+这种双编码器加早期融合的设计带来了一个重要副作用：目标分支与观察分支在特征表达上不完全独立。如果训练数据中的目标图像与当前观察在视觉外观上差异较大（如光照变化、季节变化），目标编码器由于需要同时处理两种分布，学习难度会高于仅处理单一观察分布的 \texttt{obs\_encoder}。本章后续的视觉编码器升级实验在引入统一替换框架时，选择让观察编码器与目标编码器共享同一实例并通过额外的线性融合层把当前帧与目标帧的特征合并，正是为了在参数效率与公平对比之间取得折中，其代价是失去了原始 NoMaD 在像素级早期融合上的归纳偏置。
 
 \subsection{模型结构与训练目标}
 
@@ -128,17 +132,17 @@ RTX 4090 与 Jetson Orin 之间的算力差距是本文实验设计中需要特�
 
 \section{基线实验}
 
-为给后续所有优化实验建立统一参考，本文首先复现了原始 NoMaD 离线推理流程。已有结果表明，原始模型参数量约为 19,049,675，DDPM-10 配置下单次离线推理时间约为 0.1250\,s，对应约 8.0\,Hz 的单次离线推理频率。其主要作用不是证明"原始模型足够好"，而是作为比较基线：后续 DDIM、CFG、TTS 和视觉编码器实验都需要回到这一基线来判断收益与代价。
+为给后续所有优化实验建立统一参考，本文首先复现了原始 NoMaD 离线推理流程。已有结果表明，原始模型参数量约为 19,049,675。需要区分两种不同口径的时延：在 \texttt{scripts/offline\_inference.py} 的端到端单次运行中，包含图像加载、编码、DDPM-10 采样与结果后处理的整体耗时约为 0.1250\,s；而在本章后续使用的 24 个 case 统计实验中（见表~\ref{tab:ddim-results}），\texttt{ddpm\_10} 的纯扩散采样平均时延约为 40\,ms，CI95 为 $\pm$1.37\,ms。两者数量级差异的根本原因是前者计入了一次性模型构建、首次 GPU kernel 编译与图像预处理开销，而后者在 warm-up 之后测量循环体内部的推理时间。由于后续 DDIM、CFG、TTS 与视觉编码器对比实验都运行在统一的统计脚本下，本文把"40\,ms 量级"视为基线推理时延的有效参考，而把"0.125\,s"仅保留作单次端到端流程的工程记录。
 
-需要说明的是，基线实验中报告的推理时间为"纯推理时间"，即仅包含模型前向传播和扩散采样过程，不包含图像预处理、数据加载和结果后处理的开销。在实际部署中，端到端的时延还需要加上这些额外开销，因此实际可用的推理频率会略低于此处报告的数值。然而，由于所有实验共享相同的预处理和后处理流程，这些额外开销不影响不同配置之间的相对比较。
+基线实验的主要作用不是证明"原始模型足够好"，而是作为比较基线：后续 DDIM、CFG、TTS 和视觉编码器实验都需要回到这一基线来判断收益与代价。
 
-关于参数量的构成，19M 参数中视觉编码器（EfficientNet-B0）约占 5.3M，距离预测头约占 0.5M，扩散策略头（包括 U-Net 噪声预测网络）约占 13M。这一分布说明扩散策略头是参数量的主要来源，也解释了为什么更换视觉编码器对总参数量的影响相对有限。
+关于参数量的构成，19.05\,M 参数中视觉条件编码器 \texttt{NoMaD\_ViNT} 约占 15.18\,M（含两个 EfficientNet-B0、投影层、位置编码与 4 层 self-attention），扩散策略头（ConditionalUnet1D）约占 3.85\,M，距离预测头约占 0.02\,M。由此可见视觉编码器是主要参数来源，单独更换视觉编码器对总参数量的影响取决于新骨干的规模：若替换为 DINOv2-Small（22\,M backbone）或 ConvNeXt-Tiny（27\,M backbone）将使总参数量明显上升；若保持 backbone 在 B0 量级则总参数量相近。
 
-扩散策略头中的 U-Net 架构采用了多尺度特征融合和条件注入机制。条件向量 $\mathbf{c}$ 通过 cross-attention 或 FiLM（Feature-wise Linear Modulation）层注入到 U-Net 的各个分辨率层级中，使得噪声预测网络能够在每一步去噪中都感知到当前的视觉条件和目标信息。这种设计虽然增加了参数量，但保证了扩散过程对条件信号的充分响应。
+扩散策略头中的 U-Net 架构采用了多尺度特征融合和条件注入机制。条件向量 $\mathbf{c}$ 通过 FiLM（Feature-wise Linear Modulation）机制注入到 U-Net 的各个分辨率层级中，使得噪声预测网络能够在每一步去噪中都感知到当前的视觉条件和目标信息。这种设计虽然增加了参数量，但保证了扩散过程对条件信号的充分响应。
 
-关于推理频率的部署含义，8.0\,Hz 的离线推理频率意味着在 RTX 4090 上每 125\,ms 可以完成一次轨迹生成。对于典型的机器人导航场景，控制频率通常要求在 5--20\,Hz 之间，因此 DDPM-10 的基线频率在高端 GPU 上勉强达到实用门槛。但在边缘设备（如 Jetson Orin）上，由于算力约为 RTX 4090 的 1/5 至 1/10，实际推理频率可能降至 1--2\,Hz，这远低于部署需求，也是后续 DDIM 加速实验的直接动机。
+关于推理频率的部署含义，40\,ms 的纯采样时延在 RTX 4090 上对应约 25\,Hz 的理论上限，但叠加图像预处理和 ROS 消息往返后端到端频率通常收敛到 8--10\,Hz 量级，恰好落在典型机器人控制频率 5--20\,Hz 的下界。在边缘设备（如 Jetson Orin）上，由于 GPU 算力约为 RTX 4090 的 1/5 至 1/10，单次 DDPM-10 采样会从 40\,ms 放大到 200--400\,ms，端到端控制频率进一步降至 2--5\,Hz，已经接近机器人导航可接受的下限，这也是后续 DDIM 加速实验的直接动机。
 
-此外，$8 \times 8$ 的轨迹采样规格表示每次推理生成 8 条候选轨迹，每条轨迹包含 8 个 waypoint。这里的"8 条候选"源于扩散策略头的批次采样规格 \texttt{num\_samples}，是模型前向本身的输出形态，与是否开启 TTS 无关；这一候选集既可以直接作为下游统计与执行的来源，也可以作为 TTS 评分筛选的初始候选池，当需要进一步扩大搜索空间时再通过多批次采样把候选池规模扩展到 $K > 8$。 8 个 waypoint 的长度在 NoMaD 的默认配置下对应约 2--3 秒的未来规划窗口，这一时间尺度既足以覆盖局部导航决策（如是否转弯），又不至于因规划太远而积累过大误差。
+此外，$8 \times 8$ 的轨迹采样规格表示每次推理生成 8 条候选轨迹，每条轨迹包含 8 个 waypoint。这里的"8 条候选"源于扩散策略头的批次采样规格 \texttt{num\_samples}，是模型前向本身的输出形态，与是否开启 TTS 无关；这一候选集既可以直接作为下游统计与执行的来源，也可以作为 TTS 评分筛选的初始候选池，当需要进一步扩大搜索空间时再通过多批次采样把候选池规模扩展到 $K > 8$。8 个 waypoint 的长度在 NoMaD 的默认配置下对应约 2--3 秒的未来规划窗口，这一时间尺度既足以覆盖局部导航决策（如是否转弯），又不至于因规划太远而积累过大误差。
 
 \begin{table}[htbp]
     \centering
@@ -149,8 +153,9 @@ RTX 4090 与 Jetson Orin 之间的算力差距是本文实验设计中需要特�
         指标 & 含义 & 数值 \\
         \midrule
         模型参数量 & 可学习参数总量 & 19,049,675 \\
-        DDPM 推理时间 & 单次完整离线推理耗时 & 0.1250\,s \\
-        推理频率 & 每秒可执行离线推理次数 & 8.0\,Hz \\
+        端到端单次推理 & 含 I/O 与首次 kernel 编译 & 0.1250\,s \\
+        纯采样时延 & DDPM-10 循环体耗时（24 case 平均） & 39.98\,ms (CI95 $\pm$1.37) \\
+        纯采样推理频率 & RTX 4090 单 batch 理论频率 & 25\,Hz \\
         轨迹采样规格 & 候选轨迹数 $\times$ waypoint 数 & $8\times8$ \\
         距离预测输出 & 候选目标相对距离估计均值 & 11.6589 \\
         \bottomrule
@@ -235,16 +240,16 @@ DDIM 的核心思想是将扩散模型的随机微分方程（SDE）采样过程
     \centering
     \caption{DDIM 推理加速实验结果}
     \label{tab:ddim-results}
-    \begin{tabular}{lccccc}
+    \begin{tabular}{lcccccc}
         \toprule
-        配置 & Latency/ms & CI95/ms & Speedup & MSE vs DDPM-10 & Forward Progress \\
+        配置 & Latency/ms & CI95/ms & Speedup & MSE vs DDPM-10 & Forward Progress & Diversity \\
         \midrule
-        ddpm\_10 & 39.9790 & 1.3748 & 1.00$\times$ & 0.0000 & 6.4998 \\
-        ddim\_10 & 38.0260 & 0.6034 & 1.05$\times$ & 0.0062 & 6.4686 \\
-        ddim\_5 & 19.2581 & 0.4319 & 2.08$\times$ & 0.0048 & 6.5257 \\
-        ddim\_3 & 11.6579 & 0.3438 & 3.43$\times$ & 0.0124 & 6.6224 \\
-        ddim\_2 & 8.2588 & 0.2779 & 4.84$\times$ & 0.0210 & 6.6471 \\
-        ddim\_1 & 4.5092 & 0.1427 & 8.87$\times$ & 3.5168 & 9.2789 \\
+        ddpm\_10 & 39.9790 & 1.3748 & 1.00$\times$ & 0.0000 & 6.4998 & 0.251 \\
+        ddim\_10 & 38.0260 & 0.6034 & 1.05$\times$ & 0.0062 & 6.4686 & 0.318 \\
+        ddim\_5 & 19.2581 & 0.4319 & 2.08$\times$ & 0.0048 & 6.5257 & 0.271 \\
+        ddim\_3 & 11.6579 & 0.3438 & 3.43$\times$ & 0.0124 & 6.6224 & 0.306 \\
+        ddim\_2 & 8.2588 & 0.2779 & 4.84$\times$ & 0.0210 & 6.6471 & 0.377 \\
+        ddim\_1 & 4.5092 & 0.1427 & 8.87$\times$ & 3.5168 & 9.2789 & 4.736 \\
         \bottomrule
     \end{tabular}
 \end{table}
@@ -257,7 +262,7 @@ DDIM 的核心思想是将扩散模型的随机微分方程（SDE）采样过程
 
 结果表明，DDIM 的确能显著降低推理时延，其中 \texttt{ddim\_2} 已接近 5 倍加速。更关键的是，\texttt{ddim\_2} 在 MSE 与 Forward Progress 上仍保持相对平衡，说明它不是以严重破坏轨迹分布为代价换取速度。相比之下，\texttt{ddim\_1} 虽然最快，但 MSE 大幅升高，说明轨迹已明显偏离基线分布，不适合作为稳定部署方案。
 
-具体来看，\texttt{ddim\_1} 的 MSE 高达 3.5168，是 \texttt{ddim\_2} 的 167 倍，同时其 Forward Progress 从基线的 6.50 激增至 9.28，增幅达到 43\%。这种异常的前进量增大并非正向优化的结果，而是因为单步去噪无法正确还原轨迹的空间结构，生成的 waypoint 倾向于沿某一方向过度延伸。在实际部署中，这种轨迹会导致机器人忽略障碍物和弯道，直线冲向远方，具有明显的安全隐患。
+具体来看，\texttt{ddim\_1} 的 MSE 高达 3.5168，是 \texttt{ddim\_2} 的 167 倍，同时其 Forward Progress 从基线的 6.50 激增至 9.28，增幅达到 43\%。这种异常的前进量增大并非正向优化的结果，而是因为单步去噪无法正确还原轨迹的空间结构，生成的 waypoint 倾向于沿某一方向过度延伸。更关键的是，表~\ref{tab:ddim-results} 中新增的 Diversity 列提供了一个独立的失效佐证：\texttt{ddim\_1} 的候选间标准差达到 4.736，约为其他五个配置（0.25--0.38）的 12--19 倍，说明同一条件下的 8 条随机候选不再围绕同一条轨迹聚拢，而是散落成毫无结构的随机方向。Diversity 在 \texttt{ddim\_2}--\texttt{ddim\_10} 区间内呈轻微波动（0.27--0.38），与 MSE 的小幅上升一致，说明减步数会使候选分布略微展开，但仍保持在有意义的邻域内。在实际部署中，\texttt{ddim\_1} 这种轨迹会导致机器人忽略障碍物和弯道，直线冲向远方，具有明显的安全隐患。
 
 从速度-质量 Pareto 前沿的角度分析，\texttt{ddim\_2} 到 \texttt{ddim\_5} 构成了一段有效的 Pareto 前沿：在这个范围内，每减少一步都能带来显著的时延收益，而 MSE 增长仍在可控范围内。\texttt{ddim\_1} 则明显偏离了这一前沿，属于"过度压缩"区域。这可以从 ODE 求解的角度解释：当仅用一步积分从纯噪声直接跳到干净样本时，中间的非线性变换被完全忽略，相当于用线性近似替代了整个去噪轨迹，而扩散模型的去噪路径通常具有显著的非线性特征，因此单步近似会引入不可忽略的截断误差。
 
@@ -455,7 +460,7 @@ ConvNeXt-Tiny\cite{convnext2022} 作为"现代化 CNN"的代表被纳入实验�
 
 离线结果表明，四种编码器在不同指标上各有侧重。EfficientNet-B0 的 smoothness 最低，说明其生成轨迹最平滑；ResNet-50 的 diversity 和 forward progress 最高，说明其候选轨迹更分散、前进性更强；DINOv2-Small 与 ConvNeXt-Tiny 的指标处于中间区间。由于这些指标仍是离线代理量，不能直接等价为闭环成功率，因此本文在第四章进一步补充 MuJoCo 闭环验证，而不是仅凭表~\ref{tab:encoder-results} 给出最终部署推荐。
 
-具体来说，冻结策略的影响值得深入讨论。在第一阶段的统一配置中，所有编码器均采用部分冻结策略（冻结浅层、微调深层），这对于在 ImageNet 上预训练的 CNN 编码器通常是合理的，因为浅层特征（边缘、纹理）具有良好的跨任务迁移性。然而，对于 DINOv2 这样的 ViT 编码器，浅层的 patch embedding 和早期 Transformer block 可能编码了与 CNN 浅层不同类型的信息，统一的冻结层数划分可能不是最优的。此外，DINOv2 的自监督预训练目标（DINO loss + iBOT loss）与导航任务的距离预测目标之间的 domain gap 也可能需要更多的微调轮数来弥合。
+具体来说，冻结策略的影响值得深入讨论。本文的统一替换框架（\texttt{TimmBackboneEncoder}）采用的是二元冻结开关：\texttt{freeze\_backbone=True} 时全部 backbone 参数不参与训练，仅更新投影层和导航头；\texttt{freeze\_backbone=False} 时 backbone 随整个模型一起微调。本文四个编码器权重的训练均采用 \texttt{freeze\_backbone=False} 的全微调模式，以便在相同训练轮数下最大化各编码器的适配空间。这对于在 ImageNet 上预训练的 CNN 编码器（EfficientNet-B0、ConvNeXt-Tiny、ResNet-50）通常是合理选择，因为浅层特征（边缘、纹理）仍可以通过梯度回传保持有益的迁移表征。然而，对于 DINOv2 这样的 ViT 编码器，浅层的 patch embedding 和早期 Transformer block 可能编码了与 CNN 浅层不同类型的信息，全微调可能过早打破其大规模自监督预训练中积累的全局一致性。此外，DINOv2 的自监督预训练目标（DINO loss + iBOT loss）与导航任务的距离预测目标之间的 domain gap 也可能需要专门设计的分层学习率或选择性解冻策略来弥合，这一点属于后续工作的优化空间。
 
 从定量数据来看，ResNet-50 在 diversity 指标上达到 0.9824，高于 EfficientNet-B0 的 0.5818；forward progress 也从 7.356 提升至 7.980。但 EfficientNet-B0 的 smoothness 为 0.0725，明显低于其他编码器，说明原始 CNN baseline 仍具有更稳定的局部轨迹生成特性。由此可见，视觉编码器升级不是单一指标最大化问题，而需要在多样性、前进性、平滑性和闭环执行稳定性之间折中。
 
@@ -520,19 +525,19 @@ ConvNeXt-Tiny\cite{convnext2022} 作为"现代化 CNN"的代表被纳入实验�
         \toprule
         优化方法 & 作用层级 & 是否改变训练 & 当前结论 \\
         \midrule
-        DDIM & 扩散采样调度 & 否 & 有效，\texttt{DDIM-2} 推荐默认使用 \\
-        CFG & 条件引导强度 & 否 & 有边际收益，但默认不开启更稳妥 \\
-        TTS & 候选轨迹筛选 & 否 & \texttt{TTS-8} 有效，\texttt{TTS-16} 可选 \\
-        视觉编码器升级 & 视觉条件建模 & 是 & 已验证可替换，最终部署需结合真机 \\
+        DDIM & 扩散采样调度 & 否 & \texttt{DDIM-2} 默认最优，跨四编码器鲁棒 \\
+        CFG & 条件引导强度 & 否 & 时延翻倍而无可测质量收益，默认关闭 \\
+        TTS & 候选轨迹筛选 & 否 & \texttt{TTS-8} 近零代价，增益随候选 Diversity 放大 \\
+        视觉编码器升级 & 视觉条件建模 & 是 & 四权重可替换，影响 Diversity 进而影响 TTS 增益 \\
         \bottomrule
     \end{tabular}
 \end{table}
 
 因此，DDIM、CFG 与 TTS 更适合被写成统一推理层内部的层级组合：先由 DDIM 决定每条候选轨迹的去噪步数与生成速度，再由 CFG 决定采样过程中条件信号的放大程度，最后由 TTS 在候选轨迹集合上进行评分和选择。三者并不是简单并列相加，而是在"生成单条轨迹--增强条件响应--筛选候选轨迹"的流水线上依次发挥作用。
 
-视觉编码器升级与前三者既相对独立，又存在间接联系。独立性体现在工程接口上：编码器由 \texttt{policy\_config} 与 \texttt{policy\_checkpoint} 决定，而 DDIM、CFG、TTS 由推理参数决定，只要模型保持 NoMaD 兼容输出，下游状态机和平台接口无需修改。联系则体现在条件分布上：更换编码器会改变观察图像和目标图像的 token 表达，进而同时影响距离预测头和扩散策略头，因此也可能改变 DDIM 步数、CFG 权重和 TTS 评分的最优组合。换言之，前三个优化是在既定视觉条件空间内调整推理过程，视觉编码器升级则是在源头上改变条件空间。
+视觉编码器升级与前三者既相对独立，又存在间接联系。独立性体现在工程接口上：编码器由 \texttt{policy\_config} 与 \texttt{policy\_checkpoint} 决定，而 DDIM、CFG、TTS 由推理参数决定，只要模型保持 NoMaD 兼容输出，下游状态机和平台接口无需修改。联系则体现在条件分布上：更换编码器会改变历史观察和目标图像的 token 表达，从而同时影响距离预测头和扩散策略头。补齐后的编码器 $\times$ DDIM/TTS/CFG 联合消融（见表~\ref{tab:encoder-ddim-joint}--\ref{tab:encoder-cfg-joint}）给出的经验结论是：DDIM 步数选择与 CFG 权重选择对编码器替换具有鲁棒性，其中 DDIM-2 在四个编码器上都是默认最优档，CFG-1/2 在任何一个编码器上都无法换取有意义的质量增益；唯一与编码器耦合的是 TTS-8 的筛选增益——初始候选 Diversity 越高（如 ResNet-50），TTS-8 的相对提升越大。换言之，前三个优化中的"DDIM+CFG"部分在既定视觉条件空间内调整推理过程而不受编码器影响，TTS 部分则在一定程度上继承编码器带来的分布变化，视觉编码器升级则是在源头上改变条件空间。
 
-\subsection{消融验证与待补实验}
+\subsection{消融验证与编码器联合补充}
 
 从已有结果看，本章已经完成了主要算法变量的单因素消融和部分联合消融。DDIM 实验固定模型与数据 case，仅改变采样步数，验证了 \texttt{DDIM-2} 的速度收益与 \texttt{DDIM-1} 的失效边界；CFG 实验固定模型，仅改变引导强度，说明其质量收益不足以抵消默认开启时的时延代价；TTS 实验固定 DDIM 与 CFG 条件，比较不同候选预算，说明主要收益来自 TTS-8 的低成本筛选；视觉编码器实验在统一训练配置下比较四个训练权重，证明了编码器替换框架可训练、可评估、可接入闭环。
 
@@ -551,11 +556,91 @@ ConvNeXt-Tiny\cite{convnext2022} 作为"现代化 CNN"的代表被纳入实验�
         DDIM $\times$ CFG & 同一离线 case & \texttt{ddim2\_w0.0} 综合最优 & 已完成 \\
         DDIM $\times$ CFG $\times$ TTS & 同一离线 case & Top-5 集中在 \texttt{DDIM-2/3} 与 \texttt{TTS-8/16} & 已完成 \\
         视觉编码器 & 训练配置与评估脚本统一 & 四个权重均可接入闭环 & 已完成但需真机复核 \\
+        编码器 $\times$ DDIM & 4 编码器 $\times$ DDIM-2/3/5 & DDIM-2 默认最优在四编码器上均成立 & 已完成 \\
+        编码器 $\times$ TTS & 4 编码器 $\times$ TTS-0/8/16 & TTS-8 收益随初始 diversity 放大 & 已完成 \\
+        编码器 $\times$ CFG & EfficientNet-B0 / ResNet-50 $\times$ CFG-0/1/2 & CFG 在两个编码器上均无有效收益 & 已完成 \\
         \bottomrule
     \end{tabular}
 \end{table}
 
-目前仍值得补充的是跨视觉编码器的联合消融，即在不同编码器权重下重新扫描 DDIM、CFG 和 TTS 的组合。这一实验的必要性来自前文所述的条件分布变化：如果视觉编码器改变了候选轨迹的多样性和平滑性，那么 TTS 的评分选择、CFG 的目标引导强度和 DDIM 的少步近似误差都可能随之改变。受当前实验时间限制，本文已完成四编码器离线对比和 MuJoCo 闭环接入验证，但尚未完成完整的"编码器 $\times$ DDIM/CFG/TTS"联合矩阵；该项应进入后续待补实验清单。若论文定稿前只能补一类实验，应优先补真机最终配置对照，即比较原始 DDPM-10、\texttt{DDIM-2} 和 \texttt{DDIM-2+TTS-8} 在 Lite3 真机上的成功率与时延。
+前文曾指出，跨视觉编码器的联合消融对判断"DDIM/CFG/TTS 的最优参数是否稳定"至关重要：如果更换编码器会改变候选轨迹的多样性和平滑性，那么 TTS 的评分选择、CFG 的目标引导强度和 DDIM 的少步近似误差都可能随之漂移。为了在论文定稿前回答这一问题，本文使用 \texttt{scripts/encoder\_joint\_ablation\_experiment.py} 在相同的离线 case 构造规则下补齐了"编码器 $\times$ DDIM/CFG/TTS"联合矩阵，4 个训练权重（EfficientNet-B0、DINOv2-Small、ConvNeXt-Tiny、ResNet-50）统一以 DDIM 调度器为基础，分别扫描 DDIM-2/3/5 步数、TTS-0/8/16 候选预算以及 CFG-0/1/2 引导权重，每个配置在 12 个离线 case 上重复 3 次，结果保存于 \texttt{results/day5/20260422\_171021\_encoder\_joint\_ablation\_experiment}。CFG 一项限定在 EfficientNet-B0 与 ResNet-50 这两个初始多样性差异最大的编码器上，以小规模方式验证目标引导是否会放大编码器差异。三组结果分别由表~\ref{tab:encoder-ddim-joint}、表~\ref{tab:encoder-tts-joint} 和表~\ref{tab:encoder-cfg-joint} 给出，所有条目均已带 CI95 置信区间。
+
+\begin{table}[htbp]
+    \centering
+    \small
+    \caption{编码器 $\times$ DDIM 步数联合消融（CFG=0, 无 TTS, 12 case $\times$ 3 runs）}
+    \label{tab:encoder-ddim-joint}
+    \begin{tabular}{llcccc}
+        \toprule
+        编码器 & 配置 & Latency/ms & Forward Progress & Diversity & Smoothness \\
+        \midrule
+        EfficientNet-B0 & DDIM-2 & 5.65$\pm$0.16 & 8.290$\pm$0.184 & 0.611$\pm$0.052 & 0.130$\pm$0.009 \\
+        EfficientNet-B0 & DDIM-3 & 8.61$\pm$0.36 & 8.264$\pm$0.186 & 0.599$\pm$0.053 & 0.127$\pm$0.009 \\
+        EfficientNet-B0 & DDIM-5 & 13.04$\pm$0.37 & 8.226$\pm$0.189 & 0.569$\pm$0.052 & 0.127$\pm$0.010 \\
+        DINOv2-Small & DDIM-2 & 5.67$\pm$0.14 & 6.607$\pm$1.942 & 0.390$\pm$0.066 & 0.166$\pm$0.045 \\
+        DINOv2-Small & DDIM-3 & 8.12$\pm$0.23 & 6.586$\pm$1.963 & 0.358$\pm$0.060 & 0.163$\pm$0.045 \\
+        DINOv2-Small & DDIM-5 & 12.77$\pm$0.22 & 6.525$\pm$1.990 & 0.327$\pm$0.055 & 0.163$\pm$0.046 \\
+        ConvNeXt-Tiny & DDIM-2 & 5.41$\pm$0.09 & 6.768$\pm$2.364 & 0.460$\pm$0.124 & 0.152$\pm$0.046 \\
+        ConvNeXt-Tiny & DDIM-3 & 8.04$\pm$0.17 & 6.744$\pm$2.386 & 0.438$\pm$0.132 & 0.147$\pm$0.045 \\
+        ConvNeXt-Tiny & DDIM-5 & 13.32$\pm$0.31 & 6.687$\pm$2.433 & 0.415$\pm$0.136 & 0.146$\pm$0.046 \\
+        ResNet-50 & DDIM-2 & 5.41$\pm$0.10 & 8.085$\pm$0.290 & 0.943$\pm$0.096 & 0.109$\pm$0.011 \\
+        ResNet-50 & DDIM-3 & 7.82$\pm$0.12 & 8.049$\pm$0.307 & 0.992$\pm$0.106 & 0.107$\pm$0.013 \\
+        ResNet-50 & DDIM-5 & 12.79$\pm$0.18 & 8.004$\pm$0.332 & 1.001$\pm$0.117 & 0.106$\pm$0.015 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+表~\ref{tab:encoder-ddim-joint} 最直接的观察是：对于全部四个编码器，Forward Progress、Diversity、Smoothness 在 DDIM-2/3/5 之间的变化都显著小于各编码器自身的 case 间标准差。以 EfficientNet-B0 为例，三个步数下的 Forward Progress 分别为 8.290、8.264、8.226，相邻差异远小于 CI95（$\pm0.19$）；ResNet-50 从 DDIM-2 的 8.085 到 DDIM-5 的 8.004 亦在统计不可分水平。与此形成对照的是，时延随步数线性增长：DDIM-2 约 5.4--5.7\,ms、DDIM-3 约 7.8--8.6\,ms、DDIM-5 约 12.8--13.3\,ms。因此本文在 DDIM 推理加速实验一节中得到的"DDIM-2 是默认最优加速配置"结论在视觉条件分布发生替换后依然成立，即 DDIM 步数选择对视觉编码器替换具有鲁棒性。
+
+\begin{table}[htbp]
+    \centering
+    \small
+    \caption{编码器 $\times$ TTS 候选预算联合消融（DDIM-2, CFG=0, 12 case $\times$ 3 runs）}
+    \label{tab:encoder-tts-joint}
+    \begin{tabular}{llcccc}
+        \toprule
+        编码器 & 配置 & Latency/ms & Forward Progress & Diversity & Smoothness \\
+        \midrule
+        EfficientNet-B0 & TTS-0 & 5.42$\pm$0.14 & 8.290$\pm$0.184 & 0.611$\pm$0.052 & 0.130$\pm$0.009 \\
+        EfficientNet-B0 & TTS-8 & 5.51$\pm$0.20 & 9.077$\pm$0.111 & 0.416$\pm$0.024 & 0.107$\pm$0.008 \\
+        EfficientNet-B0 & TTS-16 & 10.81$\pm$0.30 & 9.465$\pm$0.129 & 0.381$\pm$0.035 & 0.095$\pm$0.010 \\
+        DINOv2-Small & TTS-0 & 5.43$\pm$0.15 & 6.607$\pm$1.942 & 0.390$\pm$0.066 & 0.166$\pm$0.045 \\
+        DINOv2-Small & TTS-8 & 5.54$\pm$0.14 & 7.013$\pm$1.922 & 0.307$\pm$0.070 & 0.156$\pm$0.046 \\
+        DINOv2-Small & TTS-16 & 10.71$\pm$0.21 & 7.259$\pm$1.910 & 0.283$\pm$0.064 & 0.150$\pm$0.045 \\
+        ConvNeXt-Tiny & TTS-0 & 5.53$\pm$0.20 & 6.768$\pm$2.364 & 0.460$\pm$0.124 & 0.152$\pm$0.046 \\
+        ConvNeXt-Tiny & TTS-8 & 5.55$\pm$0.13 & 7.085$\pm$2.321 & 0.321$\pm$0.090 & 0.141$\pm$0.044 \\
+        ConvNeXt-Tiny & TTS-16 & 11.02$\pm$0.24 & 7.295$\pm$2.317 & 0.328$\pm$0.094 & 0.144$\pm$0.055 \\
+        ResNet-50 & TTS-0 & 5.48$\pm$0.16 & 8.085$\pm$0.290 & 0.943$\pm$0.096 & 0.109$\pm$0.011 \\
+        ResNet-50 & TTS-8 & 5.53$\pm$0.21 & 9.407$\pm$0.185 & 0.486$\pm$0.076 & 0.087$\pm$0.011 \\
+        ResNet-50 & TTS-16 & 10.69$\pm$0.16 & 9.969$\pm$0.119 & 0.343$\pm$0.033 & 0.080$\pm$0.018 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+与 DDIM 的鲁棒性结论不同，表~\ref{tab:encoder-tts-joint} 揭示了一个编码器相关的规律：TTS-8 相对于 TTS-0 的 Forward Progress 增益幅度与初始 Diversity 正相关。具体地，ResNet-50 的初始 Diversity 为 0.943（本表最高），TTS-8 将 Forward Progress 从 8.085 提升至 9.407（$+16.4\%$）；EfficientNet-B0 初始 Diversity 为 0.611，TTS-8 增益为 $+9.5\%$；ConvNeXt-Tiny 初始 Diversity 为 0.460，增益为 $+4.7\%$；DINOv2-Small 初始 Diversity 为 0.390，增益为 $+6.0\%$。这一规律说明 TTS-8 的"零时延筛选"收益依赖于扩散头生成候选时本身是否具有足够的多样性——初始多样性越高，基于多目标评分的 top-$k$ 选择就越有可能在同一批 8 条候选中找出显著更好的子集。同时 Smoothness 和 Lateral 也随 TTS-8 普遍下降，说明 top-$k$ 选择不仅向前推进更远，还倾向于更平稳和更接近目标方向的候选。TTS-16 继续把这些指标往同一方向推进，但其代价是时延翻倍（从约 5.5\,ms 增至约 10.7--11.0\,ms）。因此"TTS-8 作为默认档位、TTS-16 作为可选增强"的部署建议在四个编码器上均成立，只是候选质量基础较弱的编码器（如 DINOv2-Small、ConvNeXt-Tiny）所能获得的筛选增益相对有限。
+
+\begin{table}[htbp]
+    \centering
+    \small
+    \caption{编码器 $\times$ CFG 权重小规模联合消融（DDIM-2, 无 TTS, 12 case $\times$ 3 runs）}
+    \label{tab:encoder-cfg-joint}
+    \begin{tabular}{llccccc}
+        \toprule
+        编码器 & 配置 & Latency/ms & Forward Progress & Diversity & Lateral Abs & Smoothness \\
+        \midrule
+        EfficientNet-B0 & CFG=0 & 5.39$\pm$0.20 & 8.290$\pm$0.184 & 0.611$\pm$0.052 & 2.361$\pm$0.240 & 0.130$\pm$0.009 \\
+        EfficientNet-B0 & CFG=1 & 10.08$\pm$0.21 & 8.325$\pm$0.143 & 0.514$\pm$0.047 & 2.804$\pm$0.351 & 0.138$\pm$0.012 \\
+        EfficientNet-B0 & CFG=2 & 10.04$\pm$0.16 & 8.363$\pm$0.138 & 0.434$\pm$0.042 & 3.226$\pm$0.426 & 0.147$\pm$0.015 \\
+        ResNet-50 & CFG=0 & 5.56$\pm$0.18 & 8.085$\pm$0.290 & 0.943$\pm$0.096 & 2.016$\pm$0.290 & 0.109$\pm$0.011 \\
+        ResNet-50 & CFG=1 & 10.18$\pm$0.32 & 8.095$\pm$0.310 & 0.942$\pm$0.101 & 1.983$\pm$0.318 & 0.108$\pm$0.012 \\
+        ResNet-50 & CFG=2 & 9.93$\pm$0.11 & 8.105$\pm$0.335 & 0.940$\pm$0.107 & 1.960$\pm$0.339 & 0.108$\pm$0.013 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+表~\ref{tab:encoder-cfg-joint} 的最直接结论是：在这两个初始 Diversity 差异最大的编码器上，CFG-1/2 对 Forward Progress 的提升都在 $1\%$ 以内，而时延无一例外地翻倍——CFG 开启需要一次条件分支与一次无条件分支的额外前向。以 EfficientNet-B0 为例，CFG 从 0 增至 2 时 Forward Progress 仅由 8.290 上升至 8.363，同时 Lateral Abs 从 2.361 增至 3.226（横向偏摆放大了近 $37\%$），Diversity 从 0.611 压缩到 0.434；换言之，CFG 的外推方向对 EfficientNet-B0 的候选分布有"收紧加放大偏摆"的双重扰动。ResNet-50 的反应更平淡：它所有指标在 CFG=0/1/2 之间几乎保持不变，Diversity 从 0.943 仅微降到 0.940，Forward Progress 和 Smoothness 的变化都淹没在 CI95 之内。这一对比说明：CFG 对编码器差异既没有"放大优势"也没有"补偿劣势"，反而使原本 Diversity 较低、结构较紧的 EfficientNet-B0 受到更明显的分布扰动。综合两个编码器的结果，本文原先得到的"默认 CFG=0 更稳妥"结论得到了进一步加强，并可扩展为：在 CFG 不显著改善任何可测质量指标的情况下，其 2$\times$ 时延代价无法被初始候选分布差异所弥补。
+
+三组联合消融共同说明，DDIM 步数选择对编码器替换鲁棒，TTS 筛选收益随候选多样性放大，CFG 引导则在当前视觉条件空间内缺乏明显增益。因此，最终算法框架确定一节推荐的"EfficientNet-B0 + DDIM-2 + CFG=0 + TTS-8"默认方案在跨编码器视角下仍然成立，且给出了一个可操作的参数迁移指引：若未来替换为候选 Diversity 明显更高的编码器（如本文数据中的 ResNet-50），默认参数无需改动即可迁移；若替换为 Diversity 偏低的编码器，则应优先考虑增大 TTS 候选池而非调整 DDIM 或 CFG。
 
 \subsection{最终算法框架确定}
 
@@ -569,4 +654,4 @@ ConvNeXt-Tiny\cite{convnext2022} 作为"现代化 CNN"的代表被纳入实验�
 
 其中，DDIM 实验从 ODE 求解的理论角度解释了加速机制与失效边界，确认 \texttt{ddim\_2} 为最优加速配置；CFG 实验通过 score function 修改的理论分析揭示了时延翻倍的根本原因，并建立了引导尺度选择准则；TTS 实验设计了基于多目标评分的候选搜索框架，分析了计算预算分配策略；视觉编码器实验通过特征维度对齐和两阶段设计保证了对比公平性。
 
-当前结论表明，NoMaD 的部署潜力主要取决于推理层优化与视觉条件建模的共同效果，而不是单个指标的局部提升。本章离线实验均使用统一 case 构造方式，其中 DDIM、CFG 与编码器实验使用 24 个测试 case，TTS 补充实验使用 12 个测试 case 并报告均值与 CI95；联合实验进一步验证了 DDIM、CFG 与 TTS 三者之间的层级组合关系。下一章将在此基础上把这些候选方案接入统一闭环系统，并通过 MuJoCo 仿真验证它们在 Lite3 平台上的系统级可行性。
+当前结论表明，NoMaD 的部署潜力主要取决于推理层优化与视觉条件建模的共同效果，而不是单个指标的局部提升。本章离线实验均使用统一 case 构造方式，其中 DDIM、CFG 与编码器实验使用 24 个测试 case，TTS 补充实验与编码器 $\times$ DDIM/TTS/CFG 联合消融使用 12 个测试 case，并报告均值与 CI95；联合实验进一步验证了 DDIM、CFG 与 TTS 三者之间的层级组合关系，以及"DDIM-2 + TTS-8 + CFG=0"默认方案在四种编码器条件下的稳定性。下一章将在此基础上把这些候选方案接入统一闭环系统，并通过 MuJoCo 仿真验证它们在 Lite3 平台上的系统级可行性。
