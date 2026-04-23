@@ -234,7 +234,27 @@ ls scripts/configs/vision_encoder/nomad_encoder_efficientnet_b0.yaml
 mkdir -p deployment/topomaps/images/real_hallway
 ```
 
-推荐直接用 Orin 相机采集，保证 topomap 图像和部署时相机视角、畸变、曝光尽量一致。自动间隔采集命令如下：
+推荐直接用 Orin 相机采集，保证 topomap 图像和部署时相机视角、畸变、曝光尽量一致。当前 `capture_real_topomap.py` 会检查导航主机是否已经处于 `keyboard` 模式，确保采集时机器狗由导航主机接管、可以用键盘移动。
+
+采集前先打开一个终端启动导航主机，并在交互提示符中输入 `keyboard`。由于拍摄脚本会直接占用 Orin 相机，采集 topomap 时建议主机使用 `--camera off`：
+
+```bash
+python scripts/deployment/nomad_navigation_host.py \
+  --interactive \
+  --backend real \
+  --camera off \
+  --bridge-module deployment.lite3_real_bridge \
+  --bridge-class Lite3RealBridge \
+  --bridge-config scripts/configs/navigation_host/lite3_real_bridge_config.json
+```
+
+进入主机交互模式后输入：
+
+```text
+keyboard
+```
+
+然后在第二个终端执行自动间隔采集命令：
 
 ```bash
 python scripts/deployment/capture_real_topomap.py \
@@ -1162,6 +1182,8 @@ python scripts/deployment/orin_standalone_test.py \
   --ddim-steps 5
 
 # 5. 采集真实 topomap
+# 先在另一个终端启动交互式导航主机，使用 --camera off，并输入 keyboard；
+# capture_real_topomap.py 会检查 keyboard heartbeat，确认主机仍在键盘控制模式。
 python scripts/deployment/capture_real_topomap.py \
   --output-dir deployment/topomaps/images/real_hallway \
   --map-name real_hallway \
@@ -1196,11 +1218,14 @@ python scripts/deployment/nomad_navigation_host.py \
 ```text
 stand --stand-steps 20
 status
+keyboard
 capture
 explore --max-steps 30 --scheduler ddim --ddim-steps 5 --cfg-weight 0.0
 navigate --topomap-dir deployment/topomaps/images/real_hallway --max-steps 200 --scheduler ddim --ddim-steps 5 --cfg-weight 0.0
 estop
 ```
+
+`keyboard` 模式下用 `W/S/A/D/Q/E` 控制前后、横移和转向，按 `Esc` 回到 `idle`。
 
 ---
 
@@ -1217,4 +1242,4 @@ estop
 7. `captures/`、`goal_views/`、`fpv/` 三类图像都已经有对应代码路径，不是纯文档设计。
 8. **交互式主机启动即自动起立**：`nomad_navigation_host.py --interactive` 的 `run()` 会在进入 idle 之前调用一次 `_ensure_standing()`，所以必须在启动命令回车之前就完成安全准备，不能指望"启动后再有时间反应"。
 9. 当前最稳的真机流程是：
-   先独立调试，再用 Orin 相机采集真实 topomap，再桥接通讯（仅连接），再用 `--test-standup/--test-twist` 手工验证起立与低速前进，再打开交互式主机（注意其会自动起立），再探索，最后再做基于真实 topomap 的单目标导航。
+   先独立调试，再桥接通讯（仅连接），再用 `--test-standup/--test-twist` 手工验证起立与低速前进，再打开交互式主机（建议 `--camera off`）进入 `keyboard` 模式采集真实 topomap，最后再切回正常主机相机配置做探索和基于真实 topomap 的单目标导航。

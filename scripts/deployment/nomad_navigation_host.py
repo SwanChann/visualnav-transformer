@@ -108,6 +108,7 @@ class Lite3NavigationHost:
         from lite3_system.interfaces import ExternalBridgePlatform
 
         bridge_kwargs = self._load_bridge_kwargs()
+        bridge_kwargs.setdefault("enable_camera", self.host_args.camera == "on")
         return ExternalBridgePlatform(
             bridge_module=self.host_args.bridge_module,
             bridge_class=self.host_args.bridge_class,
@@ -231,7 +232,7 @@ class Lite3NavigationHost:
                 "## Host Design Notes",
                 "",
                 "1. The host is responsible for task scheduling and backend selection.",
-                "2. Supported host tasks are `stand`, `navigate`, `explore`, and `estop`; `mission` remains a backward-compatible alias.",
+                "2. Supported host tasks are `stand`, `keyboard`, `navigate`, `explore`, and `estop`; `mission` remains a backward-compatible alias.",
                 "3. Capture is host-managed: the host keeps one shared session and enables c/[ / ] only during host runs.",
                 "4. The MuJoCo backend keeps one scene instance alive across task switches, so the viewer stays open and the robot pose is continuous.",
                 "5. The real backend uses one persistent bridge instance; there is no map reload concept during task switching.",
@@ -259,6 +260,11 @@ def build_host_parser() -> argparse.ArgumentParser:
     parser.add_argument("--policy-config", type=str, default=None, help="Override policy config for interactive mode")
     parser.add_argument("--policy-checkpoint", type=str, default=None, help="Override policy checkpoint for interactive mode")
     parser.add_argument("--save-fpv", action="store_true", help="Save FPV frames for interactive tasks")
+    parser.add_argument(
+        "--keyboard-heartbeat-file",
+        default="results/deployment/navigation_host_keyboard_active.json",
+        help="Heartbeat file written while keyboard mode is active.",
+    )
     return parser
 
 
@@ -286,6 +292,7 @@ def load_task_args(host_args, remaining_args: list[str]) -> list[argparse.Namesp
         return task_args_list
 
     task_args = state_parser.parse_args(remaining_args)
+    task_args.keyboard_heartbeat_file = host_args.keyboard_heartbeat_file
     return [task_args]
 
 
@@ -293,7 +300,7 @@ def load_task_args(host_args, remaining_args: list[str]) -> list[argparse.Namesp
 # 在线交互模式
 # ────────────────────────────────────────────────────────────
 
-INTERACTIVE_HELP = """
+_LEGACY_INTERACTIVE_HELP = """
 ╔═══════════════════════════════════════════════════════════╗
 ║             NoMaD 导航主机 — 在线交互模式                  ║
 ╠═══════════════════════════════════════════════════════════╣
@@ -307,6 +314,22 @@ INTERACTIVE_HELP = """
 ║   help                      显示帮助                       ║
 ║   quit / exit               退出                          ║
 ╚═══════════════════════════════════════════════════════════╝
+""".strip()
+
+
+INTERACTIVE_HELP = """
+NoMaD navigation host - interactive mode
+
+Commands:
+  keyboard                  keyboard-control Lite3; ESC returns to idle
+  navigate --topomap-dir DIR navigate with a real/sim topomap
+  explore [--max-steps N]   goal-free exploration
+  stand [--stand-steps N]   stand in place
+  estop                     emergency stop
+  capture                   capture an image into the host queue
+  status                    print current status
+  help                      show this help
+  quit / exit               quit host
 """.strip()
 
 
@@ -336,6 +359,7 @@ class InteractiveNavigationHost:
             if self.host_args.bridge_config:
                 config_path = Path(self.host_args.bridge_config).expanduser().resolve()
                 bridge_kwargs = _normalize_bridge_kwargs(json.loads(config_path.read_text(encoding="utf-8")))
+            bridge_kwargs.setdefault("enable_camera", self.host_args.camera == "on")
             self._platform = ExternalBridgePlatform(
                 bridge_module=self.host_args.bridge_module,
                 bridge_class=self.host_args.bridge_class,
@@ -363,6 +387,7 @@ class InteractiveNavigationHost:
         defaults["no_gui"] = self.host_args.no_gui
         defaults["camera"] = self.host_args.camera
         defaults["save_fpv"] = self.host_args.save_fpv
+        defaults["keyboard_heartbeat_file"] = self.host_args.keyboard_heartbeat_file
         if self.host_args.policy_config:
             defaults["policy_config"] = self.host_args.policy_config
         if self.host_args.policy_checkpoint:
@@ -378,6 +403,8 @@ class InteractiveNavigationHost:
             "explore": "explore",
             "exp": "explore",
             "stand": "stand",
+            "keyboard": "keyboard",
+            "key": "keyboard",
             "estop": "estop",
             "stop": "estop",
         }
@@ -429,6 +456,30 @@ class InteractiveNavigationHost:
                 i += 2
             elif tokens[i] == "--topomap-dir" and i + 1 < len(tokens):
                 defaults["topomap_dir"] = tokens[i + 1]
+                i += 2
+            elif tokens[i] == "--keyboard-vx-step" and i + 1 < len(tokens):
+                defaults["keyboard_vx_step"] = float(tokens[i + 1])
+                i += 2
+            elif tokens[i] == "--keyboard-vy-step" and i + 1 < len(tokens):
+                defaults["keyboard_vy_step"] = float(tokens[i + 1])
+                i += 2
+            elif tokens[i] == "--keyboard-wz-step" and i + 1 < len(tokens):
+                defaults["keyboard_wz_step"] = float(tokens[i + 1])
+                i += 2
+            elif tokens[i] == "--keyboard-max-vx" and i + 1 < len(tokens):
+                defaults["keyboard_max_vx"] = float(tokens[i + 1])
+                i += 2
+            elif tokens[i] == "--keyboard-max-vy" and i + 1 < len(tokens):
+                defaults["keyboard_max_vy"] = float(tokens[i + 1])
+                i += 2
+            elif tokens[i] == "--keyboard-max-wz" and i + 1 < len(tokens):
+                defaults["keyboard_max_wz"] = float(tokens[i + 1])
+                i += 2
+            elif tokens[i] == "--keyboard-dt" and i + 1 < len(tokens):
+                defaults["keyboard_dt"] = float(tokens[i + 1])
+                i += 2
+            elif tokens[i] == "--keyboard-heartbeat-file" and i + 1 < len(tokens):
+                defaults["keyboard_heartbeat_file"] = tokens[i + 1]
                 i += 2
             elif tokens[i] == "--save-fpv":
                 defaults["save_fpv"] = True
@@ -573,7 +624,7 @@ class InteractiveNavigationHost:
                     self._do_capture()
                 elif cmd == "status":
                     self._do_status()
-                elif cmd in ("navigate", "nav", "explore", "exp", "stand", "estop", "stop"):
+                elif cmd in ("navigate", "nav", "explore", "exp", "stand", "keyboard", "key", "estop", "stop"):
                     try:
                         task_args = self._build_task_args(tokens)
                         print(f"[Host] Dispatching: mode={task_args.mode}, map={task_args.map}, "

@@ -11,6 +11,9 @@ class BaseState:
     def on_enter(self, system) -> None:
         return None
 
+    def on_exit(self, system) -> None:
+        return None
+
     def step(self, system):
         raise NotImplementedError
 
@@ -19,6 +22,8 @@ class IdleState(BaseState):
     name = "idle"
 
     def step(self, system):
+        if getattr(system, "keyboard_exit_requested", False):
+            return "completed"
         return "stand"
 
 
@@ -51,6 +56,8 @@ class StandState(BaseState):
             return "navigate"
         if system.args.mode == "explore":
             return "explore"
+        if system.args.mode == "keyboard":
+            return "keyboard"
         if system.args.mode == "estop":
             return "estop"
         return "walk"
@@ -95,6 +102,19 @@ class WalkState(BaseState):
         if system.tick >= system.args.max_steps:
             return "completed"
         return "walk"
+
+
+class KeyboardState(BaseState):
+    name = "keyboard"
+
+    def on_enter(self, system) -> None:
+        system.enter_keyboard_mode()
+
+    def on_exit(self, system) -> None:
+        system.exit_keyboard_mode()
+
+    def step(self, system):
+        return system.step_keyboard()
 
 
 class RecoveryState(BaseState):

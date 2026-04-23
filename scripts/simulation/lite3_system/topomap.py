@@ -136,7 +136,6 @@ def resolve_navigation_topomap_dir(args, expected_domain: str, legacy=None) -> P
 
 
 def validate_task_topomap_args(args, expected_domain: str, legacy=None) -> None:
-    legacy = legacy or load_legacy()
     if getattr(args, "topomap_traj", None):
         raise ValueError(
             "Dataset trajectory topomaps are offline-analysis-only. "
@@ -153,7 +152,7 @@ def validate_task_topomap_args(args, expected_domain: str, legacy=None) -> None:
     if getattr(args, "goal_source", "topomap") == "random_points" and expected_domain != "mujoco":
         raise ValueError("goal-source=random_points is currently only supported on the MuJoCo backend.")
 
-    if getattr(args, "mode", "") in {"stand", "explore", "walk-test", "estop", "generate-topomap"}:
+    if getattr(args, "mode", "") in {"stand", "explore", "keyboard", "walk-test", "estop", "generate-topomap"}:
         return
 
     if getattr(args, "goal_source", "topomap") == "capture_queue":
@@ -164,6 +163,7 @@ def validate_task_topomap_args(args, expected_domain: str, legacy=None) -> None:
             raise ValueError("num-goals must be >= 1 for goal-source=random_points.")
         return
 
+    legacy = legacy or load_legacy()
     if getattr(args, "mode", "") == "navigate":
         resolve_navigation_topomap_dir(args, expected_domain, legacy)
     elif getattr(args, "mode", "") == "mission":
@@ -387,7 +387,7 @@ def build_mission_queue(args, platform, session: "NavigationSession | None" = No
     missions: list[MissionTarget] = []
     expected_domain = platform.environment_domain()
 
-    if getattr(args, "mode", "") in {"explore", "stand", "walk-test", "estop"}:
+    if getattr(args, "mode", "") in {"explore", "stand", "keyboard", "walk-test", "estop"}:
         return None
 
     if getattr(args, "random", False):

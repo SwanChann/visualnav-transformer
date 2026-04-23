@@ -193,6 +193,7 @@ class Lite3RealBridge:
         robot_ip: str = "192.168.2.1",
         robot_port: int = 43893,
         local_port: int = 43897,
+        enable_camera: bool = True,
         camera_device: int | str = 0,
         camera_width: int = 640,
         camera_height: int = 480,
@@ -233,18 +234,21 @@ class Lite3RealBridge:
         self.gait = gait
         self.standup_wait = standup_wait
 
-        # 初始化相机
-        self.camera = OrinCamera(
-            device=camera_device,
-            width=camera_width,
-            height=camera_height,
-            fps=camera_fps,
-            use_csi=use_csi,
-            csi_sensor_id=csi_sensor_id,
-            csi_flip=csi_flip,
-            calibration_path=camera_calibration_path,
-            undistort_alpha=undistort_alpha,
-        )
+        self.camera = None
+        if enable_camera:
+            self.camera = OrinCamera(
+                device=camera_device,
+                width=camera_width,
+                height=camera_height,
+                fps=camera_fps,
+                use_csi=use_csi,
+                csi_sensor_id=csi_sensor_id,
+                csi_flip=csi_flip,
+                calibration_path=camera_calibration_path,
+                undistort_alpha=undistort_alpha,
+            )
+        else:
+            print("[Lite3RealBridge] Camera disabled for this host run.")
 
         # 初始化 Lite3 控制器
         self.ctrl = Lite3Controller(
@@ -269,6 +273,8 @@ class Lite3RealBridge:
 
     def render_camera(self) -> Image.Image:
         """获取当前相机图像。"""
+        if self.camera is None:
+            raise RuntimeError("Lite3RealBridge camera is disabled for this host run.")
         return self.camera.read()
 
     def standup(self, duration: float | None = None) -> None:
@@ -374,6 +380,23 @@ class Lite3RealBridge:
         # 独立真机部署脚本不强依赖仿真侧 lite3_system 包，避免 Orin 上路径缺失。
         self.apply_command(SimpleNamespace(linear_x=linear_x, linear_y=linear_y, yaw_rate=yaw_rate))
 
+    def prepare_for_twist_control(self) -> None:
+        """进入键盘/速度控制前的准备流程。"""
+        self.standup(self.standup_wait)
+
+    def set_gait(self, gait: str) -> None:
+        """设置 Lite3 步态档位。"""
+        if gait not in {"low", "mid", "high"}:
+            raise ValueError(f"Unsupported gait: {gait}")
+        self.gait = gait
+        self.ctrl.set_gait(gait)
+
+    def stop_motion(self) -> None:
+        """温和停止当前 Twist 控制。"""
+        if self._twist_active:
+            self.ctrl.stop_twist_control()
+            self._twist_active = False
+
     def get_pose(self):
         """
         返回 (position, yaw)。
@@ -475,9 +498,7 @@ class Lite3RealBridge:
 
     def stop(self) -> None:
         """停止运动（温和版本）。"""
-        if self._twist_active:
-            self.ctrl.stop_twist_control()
-            self._twist_active = False
+        self.stop_motion()
 
     def close(self) -> None:
         """释放所有资源。"""
@@ -486,7 +507,8 @@ class Lite3RealBridge:
             self.ctrl.stop_twist_control()
             self._twist_active = False
         self.ctrl.stop()
-        self.camera.close()
+        if self.camera is not None:
+            self.camera.close()
         print("[Lite3RealBridge] 资源已释放")
 
 

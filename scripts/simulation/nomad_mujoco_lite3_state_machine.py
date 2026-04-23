@@ -7,7 +7,6 @@ import sys
 from pathlib import Path
 
 import numpy as np
-import torch
 
 CURRENT_DIR = Path(__file__).resolve().parent
 SCRIPTS_ROOT = CURRENT_DIR.parent
@@ -21,7 +20,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Lite3 MuJoCo state-machine system")
     parser.add_argument(
         "--mode",
-        choices=["stand", "navigate", "explore", "walk-test", "generate-topomap", "mission", "estop"],
+        choices=["stand", "navigate", "explore", "keyboard", "walk-test", "generate-topomap", "mission", "estop"],
         default="navigate",
     )
     parser.add_argument("--map", choices=["easy", "medium", "hard"], default="easy")
@@ -59,6 +58,18 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--num-goals", type=int, default=1, help="Number of navigation goals for random_points or capture_queue.")
     parser.add_argument("--capture-index", type=int, default=-1, help="Capture queue index for goal-source=capture_queue (-1 means selected/latest).")
     parser.add_argument("--stand-steps", type=int, default=20, help="How many control steps the stand task should hold position.")
+    parser.add_argument("--keyboard-vx-step", type=float, default=0.2, help="Keyboard mode forward/backward speed increment.")
+    parser.add_argument("--keyboard-vy-step", type=float, default=0.15, help="Keyboard mode lateral speed increment.")
+    parser.add_argument("--keyboard-wz-step", type=float, default=0.3, help="Keyboard mode yaw-rate increment.")
+    parser.add_argument("--keyboard-max-vx", type=float, default=1.0, help="Keyboard mode max abs forward speed.")
+    parser.add_argument("--keyboard-max-vy", type=float, default=0.5, help="Keyboard mode max abs lateral speed.")
+    parser.add_argument("--keyboard-max-wz", type=float, default=1.5, help="Keyboard mode max abs yaw rate.")
+    parser.add_argument("--keyboard-dt", type=float, default=0.05, help="Keyboard mode control loop sleep time.")
+    parser.add_argument(
+        "--keyboard-heartbeat-file",
+        default="results/deployment/navigation_host_keyboard_active.json",
+        help="Heartbeat file written while keyboard mode is active.",
+    )
     parser.add_argument("--radius", type=int, default=4)
     parser.add_argument("--close-threshold", type=float, default=3.0)
     parser.add_argument("--yaw-sign", type=float, choices=[-1.0, 1.0], default=1.0)
@@ -132,6 +143,8 @@ def main() -> int:
 
     random.seed(args.seed)
     np.random.seed(args.seed)
+    import torch
+
     torch.manual_seed(args.seed)
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(args.seed)

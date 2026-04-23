@@ -96,6 +96,15 @@ class NavigationPlatformBase:
         # 中文注释：统一安全接口，默认发送零速度指令
         self.apply_command(MotionCommand(0.0, 0.0, 0.0))
 
+    def stop_motion(self) -> None:
+        self.apply_command(MotionCommand(0.0, 0.0, 0.0))
+
+    def set_gait(self, gait: str) -> None:
+        return None
+
+    def prepare_for_twist_control(self) -> None:
+        return None
+
     def close(self) -> None:
         return None
 
@@ -302,6 +311,9 @@ class Lite3LowLevelPlatform(NavigationPlatformBase):
         self.env.set_command(0.0, 0.0, 0.0)
         self.env.step_nomad_period()
 
+    def stop_motion(self) -> None:
+        self.emergency_stop()
+
     def close(self) -> None:
         self.env.close()
 
@@ -381,6 +393,21 @@ class ExternalBridgePlatform(NavigationPlatformBase):
             self.bridge.stop()
             return
         self.apply_command(MotionCommand(0.0, 0.0, 0.0))
+
+    def stop_motion(self) -> None:
+        if hasattr(self.bridge, "stop_motion"):
+            self.bridge.stop_motion()
+            return
+        if hasattr(self.bridge, "stop"):
+            self.bridge.stop()
+            return
+        self.apply_command(MotionCommand(0.0, 0.0, 0.0))
+
+    def set_gait(self, gait: str) -> None:
+        self._call("set_gait", gait, required=False)
+
+    def prepare_for_twist_control(self) -> None:
+        self._call("prepare_for_twist_control", required=False)
 
     def close(self) -> None:
         self._call("close", required=False)
