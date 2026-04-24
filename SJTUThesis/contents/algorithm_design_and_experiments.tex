@@ -128,7 +128,7 @@ GoStanford 数据集的场景多样性是其作为标准评估数据集的重要
 
 在离线实验阶段，训练与统计实验运行在配备 NVIDIA RTX 4090 的工作站上；在 MuJoCo 仿真阶段，相机图像由 MuJoCo 渲染器以第一人称视角生成；在真机部署阶段，使用 USB 单目相机接入 Jetson Orin，输出分辨率为 $640\times480$，推理前通过统一推理模块按指定 \texttt{image\_resize\_mode} 对齐至模型要求的输入尺寸（如 $96\times96$ 或 $98\times98$）。
 
-RTX 4090 与 Jetson Orin 之间的算力差距是本文实验设计中需要特别关注的因素。RTX 4090 拥有 16384 个 CUDA 核心和 24\,GB 显存，而 Jetson Orin（64\,GB 版）的 GPU 算力约为 RTX 4090 的 1/5 至 1/8。这意味着在 RTX 4090 上可接受的推理时延，在 Jetson Orin 上可能变得不可接受。因此，本文在离线实验中特别关注时延指标的绝对值而非仅关注相对加速比，以便为部署阶段的配置选择提供直接参考。
+RTX 4090 与 Jetson Orin 之间的算力差距是本文实验设计中需要特别关注的因素。RTX 4090 适合承担离线训练和统计实验，而 Jetson Orin 属于机载边缘计算平台，受功耗、散热和统一内存资源约束更强。这意味着在 RTX 4090 上可接受的推理时延，在 Jetson Orin 上仍需要通过板端 benchmark 重新确认。因此，本文在离线实验中特别关注时延指标的绝对值而非仅关注相对加速比，以便为部署阶段的配置选择提供直接参考。
 
 \section{基线实验}
 
@@ -140,7 +140,7 @@ RTX 4090 与 Jetson Orin 之间的算力差距是本文实验设计中需要特�
 
 扩散策略头中的 U-Net 架构采用了多尺度特征融合和条件注入机制。条件向量 $\mathbf{c}$ 通过 FiLM（Feature-wise Linear Modulation）机制注入到 U-Net 的各个分辨率层级中，使得噪声预测网络能够在每一步去噪中都感知到当前的视觉条件和目标信息。这种设计虽然增加了参数量，但保证了扩散过程对条件信号的充分响应。
 
-关于推理频率的部署含义，40\,ms 的纯采样时延在 RTX 4090 上对应约 25\,Hz 的理论上限，但叠加图像预处理和 ROS 消息往返后端到端频率通常收敛到 8--10\,Hz 量级，恰好落在典型机器人控制频率 5--20\,Hz 的下界。在边缘设备（如 Jetson Orin）上，由于 GPU 算力约为 RTX 4090 的 1/5 至 1/10，单次 DDPM-10 采样会从 40\,ms 放大到 200--400\,ms，端到端控制频率进一步降至 2--5\,Hz，已经接近机器人导航可接受的下限，这也是后续 DDIM 加速实验的直接动机。
+关于推理频率的部署含义，40\,ms 的纯采样时延在 RTX 4090 上对应约 25\,Hz 的理论上限，但叠加图像预处理、消息传递或可视化后，端到端频率通常会明显低于该理论值。在边缘设备（如 Jetson Orin）上，实际频率还会受到功耗模式、散热状态、相机驱动和 PyTorch/CUDA 版本影响，因此不能仅按桌面 GPU 与边缘 GPU 的标称算力比例线性外推。本文把 DDIM 加速作为部署优化的直接动机，但具体真机可用频率以后续 Orin 阶段 benchmark 为准。
 
 此外，$8 \times 8$ 的轨迹采样规格表示每次推理生成 8 条候选轨迹，每条轨迹包含 8 个 waypoint。这里的"8 条候选"源于扩散策略头的批次采样规格 \texttt{num\_samples}，是模型前向本身的输出形态，与是否开启 TTS 无关；这一候选集既可以直接作为下游统计与执行的来源，也可以作为 TTS 评分筛选的初始候选池，当需要进一步扩大搜索空间时再通过多批次采样把候选池规模扩展到 $K > 8$。8 个 waypoint 的长度在 NoMaD 的默认配置下对应约 2--3 秒的未来规划窗口，这一时间尺度既足以覆盖局部导航决策（如是否转弯），又不至于因规划太远而积累过大误差。
 
@@ -368,7 +368,7 @@ TTS 的计算开销与候选轨迹数（budget）总体正相关。设单次采�
 
 在讨论具体数值前，需要先澄清一个容易混淆的概念层次，以避免"默认生成 8 条候选"与"TTS-8"在读者眼中发生语义重合。NoMaD 扩散策略头的每次前向本身会以批次形式并行生成 \texttt{num\_samples} 条候选轨迹（本文固定为 8 条），这一批次规格由扩散头本身决定，与是否启用 TTS 无关。TTS 在此基础上额外引入两个正交的组件：一是候选池预算 $K$（即 \texttt{tts\_budget}），当 $K > \texttt{num\_samples}$ 时通过多次扩散采样把候选池从默认的 8 条扩展到 $K$ 条；二是评分筛选器，对池内的 $K$ 条候选按多目标评分排序，保留 top-$k$ 条作为执行输出。因此，实验配置中的"No TTS"与"TTS-8"都只触发一次扩散采样、生成同样的 8 条候选，差别只在于前者把候选集原样送入下游统计，后者多了一步基于评分的排序与 top-$k$ 选择；而 TTS-16 和 TTS-32 则分别对应 2 次和 4 次扩散采样，用于真正扩展候选池规模。这一层概念区分也是下文分析"TTS 收益从何而来"的前提。
 
-TTS 实验的核心问题不是"是否绝对提升所有指标"，而是"是否值得把 DDIM 节省下来的预算重新分配给候选搜索"。本次补充实验使用 \texttt{scripts/tts\_stat\_experiment.py}，在 12 个统一离线 case 上比较 DDIM 步数、CFG 权重与 TTS budget 的组合，结果保存于 \texttt{results/day4/20260421\_140601\_tts\_stat\_experiment}。表~\ref{tab:tts-results} 给出在 \texttt{DDIM-2}、$w=0$ 条件下的单因素结果。
+TTS 实验的核心问题不是"是否绝对提升所有指标"，而是"是否值得把 DDIM 节省下来的预算重新分配给候选搜索"。本次补充实验使用 \pathbreak{scripts/tts\_stat\_experiment.py}，在 12 个统一离线 case 上比较 DDIM 步数、CFG 权重与 TTS budget 的组合，结果保存于 \pathbreak{results/day4/20260421\_140601\_tts\_stat\_experiment}。表~\ref{tab:tts-results} 给出在 \texttt{DDIM-2}、$w=0$ 条件下的单因素结果。
 
 结合上述机制澄清，表中的单因素结果可以分解为两种不同来源的收益。从 No TTS 到 TTS-8，综合评分由 8.157 上升到 9.024，前进性由 9.010 上升到 9.697，而时延从 7.00\,ms 变为 6.89\,ms（两者在噪声范围内等价）——这段增益完全来自"评分筛选"，即在同一批 8 条候选上额外执行一次排序与 top-$k$ 选择，几乎没有采样开销。从 TTS-8 到 TTS-16 再到 TTS-32，时延分别上升到约 2 倍和 4 倍，对应 1 次、2 次和 4 次扩散采样批次，这一段增益才真正来自"候选池扩容"：TTS-16 的综合评分 9.124 仅比 TTS-8 高 0.10，而 TTS-32 的综合评分反而回落到 8.825。这种"筛选几乎零代价、扩容线性付费且边际收益快速衰减"的结构，正是 TTS-8 在三因素联合排序（表~\ref{tab:tts-joint-top}）中综合表现最优的根本原因：它以近乎零的时延代价捕获了 TTS 的主要收益，而把剩余预算留给 DDIM 步数与 CFG 权重的组合。
 
@@ -456,11 +456,11 @@ ConvNeXt-Tiny\cite{convnext2022} 作为"现代化 CNN"的代表被纳入实验�
 
 \subsection{已有结果与分析}
 
-本次补充实验使用 \texttt{deployment/model\_weights} 下的四个训练权重：\texttt{nomad\_efficientb0.pth}、\texttt{nomad\_dinvo2\_small.pth}、\texttt{nomad\_convnext\_tiny.pth} 和 \texttt{nomad\_resnet50.pth}。实验脚本为 \texttt{scripts/encoder\_comparison\_experiment.py}，结果保存于 \texttt{results/day4/20260421\_151228\_encoder\_comparison\_experiment}。表~\ref{tab:encoder-results} 汇总了四种编码器在相同离线 case、相同 DDPM-10 采样设置下的代理指标。
+本次补充实验使用 \pathbreak{deployment/model\_weights} 下的四个训练权重：\pathbreak{nomad\_efficientb0.pth}、\pathbreak{nomad\_dinvo2\_small.pth}、\pathbreak{nomad\_convnext\_tiny.pth} 和 \pathbreak{nomad\_resnet50.pth}。实验脚本为 \pathbreak{scripts/encoder\_comparison\_experiment.py}，结果保存于 \pathbreak{results/day4/20260421\_151228\_encoder\_comparison\_experiment}。表~\ref{tab:encoder-results} 汇总了四种编码器在相同离线 case、相同 DDPM-10 采样设置下的代理指标。
 
 离线结果表明，四种编码器在不同指标上各有侧重。EfficientNet-B0 的 smoothness 最低，说明其生成轨迹最平滑；ResNet-50 的 diversity 和 forward progress 最高，说明其候选轨迹更分散、前进性更强；DINOv2-Small 与 ConvNeXt-Tiny 的指标处于中间区间。由于这些指标仍是离线代理量，不能直接等价为闭环成功率，因此本文在第四章进一步补充 MuJoCo 闭环验证，而不是仅凭表~\ref{tab:encoder-results} 给出最终部署推荐。
 
-具体来说，冻结策略的影响值得深入讨论。本文的统一替换框架（\texttt{TimmBackboneEncoder}）采用的是二元冻结开关：\texttt{freeze\_backbone=True} 时全部 backbone 参数不参与训练，仅更新投影层和导航头；\texttt{freeze\_backbone=False} 时 backbone 随整个模型一起微调。本文四个编码器权重的训练均采用 \texttt{freeze\_backbone=False} 的全微调模式，以便在相同训练轮数下最大化各编码器的适配空间。这对于在 ImageNet 上预训练的 CNN 编码器（EfficientNet-B0、ConvNeXt-Tiny、ResNet-50）通常是合理选择，因为浅层特征（边缘、纹理）仍可以通过梯度回传保持有益的迁移表征。然而，对于 DINOv2 这样的 ViT 编码器，浅层的 patch embedding 和早期 Transformer block 可能编码了与 CNN 浅层不同类型的信息，全微调可能过早打破其大规模自监督预训练中积累的全局一致性。此外，DINOv2 的自监督预训练目标（DINO loss + iBOT loss）与导航任务的距离预测目标之间的 domain gap 也可能需要专门设计的分层学习率或选择性解冻策略来弥合，这一点属于后续工作的优化空间。
+具体来说，冻结策略的影响值得深入讨论。本文的统一替换框架（\pathbreak{TimmBackboneEncoder}）采用的是二元冻结开关：\pathbreak{freeze\_backbone=True} 时全部 backbone 参数不参与训练，仅更新投影层和导航头；\pathbreak{freeze\_backbone=False} 时 backbone 随整个模型一起微调。本文四个编码器权重的训练均采用 \pathbreak{freeze\_backbone=False} 的全微调模式，以便在相同训练轮数下最大化各编码器的适配空间。这对于在 ImageNet 上预训练的 CNN 编码器（EfficientNet-B0、ConvNeXt-Tiny、ResNet-50）通常是合理选择，因为浅层特征（边缘、纹理）仍可以通过梯度回传保持有益的迁移表征。然而，对于 DINOv2 这样的 ViT 编码器，浅层的 patch embedding 和早期 Transformer block 可能编码了与 CNN 浅层不同类型的信息，全微调可能过早打破其大规模自监督预训练中积累的全局一致性。此外，DINOv2 的自监督预训练目标（DINO loss + iBOT loss）与导航任务的距离预测目标之间的 domain gap 也可能需要专门设计的分层学习率或选择性解冻策略来弥合，这一点属于后续工作的优化空间。
 
 从定量数据来看，ResNet-50 在 diversity 指标上达到 0.9824，高于 EfficientNet-B0 的 0.5818；forward progress 也从 7.356 提升至 7.980。但 EfficientNet-B0 的 smoothness 为 0.0725，明显低于其他编码器，说明原始 CNN baseline 仍具有更稳定的局部轨迹生成特性。由此可见，视觉编码器升级不是单一指标最大化问题，而需要在多样性、前进性、平滑性和闭环执行稳定性之间折中。
 
@@ -563,7 +563,7 @@ ConvNeXt-Tiny\cite{convnext2022} 作为"现代化 CNN"的代表被纳入实验�
     \end{tabular}
 \end{table}
 
-前文曾指出，跨视觉编码器的联合消融对判断"DDIM/CFG/TTS 的最优参数是否稳定"至关重要：如果更换编码器会改变候选轨迹的多样性和平滑性，那么 TTS 的评分选择、CFG 的目标引导强度和 DDIM 的少步近似误差都可能随之漂移。为了在论文定稿前回答这一问题，本文使用 \texttt{scripts/encoder\_joint\_ablation\_experiment.py} 在相同的离线 case 构造规则下补齐了"编码器 $\times$ DDIM/CFG/TTS"联合矩阵，4 个训练权重（EfficientNet-B0、DINOv2-Small、ConvNeXt-Tiny、ResNet-50）统一以 DDIM 调度器为基础，分别扫描 DDIM-2/3/5 步数、TTS-0/8/16 候选预算以及 CFG-0/1/2 引导权重，每个配置在 12 个离线 case 上重复 3 次，结果保存于 \texttt{results/day5/20260422\_171021\_encoder\_joint\_ablation\_experiment}。CFG 一项限定在 EfficientNet-B0 与 ResNet-50 这两个初始多样性差异最大的编码器上，以小规模方式验证目标引导是否会放大编码器差异。三组结果分别由表~\ref{tab:encoder-ddim-joint}、表~\ref{tab:encoder-tts-joint} 和表~\ref{tab:encoder-cfg-joint} 给出，所有条目均已带 CI95 置信区间。
+前文曾指出，跨视觉编码器的联合消融对判断"DDIM/CFG/TTS 的最优参数是否稳定"至关重要：如果更换编码器会改变候选轨迹的多样性和平滑性，那么 TTS 的评分选择、CFG 的目标引导强度和 DDIM 的少步近似误差都可能随之漂移。为了在论文定稿前回答这一问题，本文使用 \pathbreak{scripts/encoder\_joint\_ablation\_experiment.py} 在相同的离线 case 构造规则下补齐了"编码器 $\times$ DDIM/CFG/TTS"联合矩阵，4 个训练权重（EfficientNet-B0、DINOv2-Small、ConvNeXt-Tiny、ResNet-50）统一以 DDIM 调度器为基础，分别扫描 DDIM-2/3/5 步数、TTS-0/8/16 候选预算以及 CFG-0/1/2 引导权重，每个配置在 12 个离线 case 上重复 3 次，结果保存于 \pathbreak{results/day5/20260422\_171021\_encoder\_joint\_ablation\_experiment}。CFG 一项限定在 EfficientNet-B0 与 ResNet-50 这两个初始多样性差异最大的编码器上，以小规模方式验证目标引导是否会放大编码器差异。三组结果分别由表~\ref{tab:encoder-ddim-joint}、表~\ref{tab:encoder-tts-joint} 和表~\ref{tab:encoder-cfg-joint} 给出，所有条目均已带 CI95 置信区间。
 
 \begin{table}[htbp]
     \centering
@@ -624,6 +624,7 @@ ConvNeXt-Tiny\cite{convnext2022} 作为"现代化 CNN"的代表被纳入实验�
     \small
     \caption{编码器 $\times$ CFG 权重小规模联合消融（DDIM-2, 无 TTS, 12 case $\times$ 3 runs）}
     \label{tab:encoder-cfg-joint}
+    \setlength{\tabcolsep}{3.5pt}
     \begin{tabular}{llccccc}
         \toprule
         编码器 & 配置 & Latency/ms & Forward Progress & Diversity & Lateral Abs & Smoothness \\

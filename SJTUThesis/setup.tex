@@ -15,13 +15,13 @@
     % 标题
     %
     zh / title           = {基于动作扩散策略的足式机器人视觉目标导航与探索},
-    en / title           = {Visual Goal Navigation and Exploration for Legged Robots Based on Action Diffusion Policy},
+    en / title           = {VISUAL GOAL NAVIGATION AND EXPLORATION FOR LEGGED ROBOTS BASED ON ACTION DIFFUSION POLICY},
     %
     % 标题页标题
     %   可使用“\\”命令手动控制换行
     %
     zh / display-title   = {基于动作扩散策略的\\足式机器人视觉目标导航与探索},
-    en / display-title   = {Visual Goal Navigation and Exploration \\ for Legged Robots Based on Action Diffusion Policy},
+    en / display-title   = {VISUAL GOAL NAVIGATION AND EXPLORATION \\ FOR LEGGED ROBOTS BASED ON ACTION DIFFUSION POLICY},
     %
     % 关键词
     %
@@ -98,14 +98,17 @@
     % 关键词首行悬挂
     %
     % keywords-format = hang,
+    float-font        = {\zihao{5}\setbaselineskip{14bp}\songti},
+    caption-font      = {\zihao{5}\setbaselineskip{14bp}\songti\bfseries},
+    subcaption-font   = {\zihao{5}\setbaselineskip{14bp}\songti},
   },
   %
   % 名称设置
   %
   name = {
-    % bib             = {References},
-    % ack             = {谢\hspace{\ccwd}辞},
-    % achv            = {攻读学位期间完成的论文},
+    bib             = {参考文献},
+    ack             = {致\hspace{\ccwd}谢},
+    achv            = {攻读学位期间学术论文和科研成果目录},
   },
 }
 
@@ -115,9 +118,10 @@
 %     gbpub=false             禁用出版信息缺失处理
 \usepackage[backend=biber,style=gb7714-2015]{biblatex}
 % 文献表字体
-\renewcommand{\bibfont}{\zihao{5}\setbaselineskip{16bp}}
+\renewcommand{\bibfont}{\zihao{5}\songti\setbaselineskip{14bp}}
 % 文献表条目间的间距
-\setlength{\bibitemsep}{3bp plus 1pt}
+\setlength{\bibitemsep}{0bp}
+\setlength{\bibhang}{0pt}
 % 导入参考文献数据库
 \addbibresource{refs.bib}
 
@@ -130,6 +134,9 @@
 
 % 颜色宏包
 \usepackage{xcolor} 
+\usepackage{xurl}
+\usepackage{seqsplit}
+\setmonofont{Times New Roman}
 
 % 确定浮动对象的位置，可以使用 [H]，强制将浮动对象放到这里（可能效果很差）
 % \usepackage{float}
@@ -175,7 +182,7 @@
   showstringspaces  = false,
   xleftmargin       = 1em,
   xrightmargin      = 1em,
-  breaklines        = false,
+  breaklines        = true,
   framexleftmargin  = 1em,
   framexrightmargin = 1em,
   backgroundcolor   = \color{gray!10},
@@ -214,11 +221,75 @@
 \providecommand{\BibLaTeX}{\textsc{Bib}\LaTeX}
 
 % 借用 ltxdoc 里面的几个命令方便写文档
+\RenewDocumentCommand{\texttt}{m}{\ifmmode\text{\rmfamily #1}\else{\rmfamily #1}\fi}
 \DeclareRobustCommand\cs[1]{\texttt{\char`\\#1}}
 \providecommand\pkg[1]{{\sffamily#1}}
+\newcommand{\pathbreak}[1]{{\rmfamily\seqsplit{#1}}}
 
 % hyperref 宏包在最后调用
 \usepackage{hyperref}
 
 % E-mail
-\providecommand{\email}[1]{\href{mailto:#1}{\urlstyle{tt}\nolinkurl{#1}}}
+\urlstyle{same}
+\providecommand{\email}[1]{\href{mailto:#1}{\nolinkurl{#1}}}
+
+\ctexset{
+  chapter = {
+    beforeskip = 24bp,
+    afterskip = 18bp,
+    format = {\zihao{3}\setbaselineskip{20bp}\heiti\sffamily\bfseries\centering},
+  },
+  section = {
+    beforeskip = 12bp,
+    afterskip = 6bp,
+    format = {\zihao{4}\setbaselineskip{20bp}\heiti\sffamily\bfseries},
+  },
+  subsection = {
+    beforeskip = 6bp,
+    afterskip = 6bp,
+    format = {\zihao{-4}\setbaselineskip{20bp}\heiti\sffamily\bfseries},
+  },
+}
+
+\makeatletter
+\contentsmargin[2.55em]{0pt}
+\titlecontents{chapter}
+  [0pt]
+  {\addvspace{3bp}\zihao{4}\songti\setbaselineskip{16bp}}
+  {\contentspush{\thecontentslabel\enskip}}
+  {}
+  {\SJTU@leaders\thecontentspage}
+\titlecontents{section}
+  [1\ccwd]
+  {\zihao{-4}\songti\setbaselineskip{16bp}}
+  {\contentspush{\thecontentslabel\enskip}}
+  {}
+  {\SJTU@leaders\thecontentspage}
+\titlecontents{subsection}
+  [2\ccwd]
+  {\zihao{5}\songti\setbaselineskip{16bp}}
+  {\contentspush{\thecontentslabel\enskip}}
+  {}
+  {\SJTU@leaders\thecontentspage}
+\makeatother
+
+\captionsetup{justification=centering,singlelinecheck=false}
+
+\AddToHook{env/abstract/begin}{
+  \zihao{-4}\setbaselineskip{20bp}
+  \setlength{\parindent}{2\ccwd}
+  \setlength{\parskip}{0pt}
+}
+\AddToHook{env/digest/begin}{
+  \zihao{-4}\setbaselineskip{20bp}
+  \setlength{\parindent}{2\ccwd}
+  \setlength{\parskip}{0pt}
+}
+\AtBeginDocument{
+  \setlength{\parindent}{2\ccwd}
+  \setlength{\parskip}{0pt}
+  \setlength{\emergencystretch}{3em}
+  \Urlmuskip=0mu plus 2mu
+}
+
+\hyphenation{Classifier-Free Efficient-Net Conv-NeXt}

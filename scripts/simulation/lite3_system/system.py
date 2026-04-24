@@ -39,8 +39,14 @@ class Lite3System:
     ) -> None:
         self.args = args
         self.legacy = load_legacy()
-        self.legacy.SCENE_CONFIG = self.legacy.SCENE_MAPS[args.map]
         self.platform = platform or Lite3LowLevelPlatform(gui=not args.no_gui, scene_name=args.map)
+        if args.map in self.legacy.SCENE_MAPS:
+            self.legacy.SCENE_CONFIG = self.legacy.SCENE_MAPS[args.map]
+        elif self.platform.environment_domain() == "mujoco":
+            raise ValueError(f"Unknown MuJoCo map: {args.map}")
+        else:
+            # 中文注释：真机 backend 没有 MuJoCo 场景，保留默认仿真配置只给少数复用工具兜底。
+            self.legacy.SCENE_CONFIG = self.legacy.SCENE_MAPS["easy"]
         self.platform.prepare_task(args.mode)
         self.session = session or NavigationSession(run_label=result_prefix)
         self.high_level = Lite3HighLevelNoMaD(

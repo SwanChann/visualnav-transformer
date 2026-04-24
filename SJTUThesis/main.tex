@@ -3,7 +3,16 @@
 % !TeX TXS-program:recompile-bibliography = txs:///latexmk/{} -v
 
 % 载入 SJTUThesis 模版
-\documentclass[type=bachelor,preset=jwc]{sjtuthesis}
+\documentclass[
+  type=bachelor,
+  zihao=-4,
+  lang=zh,
+  text-font=times,
+  math-font=newtx,
+  cjk-font=windows,
+  oneside,
+  openany
+]{sjtuthesis}
 % 选项
 %   type=[doctor|master|bachelor],     % 可选（默认：master），论文类型
 %   zihao=[-4|5],                      % 可选（默认：-4），正文字号大小
@@ -38,12 +47,6 @@
 
 % 目录
 \tableofcontents
-% 插图索引
-\listoffigures
-% 表格索引
-\listoftables
-% 算法索引
-\listofalgorithms
 
 % 符号对照表
 \input{contents/nomenclature}

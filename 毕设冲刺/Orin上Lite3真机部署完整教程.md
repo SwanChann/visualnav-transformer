@@ -234,6 +234,30 @@ ls scripts/configs/vision_encoder/nomad_encoder_efficientnet_b0.yaml
 mkdir -p deployment/topomaps/images/real_hallway
 ```
 
+这里的 `real_hallway` 是当前真机部署的默认真实场景名。它不是 MuJoCo 的 `easy/medium/hard` 仿真地图，而是实拍 topomap 的目录名与运行标签。若要采集其他真实场景，可以在运行前指定新的名称，例如：
+
+```bash
+mkdir -p deployment/topomaps/images/lab_corridor
+```
+
+然后采集时同步修改：
+
+```bash
+--output-dir deployment/topomaps/images/lab_corridor
+--map-name lab_corridor
+```
+
+也就是说，其他真实 map 建议与 `real_hallway` 放在同级目录下：
+
+```text
+deployment/topomaps/images/
+  real_hallway/
+  lab_corridor/
+  office_loop/
+```
+
+其中 `--output-dir` 决定图像实际保存在哪里，`--map-name` 会写入 `topomap_meta.json`，用于说明这组图像属于哪个真实场景。导航时真正加载的是 `--topomap-dir` 指向的目录；导航主机启动时的 `--map` 则主要作为真机运行标签、capture 命名和状态显示使用。
+
 推荐直接用 Orin 相机采集，保证 topomap 图像和部署时相机视角、畸变、曝光尽量一致。`capture_real_topomap.py` 只负责拍摄与写入 topomap，不再检测导航主机是否处于 `keyboard` 模式。
 
 如果希望采集时用导航主机的 `keyboard` 模式移动机器狗，可以先打开一个终端启动导航主机，并在交互提示符中输入 `keyboard`。由于拍摄脚本会直接占用 Orin 相机，采集 topomap 时建议主机使用 `--camera off`，避免两个进程抢同一个相机：
@@ -242,6 +266,7 @@ mkdir -p deployment/topomaps/images/real_hallway
 python scripts/deployment/nomad_navigation_host.py \
   --interactive \
   --backend real \
+  --map real_hallway \
   --camera off \
   --bridge-module deployment.lite3_real_bridge \
   --bridge-class Lite3RealBridge \
@@ -275,6 +300,22 @@ python scripts/deployment/capture_real_topomap.py \
   --count 40 \
   --manual
 ```
+
+带 `--manual` 的命令是**手动采集**，不是自动定时采集。脚本启动后会在终端逐张提示：
+
+```text
+[TopomapCapture] 移动到节点 000 后按 Enter 保存...
+```
+
+此时脚本会停在 `input()` 等待状态，不会自动保存图像。正确操作流程是：
+
+1. 操作者用手推 Orin 相机，或在另一个终端用导航主机 `keyboard` 模式低速移动 Lite3。
+2. 到达第一个节点位置后，让机器人或相机短暂停稳，确认朝向与机器人第一视角一致。
+3. 在运行采集脚本的终端按一次 `Enter`，脚本立即读取当前相机帧并保存为 `000.png`。
+4. 继续移动到下一个节点，再按一次 `Enter`，保存为 `001.png`。
+5. 重复直到达到 `--count 40` 指定的数量，脚本最后写入 `topomap_meta.json`。
+
+手动模式适合走廊窄、需要避让障碍、需要保证每个节点都停稳取景的情况。若不带 `--manual`，脚本才会按照 `--interval` 自动间隔采集；例如 `--interval 0.5` 表示除第一帧外，每隔 0.5 秒保存一帧。
 
 采集操作要求：
 
@@ -786,6 +827,7 @@ python scripts/deployment/lite3_real_bridge.py \
 python scripts/deployment/nomad_navigation_host.py \
   --interactive \
   --backend real \
+  --map real_hallway \
   --camera on \
   --bridge-module deployment.lite3_real_bridge \
   --bridge-class Lite3RealBridge \
@@ -804,6 +846,13 @@ python scripts/deployment/nomad_navigation_host.py \
 ```
 
 3. 如果 `--camera on`，会出现实时相机窗口。
+4. 执行 `status` 时应显示 `Backend: real, Map: real_hallway`。`Map` 在真机 backend 下表示真实场景标签，不表示 MuJoCo 仿真场景。
+
+如果旧版本代码显示 `Map: easy`，原因是导航主机历史上默认服务于 MuJoCo，`--map` 默认值写死为 `easy`。当前代码已经将真机 backend 的默认运行标签改为 `real_hallway`；若在 Orin 上仍看到 `easy`，说明 Orin 代码未同步到当前版本，或者启动命令/plan 文件中仍显式写了 `map: easy`。临时修正方式是在启动导航主机时显式加上：
+
+```bash
+--map real_hallway
+```
 
 ⚠️ 安全警告：当前交互式主机在进入 idle 前会**自动调用一次 `_ensure_standing()`，机器人在启动瞬间就会起立**（见 `nomad_navigation_host.py` 中 `InteractiveNavigationHost.run()`）。因此启动该命令前必须：
 
@@ -899,6 +948,7 @@ ls deployment/topomaps/images/real_hallway | head
 python scripts/deployment/nomad_navigation_host.py \
   --interactive \
   --backend real \
+  --map real_hallway \
   --camera on \
   --bridge-module deployment.lite3_real_bridge \
   --bridge-class Lite3RealBridge \
@@ -943,6 +993,7 @@ navigate --topomap-dir deployment/topomaps/images/real_hallway --max-steps 200 -
 python scripts/deployment/nomad_navigation_host.py \
   --interactive \
   --backend real \
+  --map real_hallway \
   --camera on \
   --bridge-module deployment.lite3_real_bridge \
   --bridge-class Lite3RealBridge \
@@ -967,6 +1018,7 @@ python scripts/deployment/nomad_navigation_host.py \
 python scripts/deployment/nomad_navigation_host.py \
   --interactive \
   --backend real \
+  --map real_hallway \
   --no-gui \
   --camera off \
   --bridge-module deployment.lite3_real_bridge \
@@ -1204,6 +1256,7 @@ python scripts/deployment/lite3_real_bridge.py --robot-ip 192.168.2.1 --camera-d
 python scripts/deployment/nomad_navigation_host.py \
   --interactive \
   --backend real \
+  --map real_hallway \
   --camera on \
   --bridge-module deployment.lite3_real_bridge \
   --bridge-class Lite3RealBridge \
@@ -1235,11 +1288,12 @@ estop
 
 1. 真实导航一定要提供真实 `topomap-dir`。
 2. 真实 topomap 应由 Orin 相机或同等视角相机在真实场景采集，目录中需要有 `"domain": "real"` 的 `topomap_meta.json`。
-3. 当前无线部署中，Orin 导航主机地址为 `192.168.2.17`，Lite3 运动主机地址为 `192.168.2.1`；`robot_ip` 必须写运动主机地址，不能写 Orin 地址。
-4. `bridge-config` 使用项目自带 JSON 即可，当前代码已兼容其 `bridge_kwargs` 包装格式；默认已使用首次真机推荐限幅 `max_linear_x=0.2 / max_yaw_rate=0.6`（见 §5.2）。
-5. `640x480` USB 相机可以先用默认 `stretch` 进入 NoMaD；若真实闭环出现横向几何异常，再测试 `center_crop` 或 `letterbox`。
-6. 若要保存运行过程中的实时图像，启动导航主机时必须带 `--save-fpv`。
-7. `captures/`、`goal_views/`、`fpv/` 三类图像都已经有对应代码路径，不是纯文档设计。
-8. **交互式主机启动即自动起立**：`nomad_navigation_host.py --interactive` 的 `run()` 会在进入 idle 之前调用一次 `_ensure_standing()`，所以必须在启动命令回车之前就完成安全准备，不能指望"启动后再有时间反应"。
-9. 当前最稳的真机流程是：
+3. 真机 backend 的默认 map/run label 是 `real_hallway`；其他真实场景应放在 `deployment/topomaps/images/<map_name>/`，与 `real_hallway` 同级。`easy/medium/hard` 只属于 MuJoCo backend。
+4. 当前无线部署中，Orin 导航主机地址为 `192.168.2.17`，Lite3 运动主机地址为 `192.168.2.1`；`robot_ip` 必须写运动主机地址，不能写 Orin 地址。
+5. `bridge-config` 使用项目自带 JSON 即可，当前代码已兼容其 `bridge_kwargs` 包装格式；默认已使用首次真机推荐限幅 `max_linear_x=0.2 / max_yaw_rate=0.6`（见 §5.2）。
+6. `640x480` USB 相机可以先用默认 `stretch` 进入 NoMaD；若真实闭环出现横向几何异常，再测试 `center_crop` 或 `letterbox`。
+7. 若要保存运行过程中的实时图像，启动导航主机时必须带 `--save-fpv`。
+8. `captures/`、`goal_views/`、`fpv/` 三类图像都已经有对应代码路径，不是纯文档设计。
+9. **交互式主机启动即自动起立**：`nomad_navigation_host.py --interactive` 的 `run()` 会在进入 idle 之前调用一次 `_ensure_standing()`，所以必须在启动命令回车之前就完成安全准备，不能指望"启动后再有时间反应"。
+10. 当前最稳的真机流程是：
    先独立调试，再桥接通讯（仅连接），再用 `--test-standup/--test-twist` 手工验证起立与低速前进，再打开交互式主机（建议 `--camera off`）进入 `keyboard` 模式采集真实 topomap，最后再切回正常主机相机配置做探索和基于真实 topomap 的单目标导航。

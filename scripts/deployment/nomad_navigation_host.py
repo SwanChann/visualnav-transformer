@@ -247,7 +247,12 @@ def build_host_parser() -> argparse.ArgumentParser:
     parser.add_argument("--platform", choices=["lite3"], default="lite3")
     parser.add_argument("--backend", choices=["mujoco", "real"], default="mujoco")
     parser.add_argument("--interactive", action="store_true", help="Start in online interactive mode (stdin command loop)")
-    parser.add_argument("--map", choices=["easy", "medium", "hard"], default="easy", help="Map for interactive mode")
+    parser.add_argument(
+        "--map",
+        type=str,
+        default=None,
+        help="Map/run label. MuJoCo defaults to easy; real backend defaults to real_hallway.",
+    )
     parser.add_argument("--plan-file", type=str, default=None, help="JSON plan file containing defaults and tasks")
     parser.add_argument("--bridge-module", type=str, default=None, help="Python module for the real-robot bridge")
     parser.add_argument("--bridge-class", type=str, default=None, help="Bridge class name in the selected module")
@@ -273,6 +278,13 @@ def _state_machine_defaults() -> dict:
     return vars(parser.parse_args([]))
 
 
+def finalize_host_args(host_args) -> None:
+    if host_args.map is None:
+        host_args.map = "real_hallway" if host_args.backend == "real" else "easy"
+    if host_args.backend == "mujoco" and host_args.map not in {"easy", "medium", "hard"}:
+        raise ValueError(f"MuJoCo backend only supports map easy/medium/hard, got: {host_args.map}")
+
+
 def load_task_args(host_args, remaining_args: list[str]) -> list[argparse.Namespace]:
     state_parser = build_state_machine_parser()
     state_defaults = _state_machine_defaults()
@@ -281,6 +293,7 @@ def load_task_args(host_args, remaining_args: list[str]) -> list[argparse.Namesp
         plan_path = Path(host_args.plan_file).expanduser().resolve()
         plan_payload = json.loads(plan_path.read_text(encoding="utf-8"))
         defaults = dict(state_defaults)
+        defaults["map"] = host_args.map
         defaults.update(plan_payload.get("defaults", {}))
         task_args_list = []
         for task_payload in plan_payload.get("tasks", []):
@@ -292,6 +305,8 @@ def load_task_args(host_args, remaining_args: list[str]) -> list[argparse.Namesp
         return task_args_list
 
     task_args = state_parser.parse_args(remaining_args)
+    if host_args.backend == "real":
+        task_args.map = host_args.map
     task_args.keyboard_heartbeat_file = host_args.keyboard_heartbeat_file
     return [task_args]
 
@@ -676,6 +691,7 @@ class InteractiveNavigationHost:
 def main() -> int:
     host_parser = build_host_parser()
     host_args, remaining_args = host_parser.parse_known_args()
+    finalize_host_args(host_args)
 
     if host_args.interactive:
         host = InteractiveNavigationHost(host_args)
