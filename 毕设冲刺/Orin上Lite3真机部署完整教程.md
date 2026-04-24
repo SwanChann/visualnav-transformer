@@ -41,7 +41,7 @@ Orin Camera -> NoMaDInferenceModule -> waypoint sequence
 | `scripts/configs/navigation_host/lite3_real_bridge_config.json` | 真机桥接配置 |
 | `scripts/shared/nomad_inference.py` | NoMaD 推理模块 |
 | `scripts/simulation/lite3_system/system.py` | 闭环状态机系统 |
-| `scripts/simulation/lite3_system/session.py` | `images/`、`goal_views/`、`captures/` 保存 |
+| `scripts/simulation/lite3_system/session.py` | `videos/`、`goal_views/`、`captures/` 保存 |
 | `lite3_host_control/lite3_controller.py` | UDP 上位机控制器 |
 | `scripts/nomad_real_deployment_checklist.py` | 真机部署检查清单生成器 |
 
@@ -52,7 +52,7 @@ Orin Camera -> NoMaDInferenceModule -> waypoint sequence
 3. 用 Orin 相机采集真实环境 topomap，并写入 `topomap_meta.json`。
 4. 通过 `Lite3RealBridge` 把高层命令转成 Lite3 的 UDP Twist 控制。
 5. 用导航主机启动交互式 `stand`、`explore`、`navigate`、`estop`。
-6. 保存运行目录下的 `captures/`、`goal_views/`、`images/`。
+6. 保存运行目录下的 `captures/`、`goal_views/`、`videos/`。
 
 ### 2.4 当前代码不应误写的限制
 
@@ -287,7 +287,7 @@ python scripts/deployment/capture_real_topomap.py \
   --map-name real_hallway \
   --camera-device 0 \
   --count 40 \
-  --interval 2
+  --interval 5
 ```
 
 如果场地狭窄、需要每移动一段距离再手动保存一帧，使用手动模式：
@@ -1029,11 +1029,19 @@ python scripts/deployment/nomad_navigation_host.py \
 navigate --topomap-dir deployment/topomaps/images/real_hallway --max-steps 200 --scheduler ddim --ddim-steps 5 --cfg-weight 0.0
 ```
 
-窗口左侧是实时 FPV 图像，右侧是当前 goal 图像；按 `[` / `]` 可以切换 goal 节点，按 `ESC` 退出当前任务并回到 idle。
+窗口左侧是实时 FPV 图像，右侧是当前 goal 图像；按 `[` / `]` 可以切换 goal 节点，按 `ESC` 退出当前任务并回到 idle。真机 backend 默认启用后台相机可视化线程，窗口会按 `--camera-viewer-fps` 尽量持续显示最新相机帧，不再等待每一次 NoMaD 推理结束才刷新。
+
+如果希望从 topomap 中直接指定某一张目标图像，可以加 `--goal-image`。它匹配 `--topomap-dir` 目录内的文件名或不带后缀的 stem，例如：
+
+```text
+navigate --topomap-dir deployment/topomaps/images/real_hallway --goal-image 023.png --max-steps 200 --scheduler ddim --ddim-steps 5 --cfg-weight 0.0
+```
+
+如果不指定 `--goal-image`，默认仍使用 topomap 的最后一张图作为 goal。
 
 ### 8.2 保存图像的导航
 
-若需要复盘导航过程，只保留一个保存开关：`--save-images`。
+若需要复盘导航过程，只保留一个保存开关：`--save-images`。这个参数名为了兼容旧命令仍保留，但当前行为已经改成保存 MP4 视频，不再逐帧写 PNG。
 
 ```bash
 python scripts/deployment/nomad_navigation_host.py \
@@ -1055,13 +1063,14 @@ python scripts/deployment/nomad_navigation_host.py \
 
 保存逻辑如下：
 
-1. `navigate` / `mission` 中有目标图像时，每个导航 tick 保存一张“实时 FPV + 当前 goal”的左右拼接图。
-2. `explore`、`keyboard` 等无 goal 图像的任务中，按较低频率保存实时 FPV 图像。
-3. 所有运行过程图像统一保存在 `images/<timestamp>_.../`，不再拆成两套保存开关和两套运行目录。
+1. `navigate` / `mission` 中有目标图像时，视频画面为“实时 FPV + 当前 goal”的左右拼接。
+2. `explore`、`keyboard` 等无 goal 图像的任务中，视频画面为实时 FPV。
+3. 视频统一保存到 `videos/<timestamp>_.../navigation_record.mp4`，旁边会写入 `recording_meta.json`，其中包含完整 `video_path`。
+4. 启动后终端也会打印完整路径，例如 `results/deployment/<session>/videos/<timestamp>_lite3_real_interactive_navigate/navigation_record.mp4`。
 
 ### 8.3 无可视化导航
 
-用于正式跑实验时减少 GUI 开销。若仍想保留复盘图像，可以继续加 `--save-images`：
+用于正式跑实验时减少 GUI 开销。若仍想保留复盘视频，可以继续加 `--save-images`：
 
 ```bash
 python scripts/deployment/nomad_navigation_host.py \
@@ -1082,7 +1091,7 @@ python scripts/deployment/nomad_navigation_host.py \
 
 1. 不弹出实时相机窗口。
 2. 仍可执行 `capture`。
-3. 若带 `--save-images`，仍会保存 `images/`、`captures/`、`goal_views/`。
+3. 若带 `--save-images`，仍会保存 `videos/`、`captures/`、`goal_views/`。
 
 ### 8.4 指定地图或真实场景
 
@@ -1129,7 +1138,7 @@ results/deployment/<timestamp>_lite3_real_interactive/
 |------|----------|------|
 | `captures/` | 执行 `capture` | 当前相机图像 |
 | `goal_views/` | 执行 `navigate` 且任务有目标图像 | 当前任务目标图像 |
-| `images/<timestamp>_.../` | 主机或任务带 `--save-images` | 导航时为实时图像与目标图像拼接图；无目标任务中为实时图像 |
+| `videos/<timestamp>_.../navigation_record.mp4` | 主机或任务带 `--save-images` | 导航时为实时图像与目标图像拼接视频；无目标任务中为实时图像视频 |
 
 检查命令：
 
@@ -1211,7 +1220,7 @@ explore --max-steps 30 --scheduler ddim --ddim-steps 2 --cfg-weight 0.0
 先区分两类“低帧率”：
 
 1. 相机采集低帧率：后台相机线程本身只能拿到很低 FPS，这会影响模型输入实时性。
-2. 导航窗口低帧率：相机后台仍在 20-30 FPS 更新，但 NoMaD 推理循环较慢，OpenCV 窗口只在每个高层 tick 刷新一次；此时模型读取的是后台最新帧，不是窗口上一帧。
+2. 导航窗口低帧率：相机后台仍在 20-30 FPS 更新，但 NoMachine 或 OpenCV 显示链路刷新慢。当前真机 backend 已默认把相机窗口放到后台线程刷新，NoMaD 推理循环和窗口显示解耦；此时模型读取的是后台最新帧，不是窗口上一帧。
 
 排查方法：
 
@@ -1238,13 +1247,19 @@ v4l2-ctl --device=/dev/video0 --list-formats-ext
 "camera_fourcc": "MJPG"
 ```
 
-若相机不支持 MJPG，可以把 `camera_fourcc` 改成 `null` 或相机支持的格式，再重新测试。若 `camera_fps` 正常但窗口刷新慢，瓶颈在推理循环，优先使用 `--scheduler ddim --ddim-steps 2`，并在主机启动时加：
+若相机不支持 MJPG，可以把 `camera_fourcc` 改成 `null` 或相机支持的格式，再重新测试。若 `camera_fps` 正常但窗口刷新慢，先确认没有手动关闭后台显示线程。真机默认开启，也可以显式设置显示帧率：
+
+```text
+--camera-viewer-fps 15
+```
+
+如果 NoMachine 带宽不足，降低到 `--camera-viewer-fps 8` 通常更稳定；如果要回到旧的串行显示方式，可加 `--no-async-camera-viewer`。若推理本身仍慢，优先使用 `--scheduler ddim --ddim-steps 2`，并在主机启动时加：
 
 ```text
 --profile-timing --profile-interval 5
 ```
 
-导航时会打印每个阶段耗时，例如 `camera / ui / preprocess / infer / command / total`。其中 `infer` 大说明模型推理慢；`ui` 大说明显示窗口拖慢；`preprocess` 大通常说明图像预处理或 topomap 预处理有问题。当前代码已把 topomap 图像预处理缓存到任务开始阶段，避免每个导航 tick 重复把 topomap 从 PIL 转 tensor。
+导航时会打印每个阶段耗时，例如 `camera / ui / preprocess / infer / command / total`。其中 `infer` 大说明模型推理慢；`camera` 大说明主循环取图或相机后端慢；`ui` 在真机异步显示开启后应接近 0，若仍明显偏大，说明当前任务关闭了异步显示或在走旧的串行显示路径；`preprocess` 大通常说明图像预处理有问题。当前代码已把 topomap 图像预处理缓存到任务开始阶段，避免每个导航 tick 重复把 topomap 从 PIL 转 tensor。
 
 正式实验如果不需要看窗口，推荐：
 
@@ -1252,7 +1267,7 @@ v4l2-ctl --device=/dev/video0 --list-formats-ext
 --camera off --no-gui
 ```
 
-这样闭环仍使用后台相机最新帧，但不再让 OpenCV 显示参与高层循环。
+这样闭环仍使用后台相机最新帧，但不再让 OpenCV/NoMachine 显示参与运行。
 
 ### 9.4 速度指令太大或机器人动作太猛
 
@@ -1290,14 +1305,14 @@ scripts/configs/navigation_host/lite3_real_bridge_config.json
 2. 目录是否真实存在。
 3. 目录中的图像是不是实拍图，而不是 MuJoCo 图。
 
-### 9.7 没有保存 `images/`
+### 9.7 没有保存 `videos/`
 
 要满足两个条件：
 
 1. 启动导航主机时带 `--save-images`。
 2. 实际执行了 `explore` 或 `navigate` 这类会循环运行的任务。
 
-仅仅进入 idle 或只执行 `capture`，不会产生整段 `images/` 运行图像。
+仅仅进入 idle 或只执行 `capture`，不会产生整段 `videos/` 运行视频。视频路径会在任务启动和结束时打印，格式为 `results/deployment/<session>/videos/<timestamp>_<label>/navigation_record.mp4`。
 
 ### 9.8 交互式主机任务时报 `No module named 'torchvision'`
 
@@ -1434,8 +1449,8 @@ estop
 4. 当前无线部署中，Orin 导航主机地址为 `192.168.2.17`，Lite3 运动主机地址为 `192.168.2.1`；`robot_ip` 必须写运动主机地址，不能写 Orin 地址。
 5. `bridge-config` 使用项目自带 JSON 即可，当前代码已兼容其 `bridge_kwargs` 包装格式；默认已使用更保守的首次真机限幅 `max_linear_x=0.12 / max_yaw_rate=0.35`，并默认启用 `camera_backend=v4l2 / camera_fourcc=MJPG`（见 §5.2）。
 6. `640x480` USB 相机可以先用默认 `stretch` 进入 NoMaD；若真实闭环出现横向几何异常，再测试 `center_crop` 或 `letterbox`。
-7. 若要保存运行过程图像，启动导航主机时带 `--save-images`；导航任务会逐帧保存实时图像与目标图像拼接图，非目标任务保存实时图像。
-8. `captures/`、`goal_views/`、`images/` 都已经有对应代码路径，不是纯文档设计。
+7. 若要保存运行过程，启动导航主机时带 `--save-images`；当前会保存 MP4 视频，导航任务画面为实时图像与目标图像拼接，非目标任务保存实时图像视频。
+8. `captures/`、`goal_views/`、`videos/` 都已经有对应代码路径，不是纯文档设计。
 9. **交互式主机启动即自动起立**：`nomad_navigation_host.py --interactive` 的 `run()` 会在进入 idle 之前调用一次 `_ensure_standing()`，所以必须在启动命令回车之前就完成安全准备，不能指望"启动后再有时间反应"。
 10. 若机器人动作仍偏猛，先加或继续降低 `--pd-linear-scale / --pd-yaw-scale / --pd-max-v / --pd-max-w`，再考虑改桥接层最终限幅。
 11. 当前最稳的真机流程是：

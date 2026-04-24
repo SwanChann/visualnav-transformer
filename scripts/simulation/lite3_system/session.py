@@ -28,9 +28,11 @@ class NavigationSession:
         self.capture_dir = self.run_dir / "captures"
         self.goal_dir = self.run_dir / "goal_views"
         self.images_root = self.run_dir / "images"
+        self.videos_root = self.run_dir / "videos"
         self.capture_dir.mkdir(parents=True, exist_ok=True)
         self.goal_dir.mkdir(parents=True, exist_ok=True)
         self.images_root.mkdir(parents=True, exist_ok=True)
+        self.videos_root.mkdir(parents=True, exist_ok=True)
         self.capture_queue: list[CaptureFrame] = []
         self.selected_capture_index = -1
         self.estop_requested = False
@@ -116,6 +118,13 @@ class NavigationSession:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         safe_label = "".join(ch if ch.isalnum() or ch in {"-", "_"} else "_" for ch in label).strip("_") or "navigation"
         output_dir = self.images_root / f"{timestamp}_{safe_label}"
+        output_dir.mkdir(parents=True, exist_ok=True)
+        return output_dir
+
+    def start_video_recording(self, label: str = "navigation") -> Path:
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        safe_label = "".join(ch if ch.isalnum() or ch in {"-", "_"} else "_" for ch in label).strip("_") or "navigation"
+        output_dir = self.videos_root / f"{timestamp}_{safe_label}"
         output_dir.mkdir(parents=True, exist_ok=True)
         return output_dir
 

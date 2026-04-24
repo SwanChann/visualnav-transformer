@@ -37,8 +37,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--save-images",
         action="store_true",
-        help="Save run images under the session images/ directory. Navigation saves FPV+goal composites.",
+        help="Record the run as MP4 video under the session videos/ directory. The flag name is kept for compatibility.",
     )
+    parser.add_argument("--record-fps", type=float, default=10.0, help="FPS used by --save-images MP4 recording.")
     parser.add_argument(
         "--topomap-traj",
         type=str,
@@ -50,6 +51,12 @@ def build_parser() -> argparse.ArgumentParser:
         type=str,
         default=None,
         help="MuJoCo: defaults to topomaps/<map>. Real: must be a real-world collected topomap directory.",
+    )
+    parser.add_argument(
+        "--goal-image",
+        type=str,
+        default=None,
+        help="Use a specific image file from the selected topomap as the navigation goal, e.g. 023.png.",
     )
     parser.add_argument("--topomap-step", type=int, default=5)
     parser.add_argument("--topomap-nodes", type=int, default=20)
@@ -83,6 +90,18 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--pd-max-w", type=float, default=None, help="Optional PD yaw-rate clamp before bridge clipping.")
     parser.add_argument("--profile-timing", action="store_true", help="Print per-tick timing diagnostics.")
     parser.add_argument("--profile-interval", type=int, default=10, help="Timing diagnostics print interval in ticks.")
+    parser.add_argument(
+        "--camera-viewer-fps",
+        type=float,
+        default=15.0,
+        help="Target FPS for the real-backend async camera visualization thread.",
+    )
+    parser.add_argument(
+        "--no-async-camera-viewer",
+        dest="async_camera_viewer",
+        action="store_false",
+        help="Disable the real-backend async camera viewer and render camera frames in the control loop.",
+    )
     parser.add_argument("--scheduler", choices=["ddpm", "ddim"], default="ddpm")
     parser.add_argument("--ddim-steps", type=int, default=10)
     parser.add_argument(
@@ -142,7 +161,7 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_false",
         help="Disable the MuJoCo-only reference-path stabilizer used to keep the quadruped inside the simulated corridor.",
     )
-    parser.set_defaults(mujoco_route_stabilizer=True)
+    parser.set_defaults(mujoco_route_stabilizer=True, async_camera_viewer=True)
     return parser
 
 

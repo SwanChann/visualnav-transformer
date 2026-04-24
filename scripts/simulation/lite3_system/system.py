@@ -4,10 +4,12 @@ from datetime import datetime
 import json
 import os
 from pathlib import Path
+import threading
 import select
 import sys
 import time
 
+import cv2
 import numpy as np
 
 from lite3_system.interfaces import ContextBuffer, Lite3HighLevelNoMaD, Lite3LowLevelPlatform, Lite3MiddleLayerPD, MotionCommand, NavigationPlatformBase
@@ -88,7 +90,14 @@ class Lite3System:
         self.recovery_count_total = 0
         self.resume_state = "navigate" if args.mode in {"navigate", "mission"} else "explore"
         self.goal_reached = False
-        self.image_save_dir = None
+        self.video_dir = None
+        self.video_path = None
+        self._video_writer = None
+        self._video_size = None
+        self._video_frames = 0
+        self._video_started_at = None
+        self._last_video_frame_at = 0.0
+        self._video_lock = threading.Lock()
         self.result_prefix = result_prefix
         self.close_platform_on_finalize = close_platform_on_finalize
         self.is_standing = bool(getattr(self.platform, "_nomad_is_standing", False))
@@ -104,6 +113,17 @@ class Lite3System:
         self.capture_enabled = bool(getattr(args, "capture_enabled", False))
         self.mujoco_route_stabilizer = bool(getattr(args, "mujoco_route_stabilizer", True))
         self._mujoco_reference_path = None
+        self._async_viewer_enabled = (
+            self.camera_enabled
+            and self.platform.environment_domain() == "real"
+            and bool(getattr(args, "async_camera_viewer", True))
+        )
+        self._viewer_stop = threading.Event()
+        self._viewer_lock = threading.Lock()
+        self._viewer_key_lock = threading.Lock()
+        self._viewer_key_queue: list[int] = []
+        self._viewer_thread = None
+        self._viewer_state = {"extra_text": "", "goal_view": None, "footer_lines": []}
         self.states = {
             "idle": IdleState(),
             "stand": StandState(),
@@ -120,8 +140,10 @@ class Lite3System:
         self.state = self.states[self.state_name]
         self.state.on_enter(self)
         if bool(getattr(args, "save_images", False)):
-            self.image_save_dir = self.session.start_image_recording(label=f"{result_prefix}_{args.mode}")
-            print(f"[Recorder] Saving run images to: {self.image_save_dir}")
+            self.video_dir = self.session.start_video_recording(label=f"{result_prefix}_{args.mode}")
+            self.video_path = self.video_dir / "navigation_record.mp4"
+            print(f"[Recorder] Saving run video to: {self.video_path.resolve()}")
+        self._start_async_viewer()
 
     def _prepare_mission_topomap_tensors(self) -> None:
         if self.missions is None:
@@ -254,9 +276,101 @@ class Lite3System:
     def _keyboard_help_line(self) -> str:
         return "KEYBOARD | W/S A/D Q/E | 0 stop | Space estop | U stand | P prepare | 1/2/3 gait | ESC idle"
 
+    def _start_async_viewer(self) -> None:
+        if not self._async_viewer_enabled:
+            return
+        fps = max(1.0, float(getattr(self.args, "camera_viewer_fps", 15.0)))
+        self._viewer_thread = threading.Thread(
+            target=self._async_viewer_loop,
+            name="lite3-real-camera-viewer",
+            args=(fps,),
+            daemon=True,
+        )
+        self._viewer_thread.start()
+        print(f"[Camera] Async real-camera viewer enabled at {fps:.1f} FPS.")
+
+    def _stop_async_viewer(self) -> None:
+        self._viewer_stop.set()
+        if self._viewer_thread is not None and self._viewer_thread.is_alive():
+            self._viewer_thread.join(timeout=2.0)
+        self._viewer_thread = None
+
+    def _update_async_viewer_state(self, extra_text: str, goal_view=None, footer_lines=None) -> None:
+        if not self._async_viewer_enabled:
+            return
+        with self._viewer_lock:
+            self._viewer_state = {
+                "extra_text": extra_text,
+                "goal_view": goal_view,
+                "footer_lines": list(footer_lines or []),
+            }
+
+    def _queue_async_viewer_key(self, key_code: int) -> None:
+        if key_code == 255:
+            return
+        with self._viewer_key_lock:
+            self._viewer_key_queue.append(key_code)
+            if len(self._viewer_key_queue) > 16:
+                self._viewer_key_queue = self._viewer_key_queue[-16:]
+
+    def _pop_async_viewer_key(self) -> int:
+        with self._viewer_key_lock:
+            if not self._viewer_key_queue:
+                return 255
+            return self._viewer_key_queue.pop(0)
+
+    def _drain_async_viewer_ui_keys(self, camera_image) -> None:
+        while True:
+            key_code = self._pop_async_viewer_key()
+            if key_code == 255:
+                return
+            self._handle_ui_key(key_code, camera_image)
+
+    def _async_viewer_loop(self, fps: float) -> None:
+        period = 1.0 / max(fps, 1.0)
+        while not self._viewer_stop.is_set():
+            loop_start = time.perf_counter()
+            with self._viewer_lock:
+                state = dict(self._viewer_state)
+            try:
+                camera_image = self.platform.render_camera()
+                display_goal = state.get("goal_view")
+                key_code = self.legacy.show_fpv_realtime(
+                    camera_image,
+                    self.tick,
+                    str(state.get("extra_text") or ""),
+                    goal_view=display_goal,
+                    footer_lines=state.get("footer_lines") or [],
+                )
+                if self._should_write_wall_clock_video_frame():
+                    self._write_run_video_frame(camera_image, display_goal, label=self.state_name)
+                if key_code != 255:
+                    self._queue_async_viewer_key(key_code)
+                    if key_code == 27:
+                        self.session.request_exit()
+                    elif key_code in (ord("e"), ord("E")):
+                        self.session.request_estop()
+            except Exception as exc:
+                if not self._viewer_stop.is_set():
+                    print(f"[Camera] Async viewer stopped after {type(exc).__name__}: {exc}")
+                break
+            elapsed = time.perf_counter() - loop_start
+            time.sleep(max(0.0, period - elapsed))
+
     def _show_keyboard_camera(self, camera_image) -> int:
         if not self.camera_enabled:
             return 255
+        if self._async_viewer_enabled:
+            self._update_async_viewer_state(
+                extra_text=(
+                    f"KEYBOARD | vx={self.keyboard_vx:.2f} "
+                    f"vy={self.keyboard_vy:.2f} wz={self.keyboard_wz:.2f}"
+                ),
+                goal_view=None,
+                footer_lines=[self._keyboard_help_line()],
+            )
+            key_code = self._pop_async_viewer_key()
+            return key_code
         key_code = self.legacy.show_fpv_realtime(
             camera_image,
             self.tick,
@@ -267,7 +381,7 @@ class Lite3System:
             goal_view=None,
             footer_lines=[self._keyboard_help_line()],
         )
-        self._save_run_image(camera_image, label="keyboard", every_n=5)
+        self._write_run_video_frame(camera_image, label="keyboard", every_n=5)
         return key_code
 
     def _handle_keyboard_key(self, key: str | None) -> None:
@@ -458,16 +572,83 @@ class Lite3System:
             return selected_capture.image
         return None
 
-    def _save_run_image(self, camera_image, display_goal=None, label: str | None = None, every_n: int = 1) -> None:
-        if self.image_save_dir is None:
+    def _compose_video_frame(self, camera_image, display_goal=None):
+        fpv = camera_image.convert("RGB")
+        if display_goal is None:
+            return cv2.cvtColor(np.asarray(fpv), cv2.COLOR_RGB2BGR)
+        goal = display_goal.convert("RGB")
+        if goal.size != fpv.size:
+            resampling = getattr(type(goal), "Resampling", None)
+            if resampling is None:
+                from PIL import Image
+
+                resample_mode = getattr(Image, "Resampling", Image).BILINEAR
+            else:
+                resample_mode = resampling.BILINEAR
+            goal = goal.resize(fpv.size, resample_mode)
+        combined = np.concatenate([np.asarray(fpv), np.asarray(goal)], axis=1)
+        return cv2.cvtColor(combined, cv2.COLOR_RGB2BGR)
+
+    def _write_video_metadata(self, finished: bool = False) -> None:
+        if self.video_dir is None or self.video_path is None:
+            return
+        payload = {
+            "video_path": str(self.video_path.resolve()),
+            "video_dir": str(self.video_dir.resolve()),
+            "frames": int(self._video_frames),
+            "fps": float(getattr(self.args, "record_fps", 10.0)),
+            "mode": self.args.mode,
+            "map": getattr(self.args, "map", None),
+            "backend": self.platform.environment_domain(),
+            "started_at": self._video_started_at,
+            "updated_at": datetime.now().isoformat(timespec="seconds"),
+            "finished": bool(finished),
+        }
+        (self.video_dir / "recording_meta.json").write_text(
+            json.dumps(payload, indent=2, ensure_ascii=False),
+            encoding="utf-8",
+        )
+
+    def _should_write_wall_clock_video_frame(self) -> bool:
+        if self.video_path is None:
+            return False
+        record_fps = max(1.0, float(getattr(self.args, "record_fps", 10.0)))
+        now = time.perf_counter()
+        if now - self._last_video_frame_at < 1.0 / record_fps:
+            return False
+        self._last_video_frame_at = now
+        return True
+
+    def _write_run_video_frame(self, camera_image, display_goal=None, label: str | None = None, every_n: int = 1) -> None:
+        if self.video_path is None:
             return
         if every_n > 1 and self.tick % every_n != 0:
             return
-        safe_label = label or self.state_name
-        if display_goal is not None:
-            self.session.save_goal_pair(camera_image, display_goal, self.image_save_dir, self.tick, label=safe_label)
-        else:
-            self.session.save_camera_image(camera_image, self.image_save_dir, self.tick, label=safe_label)
+        frame = self._compose_video_frame(camera_image, display_goal)
+        height, width = frame.shape[:2]
+        with self._video_lock:
+            if self._video_writer is None:
+                fps = max(1.0, float(getattr(self.args, "record_fps", 10.0)))
+                fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+                self._video_size = (width, height)
+                self._video_started_at = datetime.now().isoformat(timespec="seconds")
+                self._video_writer = cv2.VideoWriter(str(self.video_path), fourcc, fps, self._video_size)
+                if not self._video_writer.isOpened():
+                    self._video_writer = None
+                    print(f"[Recorder] Unable to open video writer: {self.video_path}")
+                    return
+                self._write_video_metadata(finished=False)
+            if (width, height) != self._video_size:
+                frame = cv2.resize(frame, self._video_size, interpolation=cv2.INTER_AREA)
+            self._video_writer.write(frame)
+            self._video_frames += 1
+
+    def _close_video_writer(self) -> None:
+        with self._video_lock:
+            if self._video_writer is not None:
+                self._video_writer.release()
+                self._video_writer = None
+            self._write_video_metadata(finished=True)
 
     def _profile_timing(self, label: str, timings: dict[str, float]) -> None:
         if not bool(getattr(self.args, "profile_timing", False)):
@@ -483,7 +664,10 @@ class Lite3System:
     def _show_camera(self, camera_image, extra_text: str, goal_view=None) -> None:
         key_code = 255
         display_goal = self._display_goal_view(goal_view)
-        if self.camera_enabled:
+        if self._async_viewer_enabled:
+            self._update_async_viewer_state(extra_text, display_goal, self._footer_lines())
+            self._drain_async_viewer_ui_keys(camera_image)
+        elif self.camera_enabled:
             key_code = self.legacy.show_fpv_realtime(
                 camera_image,
                 self.tick,
@@ -491,12 +675,13 @@ class Lite3System:
                 goal_view=display_goal,
                 footer_lines=self._footer_lines(),
             )
-        self._handle_ui_key(key_code, camera_image)
+            self._handle_ui_key(key_code, camera_image)
         mission = self._current_mission()
         label = mission.label if self.state_name == "navigate" and mission is not None else self.state_name
         every_n = 1 if self.state_name == "navigate" and display_goal is not None else 5
         goal_for_save = display_goal if self.state_name == "navigate" else None
-        self._save_run_image(camera_image, goal_for_save, label=label, every_n=every_n)
+        if not self._async_viewer_enabled:
+            self._write_run_video_frame(camera_image, goal_for_save, label=label, every_n=every_n)
 
     def show_task_camera(self, task_label: str, goal_view=None) -> None:
         camera_image = self.platform.render_camera()
@@ -754,6 +939,10 @@ class Lite3System:
         return "explore"
 
     def finalize(self) -> None:
+        self._stop_async_viewer()
+        self._close_video_writer()
+        if self.video_path is not None:
+            print(f"[Recorder] Video saved to: {self.video_path.resolve()}")
         mode_name = f"{self.result_prefix}_{self.args.mode}"
         self.legacy._save_results(
             self.trajectory,
@@ -767,8 +956,12 @@ class Lite3System:
 
     def run(self) -> int:
         if self.args.mode == "generate-topomap":
-            self.legacy.run_generate_topomap(self.args)
-            self.platform.close()
+            try:
+                self.legacy.run_generate_topomap(self.args)
+            finally:
+                self._stop_async_viewer()
+                self._close_video_writer()
+                self.platform.close()
             return 0
 
         if self.args.mode in {"navigate", "mission"} and self.missions is None:

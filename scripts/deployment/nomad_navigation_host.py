@@ -271,10 +271,19 @@ def build_host_parser() -> argparse.ArgumentParser:
     parser.add_argument("--pd-max-w", type=float, default=None, help="Default PD yaw-rate clamp for tasks")
     parser.add_argument("--profile-timing", action="store_true", help="Print per-tick timing diagnostics")
     parser.add_argument("--profile-interval", type=int, default=None, help="Timing diagnostics print interval in ticks")
+    parser.add_argument("--record-fps", type=float, default=None, help="FPS used by --save-images MP4 recording")
+    parser.add_argument("--camera-viewer-fps", type=float, default=None, help="Real-backend async camera viewer FPS")
+    parser.add_argument(
+        "--no-async-camera-viewer",
+        dest="async_camera_viewer",
+        action="store_false",
+        default=None,
+        help="Disable the real-backend async camera viewer",
+    )
     parser.add_argument(
         "--save-images",
         action="store_true",
-        help="Save run images. Navigation saves one FPV+goal composite per tick; non-goal modes save FPV frames.",
+        help="Record run video as MP4. The flag name is kept for compatibility with older image-saving commands.",
     )
     parser.add_argument(
         "--keyboard-heartbeat-file",
@@ -290,7 +299,16 @@ def _state_machine_defaults() -> dict:
 
 
 def _apply_host_task_overrides(defaults: dict, host_args) -> None:
-    for name in ("pd_linear_scale", "pd_yaw_scale", "pd_max_v", "pd_max_w", "profile_interval"):
+    for name in (
+        "pd_linear_scale",
+        "pd_yaw_scale",
+        "pd_max_v",
+        "pd_max_w",
+        "profile_interval",
+        "record_fps",
+        "camera_viewer_fps",
+        "async_camera_viewer",
+    ):
         value = getattr(host_args, name, None)
         if value is not None:
             defaults[name] = value
@@ -366,6 +384,7 @@ NoMaD navigation host - interactive mode
 Commands:
   keyboard                  keyboard-control Lite3; ESC returns to idle
   navigate --topomap-dir DIR navigate with a real/sim topomap ([/] switches goal node, ESC exits)
+  navigate --topomap-dir DIR --goal-image 023.png
   explore [--max-steps N]   goal-free exploration
   add --profile-timing      print camera/inference/control timing every few ticks
   add --pd-linear-scale S   reduce forward command amplitude, e.g. 0.6
@@ -376,7 +395,7 @@ Commands:
   help                      show this help
   quit / exit               quit host
 
-Start the host with --save-images to record navigation frames.
+Start the host with --save-images to record an MP4 video under the session videos/ directory.
 """.strip()
 
 
@@ -516,6 +535,15 @@ class InteractiveNavigationHost:
             elif tokens[i] == "--profile-interval" and i + 1 < len(tokens):
                 defaults["profile_interval"] = int(tokens[i + 1])
                 i += 2
+            elif tokens[i] == "--record-fps" and i + 1 < len(tokens):
+                defaults["record_fps"] = float(tokens[i + 1])
+                i += 2
+            elif tokens[i] == "--camera-viewer-fps" and i + 1 < len(tokens):
+                defaults["camera_viewer_fps"] = float(tokens[i + 1])
+                i += 2
+            elif tokens[i] == "--no-async-camera-viewer":
+                defaults["async_camera_viewer"] = False
+                i += 1
             elif tokens[i] == "--goal-source" and i + 1 < len(tokens):
                 defaults["goal_source"] = tokens[i + 1]
                 i += 2
@@ -524,6 +552,9 @@ class InteractiveNavigationHost:
                 i += 2
             elif tokens[i] == "--topomap-dir" and i + 1 < len(tokens):
                 defaults["topomap_dir"] = tokens[i + 1]
+                i += 2
+            elif tokens[i] == "--goal-image" and i + 1 < len(tokens):
+                defaults["goal_image"] = tokens[i + 1]
                 i += 2
             elif tokens[i] == "--keyboard-vx-step" and i + 1 < len(tokens):
                 defaults["keyboard_vx_step"] = float(tokens[i + 1])

@@ -14,6 +14,7 @@ if TYPE_CHECKING:
     from lite3_system.session import NavigationSession
 
 TOPOMAP_META_FILENAME = "topomap_meta.json"
+TOPOMAP_IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png"}
 
 
 @dataclass
@@ -65,6 +66,50 @@ class MissionQueue:
 
     def shift_goal_node(self, delta: int) -> int:
         return self.set_goal_node(self.goal_node + int(delta))
+
+
+def list_topomap_image_paths(topomap_dir: Path) -> list[Path]:
+    images = [
+        path
+        for path in Path(topomap_dir).iterdir()
+        if path.is_file() and path.suffix.lower() in TOPOMAP_IMAGE_SUFFIXES
+    ]
+
+    def sort_key(path: Path):
+        try:
+            return (0, int(path.stem), path.name)
+        except ValueError:
+            return (1, path.name)
+
+    return sorted(images, key=sort_key)
+
+
+def resolve_goal_node_from_image(topomap_dir: Path, goal_image: str | None) -> int | None:
+    if not goal_image:
+        return None
+    requested = Path(goal_image).name
+    requested_stem = Path(requested).stem
+    image_paths = list_topomap_image_paths(topomap_dir)
+    for index, image_path in enumerate(image_paths):
+        if image_path.name == requested:
+            return index
+    for index, image_path in enumerate(image_paths):
+        if image_path.stem == requested_stem:
+            return index
+    available = ", ".join(path.name for path in image_paths[:8])
+    suffix = "..." if len(image_paths) > 8 else ""
+    raise FileNotFoundError(
+        f"Goal image '{goal_image}' was not found in topomap '{topomap_dir}'. "
+        f"Available examples: {available}{suffix}"
+    )
+
+
+def _select_topomap_goal(args, topo_path: Path, topomap: list) -> tuple[object, int]:
+    goal_node = resolve_goal_node_from_image(topo_path, getattr(args, "goal_image", None))
+    if goal_node is None:
+        goal_node = len(topomap) - 1
+    goal_node = int(np.clip(goal_node, 0, len(topomap) - 1))
+    return topomap[goal_node], goal_node
 
 
 def _is_relative_to(path: Path, other: Path) -> bool:
@@ -444,7 +489,15 @@ def build_mission_queue(args, platform, session: "NavigationSession | None" = No
     for topomap_dir in getattr(args, "mission_topomap", []) or []:
         topo_path = validate_topomap_dir_for_domain(topomap_dir, expected_domain, legacy)
         topomap = legacy.load_topomap_from_dir(str(topo_path))
-        missions.append(MissionTarget(label=topo_path.name, topomap=topomap, goal_view=topomap[-1]))
+        goal_view, goal_node = _select_topomap_goal(args, topo_path, topomap)
+        missions.append(
+            MissionTarget(
+                label=topo_path.name,
+                topomap=topomap,
+                goal_view=goal_view,
+                goal_node_index=goal_node,
+            )
+        )
 
     for traj_name in getattr(args, "mission_dataset_traj", []) or []:
         raise ValueError(
@@ -460,12 +513,14 @@ def build_mission_queue(args, platform, session: "NavigationSession | None" = No
             scene_config = legacy.SCENE_MAPS.get(getattr(args, "map", ""), legacy.SCENE_CONFIG)
             goal_position = np.asarray(scene_config["goal_pos"], dtype=float)
             platform.set_scene_goal(goal_position)
+        goal_view, goal_node = _select_topomap_goal(args, topo_path, topomap)
         missions.append(
             MissionTarget(
                 label=topo_path.name,
                 topomap=topomap,
-                goal_view=topomap[-1],
+                goal_view=goal_view,
                 goal_position=goal_position,
+                goal_node_index=goal_node,
             )
         )
 
