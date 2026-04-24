@@ -137,6 +137,7 @@ class Lite3NavigationHost:
 
         if task_args.mode != "estop":
             self.session.clear_estop()
+            self.session.clear_exit()
         task_args.capture_enabled = True
         self._validate_task(task_args)
         platform = self._get_platform_for_task(task_args)
@@ -264,7 +265,17 @@ def build_host_parser() -> argparse.ArgumentParser:
     parser.add_argument("--camera", choices=["on", "off"], default="on", help="Camera visualization on/off")
     parser.add_argument("--policy-config", type=str, default=None, help="Override policy config for interactive mode")
     parser.add_argument("--policy-checkpoint", type=str, default=None, help="Override policy checkpoint for interactive mode")
-    parser.add_argument("--save-fpv", action="store_true", help="Save FPV frames for interactive tasks")
+    parser.add_argument("--pd-linear-scale", type=float, default=None, help="Default PD linear velocity scale for tasks")
+    parser.add_argument("--pd-yaw-scale", type=float, default=None, help="Default PD yaw-rate scale for tasks")
+    parser.add_argument("--pd-max-v", type=float, default=None, help="Default PD linear velocity clamp for tasks")
+    parser.add_argument("--pd-max-w", type=float, default=None, help="Default PD yaw-rate clamp for tasks")
+    parser.add_argument("--profile-timing", action="store_true", help="Print per-tick timing diagnostics")
+    parser.add_argument("--profile-interval", type=int, default=None, help="Timing diagnostics print interval in ticks")
+    parser.add_argument(
+        "--save-images",
+        action="store_true",
+        help="Save run images. Navigation saves one FPV+goal composite per tick; non-goal modes save FPV frames.",
+    )
     parser.add_argument(
         "--keyboard-heartbeat-file",
         default="results/deployment/navigation_host_keyboard_active.json",
@@ -276,6 +287,15 @@ def build_host_parser() -> argparse.ArgumentParser:
 def _state_machine_defaults() -> dict:
     parser = build_state_machine_parser()
     return vars(parser.parse_args([]))
+
+
+def _apply_host_task_overrides(defaults: dict, host_args) -> None:
+    for name in ("pd_linear_scale", "pd_yaw_scale", "pd_max_v", "pd_max_w", "profile_interval"):
+        value = getattr(host_args, name, None)
+        if value is not None:
+            defaults[name] = value
+    if bool(getattr(host_args, "profile_timing", False)):
+        defaults["profile_timing"] = True
 
 
 def finalize_host_args(host_args) -> None:
@@ -294,6 +314,8 @@ def load_task_args(host_args, remaining_args: list[str]) -> list[argparse.Namesp
         plan_payload = json.loads(plan_path.read_text(encoding="utf-8"))
         defaults = dict(state_defaults)
         defaults["map"] = host_args.map
+        defaults["save_images"] = bool(host_args.save_images)
+        _apply_host_task_overrides(defaults, host_args)
         defaults.update(plan_payload.get("defaults", {}))
         task_args_list = []
         for task_payload in plan_payload.get("tasks", []):
@@ -308,6 +330,12 @@ def load_task_args(host_args, remaining_args: list[str]) -> list[argparse.Namesp
     if host_args.backend == "real":
         task_args.map = host_args.map
     task_args.keyboard_heartbeat_file = host_args.keyboard_heartbeat_file
+    if host_args.save_images:
+        task_args.save_images = True
+    task_overrides = {}
+    _apply_host_task_overrides(task_overrides, host_args)
+    for key, value in task_overrides.items():
+        setattr(task_args, key, value)
     return [task_args]
 
 
@@ -337,14 +365,18 @@ NoMaD navigation host - interactive mode
 
 Commands:
   keyboard                  keyboard-control Lite3; ESC returns to idle
-  navigate --topomap-dir DIR navigate with a real/sim topomap
+  navigate --topomap-dir DIR navigate with a real/sim topomap ([/] switches goal node, ESC exits)
   explore [--max-steps N]   goal-free exploration
+  add --profile-timing      print camera/inference/control timing every few ticks
+  add --pd-linear-scale S   reduce forward command amplitude, e.g. 0.6
   stand [--stand-steps N]   stand in place
   estop                     emergency stop
   capture                   capture an image into the host queue
   status                    print current status
   help                      show this help
   quit / exit               quit host
+
+Start the host with --save-images to record navigation frames.
 """.strip()
 
 
@@ -403,8 +435,9 @@ class InteractiveNavigationHost:
         defaults["map"] = self.host_args.map
         defaults["no_gui"] = self.host_args.no_gui
         defaults["camera"] = self.host_args.camera
-        defaults["save_fpv"] = self.host_args.save_fpv
+        defaults["save_images"] = self.host_args.save_images
         defaults["keyboard_heartbeat_file"] = self.host_args.keyboard_heartbeat_file
+        _apply_host_task_overrides(defaults, self.host_args)
         if self.host_args.policy_config:
             defaults["policy_config"] = self.host_args.policy_config
         if self.host_args.policy_checkpoint:
@@ -465,6 +498,24 @@ class InteractiveNavigationHost:
             elif tokens[i] == "--close-threshold" and i + 1 < len(tokens):
                 defaults["close_threshold"] = float(tokens[i + 1])
                 i += 2
+            elif tokens[i] == "--pd-linear-scale" and i + 1 < len(tokens):
+                defaults["pd_linear_scale"] = float(tokens[i + 1])
+                i += 2
+            elif tokens[i] == "--pd-yaw-scale" and i + 1 < len(tokens):
+                defaults["pd_yaw_scale"] = float(tokens[i + 1])
+                i += 2
+            elif tokens[i] == "--pd-max-v" and i + 1 < len(tokens):
+                defaults["pd_max_v"] = float(tokens[i + 1])
+                i += 2
+            elif tokens[i] == "--pd-max-w" and i + 1 < len(tokens):
+                defaults["pd_max_w"] = float(tokens[i + 1])
+                i += 2
+            elif tokens[i] == "--profile-timing":
+                defaults["profile_timing"] = True
+                i += 1
+            elif tokens[i] == "--profile-interval" and i + 1 < len(tokens):
+                defaults["profile_interval"] = int(tokens[i + 1])
+                i += 2
             elif tokens[i] == "--goal-source" and i + 1 < len(tokens):
                 defaults["goal_source"] = tokens[i + 1]
                 i += 2
@@ -498,8 +549,8 @@ class InteractiveNavigationHost:
             elif tokens[i] == "--keyboard-heartbeat-file" and i + 1 < len(tokens):
                 defaults["keyboard_heartbeat_file"] = tokens[i + 1]
                 i += 2
-            elif tokens[i] == "--save-fpv":
-                defaults["save_fpv"] = True
+            elif tokens[i] == "--save-images":
+                defaults["save_images"] = True
                 i += 1
             else:
                 i += 1
@@ -511,6 +562,7 @@ class InteractiveNavigationHost:
 
         self.task_count += 1
         self.session.clear_estop()
+        self.session.clear_exit()
         task_args.capture_enabled = True
         validate_task_topomap_args(task_args, expected_domain=self.host_args.backend)
         platform = self._ensure_platform()
@@ -555,6 +607,9 @@ class InteractiveNavigationHost:
         print(f"  Position: ({position[0]:.3f}, {position[1]:.3f}), yaw={yaw:.3f}, height={height:.3f}")
         print(f"  Tasks completed: {self.task_count}, Captures: {captures}")
         print(f"  Backend: {self.host_args.backend}, Map: {self.host_args.map}")
+        camera_status = platform.camera_status()
+        if camera_status:
+            print(f"  Camera: {camera_status}")
         if self.results:
             last = self.results[-1]
             print(f"  Last task: mode={last.mode}, status={last.status}")

@@ -111,6 +111,9 @@ class NavigationPlatformBase:
     def close(self) -> None:
         return None
 
+    def camera_status(self) -> str:
+        return ""
+
 
 class Lite3HighLevelNoMaD:
     def __init__(
@@ -158,6 +161,11 @@ class Lite3HighLevelNoMaD:
     def _sample_actions(self, obs_cond: torch.Tensor, uncond: torch.Tensor | None = None) -> np.ndarray:
         return self.inference.sample_actions(obs_cond, uncond_condition=uncond)
 
+    def build_topomap_tensor(self, topomap: list) -> torch.Tensor:
+        """Preprocess a topomap once so navigation ticks do not repeat PIL work."""
+        tensors = [self.inference.pil_to_tensor(goal_image) for goal_image in topomap]
+        return torch.stack(tensors, dim=0).to(self.device)
+
     def predict_exploration(self, frame_buffer: Deque[torch.Tensor]) -> ExplorationResult:
         obs_tensor = self._build_obs_tensor(frame_buffer)
         image_height = int(self.inference.image_size[1])
@@ -176,15 +184,19 @@ class Lite3HighLevelNoMaD:
         topomap: list,
         closest_node: int,
         goal_node: int,
+        topomap_tensor: torch.Tensor | None = None,
     ) -> NavigationResult:
         obs_tensor = self._build_obs_tensor(frame_buffer)
         start = max(closest_node - self.radius, 0)
         end = min(closest_node + self.radius + 1, goal_node)
 
-        goal_tensors = []
-        for goal_image in topomap[start : end + 1]:
-            goal_tensors.append(self.inference.pil_to_tensor(goal_image).unsqueeze(0).to(self.device))
-        goal_batch = torch.cat(goal_tensors, dim=0)
+        if topomap_tensor is not None:
+            goal_batch = topomap_tensor[start : end + 1]
+        else:
+            goal_tensors = []
+            for goal_image in topomap[start : end + 1]:
+                goal_tensors.append(self.inference.pil_to_tensor(goal_image).unsqueeze(0).to(self.device))
+            goal_batch = torch.cat(goal_tensors, dim=0)
         candidate_count = goal_batch.shape[0]
 
         obsgoal_cond = self.inference.encode_condition(
@@ -227,9 +239,20 @@ class Lite3MiddleLayerPD:
     # 硬上限：扩散采样偶尔会输出远离观察尺度的 waypoint，中层在喂给 PD 控制器前先压住。
     MAX_WAYPOINT_NORM = 2.0  # 米
 
-    def __init__(self, yaw_sign: float = 1.0) -> None:
+    def __init__(
+        self,
+        yaw_sign: float = 1.0,
+        linear_scale: float = 1.0,
+        yaw_scale: float = 1.0,
+        max_linear: float | None = None,
+        max_yaw: float | None = None,
+    ) -> None:
         self.legacy = load_legacy()
         self.yaw_sign = float(yaw_sign)
+        self.linear_scale = float(linear_scale)
+        self.yaw_scale = float(yaw_scale)
+        self.max_linear = None if max_linear is None else abs(float(max_linear))
+        self.max_yaw = None if max_yaw is None else abs(float(max_yaw))
 
     def waypoint_to_command(self, waypoint: np.ndarray) -> MotionCommand:
         waypoint = np.asarray(waypoint, dtype=float)
@@ -242,13 +265,27 @@ class Lite3MiddleLayerPD:
         if norm > self.MAX_WAYPOINT_NORM:
             waypoint = waypoint * (self.MAX_WAYPOINT_NORM / norm)
 
-        linear_x, yaw_rate = self.legacy.pd_controller(waypoint, yaw_sign=self.yaw_sign)
+        pd_kwargs = {"yaw_sign": self.yaw_sign}
+        if self.max_linear is not None:
+            pd_kwargs["max_v"] = self.max_linear
+        if self.max_yaw is not None:
+            pd_kwargs["max_w"] = self.max_yaw
+        linear_x, yaw_rate = self.legacy.pd_controller(waypoint, **pd_kwargs)
         linear_x = float(linear_x)
         yaw_rate = float(yaw_rate)
         # 二次守卫：PD 输出本身也可能被上游的 NaN 传染
         if not (np.isfinite(linear_x) and np.isfinite(yaw_rate)):
             print(f"[MiddleLayer] ⚠️ PD output non-finite: lx={linear_x}, wz={yaw_rate}; issuing zero command")
             return MotionCommand(linear_x=0.0, linear_y=0.0, yaw_rate=0.0)
+        linear_x *= self.linear_scale
+        yaw_rate *= self.yaw_scale
+        if not (np.isfinite(linear_x) and np.isfinite(yaw_rate)):
+            print(f"[MiddleLayer] ⚠️ scaled PD output non-finite: lx={linear_x}, wz={yaw_rate}; issuing zero command")
+            return MotionCommand(linear_x=0.0, linear_y=0.0, yaw_rate=0.0)
+        if self.max_linear is not None:
+            linear_x = float(np.clip(linear_x, -self.max_linear, self.max_linear))
+        if self.max_yaw is not None:
+            yaw_rate = float(np.clip(yaw_rate, -self.max_yaw, self.max_yaw))
         return MotionCommand(linear_x=linear_x, linear_y=0.0, yaw_rate=yaw_rate)
 
 
@@ -419,6 +456,9 @@ class ExternalBridgePlatform(NavigationPlatformBase):
 
     def close(self) -> None:
         self._call("close", required=False)
+
+    def camera_status(self) -> str:
+        return str(self._call("camera_status", default=""))
 
 
 class ContextBuffer:

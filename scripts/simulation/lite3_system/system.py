@@ -65,13 +65,20 @@ class Lite3System:
             radius=args.radius,
             close_threshold=args.close_threshold,
         )
-        self.middle_layer = Lite3MiddleLayerPD(yaw_sign=getattr(args, "yaw_sign", 1.0))
+        self.middle_layer = Lite3MiddleLayerPD(
+            yaw_sign=getattr(args, "yaw_sign", 1.0),
+            linear_scale=getattr(args, "pd_linear_scale", 1.0),
+            yaw_scale=getattr(args, "pd_yaw_scale", 1.0),
+            max_linear=getattr(args, "pd_max_v", None),
+            max_yaw=getattr(args, "pd_max_w", None),
+        )
         self.context = ContextBuffer(
             max_frames=self.high_level.context_size + 1,
             transform_fn=self.high_level.inference.pil_to_tensor,
         )
         self.stuck_detector = self.legacy.StuckDetector()
         self.missions: MissionQueue | None = build_mission_queue(args, self.platform, self.session)
+        self._prepare_mission_topomap_tensors()
         self.trajectory = []
         self.velocity_log = []
         self.tick = 0
@@ -81,7 +88,7 @@ class Lite3System:
         self.recovery_count_total = 0
         self.resume_state = "navigate" if args.mode in {"navigate", "mission"} else "explore"
         self.goal_reached = False
-        self.fp_dir = None
+        self.image_save_dir = None
         self.result_prefix = result_prefix
         self.close_platform_on_finalize = close_platform_on_finalize
         self.is_standing = bool(getattr(self.platform, "_nomad_is_standing", False))
@@ -112,9 +119,16 @@ class Lite3System:
         self.state_name = "idle"
         self.state = self.states[self.state_name]
         self.state.on_enter(self)
-        if args.save_fpv:
-            self.fp_dir = self.session.fpv_dir
-            self.fp_dir.mkdir(parents=True, exist_ok=True)
+        if bool(getattr(args, "save_images", False)):
+            self.image_save_dir = self.session.start_image_recording(label=f"{result_prefix}_{args.mode}")
+            print(f"[Recorder] Saving run images to: {self.image_save_dir}")
+
+    def _prepare_mission_topomap_tensors(self) -> None:
+        if self.missions is None:
+            return
+        for mission in self.missions.missions:
+            if getattr(mission, "topomap_tensor", None) is None:
+                mission.topomap_tensor = self.high_level.build_topomap_tensor(mission.topomap)
 
     def transition_to(self, state_name: str) -> None:
         if state_name == self.state_name:
@@ -253,8 +267,7 @@ class Lite3System:
             goal_view=None,
             footer_lines=[self._keyboard_help_line()],
         )
-        if self.fp_dir and self.tick % 5 == 0:
-            camera_image.save(self.fp_dir / f"{self.tick:04d}.png")
+        self._save_run_image(camera_image, label="keyboard", every_n=5)
         return key_code
 
     def _handle_keyboard_key(self, key: str | None) -> None:
@@ -367,20 +380,53 @@ class Lite3System:
         return "keyboard"
 
     def _footer_lines(self) -> list[str]:
+        base_exit = "ESC exit | e estop"
+        if self.state_name == "navigate" and self.missions is not None:
+            goal_line = (
+                f"{base_exit} | [/] goal node {self.missions.goal_node}/"
+                f"{len(self.missions.current.topomap) - 1}"
+            )
+            capture_line = "c capture | ,/. switch captured display"
+            return [goal_line, capture_line]
         if not self.capture_enabled:
-            return ["e estop | capture handled by navigation host"]
+            return [base_exit]
         capture = self.session.get_selected_capture()
         if capture is None:
-            queue_line = "captures=0 | press c to capture | [,] switch | e estop"
+            queue_line = f"captures=0 | c capture | {base_exit}"
         else:
             queue_line = (
                 f"captures={len(self.session.capture_queue)} | selected={capture.index}:{capture.label} "
-                "| c capture | [,] switch | e estop"
+                f"| c capture | ,/. switch | {base_exit}"
             )
         return [queue_line]
 
+    def _switch_navigation_goal_node(self, delta: int) -> bool:
+        if self.state_name != "navigate" or self.missions is None:
+            return False
+        node = self.missions.shift_goal_node(delta)
+        current = self.missions.current
+        saved_path = self.session.save_goal_view(current.goal_view, f"{current.label}_node_{node:03d}")
+        setattr(current, "saved_goal_path", saved_path)
+        print(
+            f"[Goal] Switched topomap goal to node {node}/"
+            f"{len(current.topomap) - 1}: {saved_path}"
+        )
+        return True
+
     def _handle_ui_key(self, key_code: int, camera_image) -> None:
         if key_code == 255:
+            return
+        if key_code == 27:
+            print("[Exit] ESC pressed; leaving current mode.")
+            self.session.request_exit()
+            return
+        if key_code in (ord("e"), ord("E")):
+            print("[EStop] Keyboard estop requested.")
+            self.session.request_estop()
+            return
+        if key_code in (ord("["), ord("{")) and self._switch_navigation_goal_node(-1):
+            return
+        if key_code in (ord("]"), ord("}")) and self._switch_navigation_goal_node(1):
             return
         if self.capture_enabled and key_code in (ord("c"), ord("C")):
             position, yaw = self.platform.get_pose()
@@ -393,19 +439,16 @@ class Lite3System:
             )
             print(f"[Capture] Stored {capture.label} -> {capture.saved_path}")
             return
-        if self.capture_enabled and key_code in (ord("["), ord("{")):
+        if self.capture_enabled and key_code in (ord(","), ord("<"), ord("["), ord("{")):
             capture = self.session.select_previous_capture()
             if capture is not None:
                 print(f"[Capture] Selected previous capture: {capture.label}")
             return
-        if self.capture_enabled and key_code in (ord("]"), ord("}")):
+        if self.capture_enabled and key_code in (ord("."), ord(">"), ord("]"), ord("}")):
             capture = self.session.select_next_capture()
             if capture is not None:
                 print(f"[Capture] Selected next capture: {capture.label}")
             return
-        if key_code in (ord("e"), ord("E"), 27):
-            print("[EStop] Keyboard estop requested.")
-            self.session.request_estop()
 
     def _display_goal_view(self, goal_view):
         if goal_view is not None:
@@ -415,19 +458,45 @@ class Lite3System:
             return selected_capture.image
         return None
 
+    def _save_run_image(self, camera_image, display_goal=None, label: str | None = None, every_n: int = 1) -> None:
+        if self.image_save_dir is None:
+            return
+        if every_n > 1 and self.tick % every_n != 0:
+            return
+        safe_label = label or self.state_name
+        if display_goal is not None:
+            self.session.save_goal_pair(camera_image, display_goal, self.image_save_dir, self.tick, label=safe_label)
+        else:
+            self.session.save_camera_image(camera_image, self.image_save_dir, self.tick, label=safe_label)
+
+    def _profile_timing(self, label: str, timings: dict[str, float]) -> None:
+        if not bool(getattr(self.args, "profile_timing", False)):
+            return
+        interval = max(1, int(getattr(self.args, "profile_interval", 10)))
+        if self.tick % interval != 0:
+            return
+        timing_text = " ".join(f"{name}={value * 1000.0:.1f}ms" for name, value in timings.items())
+        camera_status = self.platform.camera_status()
+        suffix = f" | {camera_status}" if camera_status else ""
+        print(f"[Timing] {label} tick={self.tick} {timing_text}{suffix}")
+
     def _show_camera(self, camera_image, extra_text: str, goal_view=None) -> None:
         key_code = 255
+        display_goal = self._display_goal_view(goal_view)
         if self.camera_enabled:
             key_code = self.legacy.show_fpv_realtime(
                 camera_image,
                 self.tick,
                 extra_text,
-                goal_view=self._display_goal_view(goal_view),
+                goal_view=display_goal,
                 footer_lines=self._footer_lines(),
             )
         self._handle_ui_key(key_code, camera_image)
-        if self.fp_dir and self.tick % 5 == 0:
-            camera_image.save(self.fp_dir / f"{self.tick:04d}.png")
+        mission = self._current_mission()
+        label = mission.label if self.state_name == "navigate" and mission is not None else self.state_name
+        every_n = 1 if self.state_name == "navigate" and display_goal is not None else 5
+        goal_for_save = display_goal if self.state_name == "navigate" else None
+        self._save_run_image(camera_image, goal_for_save, label=label, every_n=every_n)
 
     def show_task_camera(self, task_label: str, goal_view=None) -> None:
         camera_image = self.platform.render_camera()
@@ -439,6 +508,9 @@ class Lite3System:
         )
 
     def _common_failure_check(self) -> str | None:
+        if self.session.exit_requested:
+            self.platform.stop_motion()
+            return "completed"
         if self.platform.is_fallen():
             print(
                 f"[System] Failure: platform reported fallen "
@@ -520,30 +592,52 @@ class Lite3System:
         if mission is None:
             return "failed"
 
+        tick_start = time.perf_counter()
         camera_image = self.platform.render_camera()
+        after_camera = time.perf_counter()
         forward_speed = self.platform.get_forward_speed()
         self._show_camera(
             camera_image,
             extra_text=f"NAVIGATE | mission={mission.label} | node={self.missions.closest_node}/{self.missions.goal_node} | v_body={forward_speed:.3f}",
             goal_view=mission.goal_view,
         )
+        after_ui = time.perf_counter()
+        if self.session.exit_requested:
+            self.platform.stop_motion()
+            return "completed"
         self.context.push(camera_image)
         self.tick += 1
+        after_preprocess = time.perf_counter()
 
         if self.session.estop_requested:
             return "estop"
 
         if not self.context.ready():
             self.platform.apply_command(MotionCommand(0.0, 0.0, 0.0))
+            after_command = time.perf_counter()
+            self._profile_timing(
+                "navigate",
+                {
+                    "camera": after_camera - tick_start,
+                    "ui": after_ui - after_camera,
+                    "preprocess": after_preprocess - after_ui,
+                    "infer": 0.0,
+                    "command": after_command - after_preprocess,
+                    "total": after_command - tick_start,
+                },
+            )
             return self._common_failure_check() or "navigate"
 
         try:
+            before_infer = time.perf_counter()
             result = self.high_level.predict_navigation(
                 self.context.frames,
                 mission.topomap,
                 self.missions.closest_node,
                 self.missions.goal_node,
+                topomap_tensor=getattr(mission, "topomap_tensor", None),
             )
+            after_infer = time.perf_counter()
         except Exception as exc:
             print(f"[System] ⚠️ predict_navigation raised {type(exc).__name__}: {exc}; issuing safe stop and failing")
             self.safe_stop()
@@ -553,6 +647,18 @@ class Lite3System:
         pre_position, pre_yaw = self.platform.get_pose()
         command = self._stabilize_mujoco_route(command, pre_position, pre_yaw, mission.goal_position)
         self.platform.apply_command(command)
+        after_command = time.perf_counter()
+        self._profile_timing(
+            "navigate",
+            {
+                "camera": after_camera - tick_start,
+                "ui": after_ui - after_camera,
+                "preprocess": after_preprocess - after_ui,
+                "infer": after_infer - before_infer,
+                "command": after_command - after_infer,
+                "total": after_command - tick_start,
+            },
+        )
         position, _ = self.platform.get_pose()
         self.record_step(position, command)
         actual_velocity = self.platform.get_forward_speed()
@@ -580,27 +686,60 @@ class Lite3System:
         return "navigate"
 
     def step_exploration(self) -> str:
+        tick_start = time.perf_counter()
         camera_image = self.platform.render_camera()
+        after_camera = time.perf_counter()
         forward_speed = self.platform.get_forward_speed()
         self._show_camera(camera_image, extra_text=f"EXPLORE | v_body={forward_speed:.3f}")
+        after_ui = time.perf_counter()
+        if self.session.exit_requested:
+            self.platform.stop_motion()
+            return "completed"
         self.context.push(camera_image)
         self.tick += 1
+        after_preprocess = time.perf_counter()
 
         if self.session.estop_requested:
             return "estop"
 
         if not self.context.ready():
             self.platform.apply_command(MotionCommand(0.0, 0.0, 0.0))
+            after_command = time.perf_counter()
+            self._profile_timing(
+                "explore",
+                {
+                    "camera": after_camera - tick_start,
+                    "ui": after_ui - after_camera,
+                    "preprocess": after_preprocess - after_ui,
+                    "infer": 0.0,
+                    "command": after_command - after_preprocess,
+                    "total": after_command - tick_start,
+                },
+            )
             return self._common_failure_check() or "explore"
 
         try:
+            before_infer = time.perf_counter()
             result = self.high_level.predict_exploration(self.context.frames)
+            after_infer = time.perf_counter()
         except Exception as exc:
             print(f"[System] ⚠️ predict_exploration raised {type(exc).__name__}: {exc}; issuing safe stop and failing")
             self.safe_stop()
             return "failed"
         command = self.middle_layer.waypoint_to_command(result.chosen_waypoint)
         self.platform.apply_command(command)
+        after_command = time.perf_counter()
+        self._profile_timing(
+            "explore",
+            {
+                "camera": after_camera - tick_start,
+                "ui": after_ui - after_camera,
+                "preprocess": after_preprocess - after_ui,
+                "infer": after_infer - before_infer,
+                "command": after_command - after_infer,
+                "total": after_command - tick_start,
+            },
+        )
         position, _ = self.platform.get_pose()
         self.record_step(position, command)
         actual_velocity = self.platform.get_forward_speed()
@@ -658,6 +797,8 @@ class Lite3System:
 
         self.finalize()
         if current_name == "completed" and self.args.mode in {"stand", "explore", "keyboard", "walk-test", "estop"}:
+            return 0
+        if current_name == "completed" and self.session.exit_requested:
             return 0
         if current_name == "completed" and self.goal_reached:
             return 0

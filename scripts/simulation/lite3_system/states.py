@@ -99,6 +99,9 @@ class WalkState(BaseState):
         system.record_step(position, command)
         system.tick += 1
         system.show_task_camera("WALK")
+        if system.session.exit_requested:
+            system.platform.stop_motion()
+            return "completed"
         if system.tick >= system.args.max_steps:
             return "completed"
         return "walk"
@@ -145,6 +148,9 @@ class RecoveryState(BaseState):
         system.record_step(position, command)
         system.tick += 1
         system.show_task_camera(phase_label)
+        if system.session.exit_requested:
+            system.platform.stop_motion()
+            return "completed"
         system.recovery_counter += 1
 
         if system.recovery_counter >= phase_limit:

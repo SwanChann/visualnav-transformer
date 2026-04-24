@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import json
 import sys
+import threading
 import time
 from pathlib import Path
 from types import SimpleNamespace
@@ -62,6 +63,8 @@ class OrinCamera:
         width: int = 640,
         height: int = 480,
         fps: int = 30,
+        backend: str = "v4l2",
+        fourcc: str | None = "MJPG",
         use_csi: bool = False,
         csi_sensor_id: int = 0,
         csi_flip: int = 0,
@@ -80,6 +83,8 @@ class OrinCamera:
         """
         self.width = width
         self.height = height
+        self.backend = str(backend or "default").lower()
+        self.fourcc = None if fourcc in {None, ""} else str(fourcc).upper()
         self.calibration_path = calibration_path
         self.undistort_alpha = float(undistort_alpha)
         self.camera_matrix: np.ndarray | None = None
@@ -88,6 +93,16 @@ class OrinCamera:
         self._map1: np.ndarray | None = None
         self._map2: np.ndarray | None = None
         self._rectify_ready = False
+        self._frame_lock = threading.Lock()
+        self._latest_frame: np.ndarray | None = None
+        self._latest_frame_ts = 0.0
+        self._last_read_error = ""
+        self._frames_captured = 0
+        self._capture_fps = 0.0
+        self._fps_window_start = time.time()
+        self._fps_window_count = 0
+        self._closed = False
+        self._capture_thread: threading.Thread | None = None
 
         def open_capture():
             if use_csi:
@@ -98,15 +113,23 @@ class OrinCamera:
                     f"format=NV12, framerate={fps}/1 ! "
                     f"nvvidconv flip-method={csi_flip} ! "
                     f"video/x-raw, width={width}, height={height}, format=BGRx ! "
-                    f"videoconvert ! video/x-raw, format=BGR ! appsink"
+                    f"videoconvert ! video/x-raw, format=BGR ! "
+                    f"appsink drop=true max-buffers=1 sync=false"
                 )
                 return cv2.VideoCapture(pipeline, cv2.CAP_GSTREAMER)
 
             # USB 相机偶尔会在刚释放或刚插入时打开失败，重试可避免误判。
-            cap = cv2.VideoCapture(int(device) if isinstance(device, (int, str)) and str(device).isdigit() else device)
+            device_value = int(device) if isinstance(device, (int, str)) and str(device).isdigit() else device
+            if self.backend == "v4l2" and hasattr(cv2, "CAP_V4L2"):
+                cap = cv2.VideoCapture(device_value, cv2.CAP_V4L2)
+            else:
+                cap = cv2.VideoCapture(device_value)
+            if self.fourcc:
+                cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*self.fourcc[:4]))
             cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
             cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
             cap.set(cv2.CAP_PROP_FPS, fps)
+            cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
             return cap
 
         self.cap = None
@@ -132,7 +155,39 @@ class OrinCamera:
         for _ in range(5):
             self.cap.read()
 
-        print(f"[OrinCamera] 相机已打开: {width}x{height}@{fps}fps, CSI={use_csi}")
+        self._capture_thread = threading.Thread(target=self._capture_loop, daemon=True)
+        self._capture_thread.start()
+
+        actual_w = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        actual_h = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        actual_fps = float(self.cap.get(cv2.CAP_PROP_FPS) or 0.0)
+        print(
+            f"[OrinCamera] 相机已打开: requested={width}x{height}@{fps}fps, "
+            f"actual={actual_w}x{actual_h}@{actual_fps:.1f}fps, CSI={use_csi}, "
+            f"backend={self.backend}, fourcc={self.fourcc or 'default'}"
+        )
+
+    def _capture_loop(self) -> None:
+        """Continuously drain the camera and keep only the newest frame."""
+        while not self._closed:
+            if self.cap is None:
+                break
+            ret, frame = self.cap.read()
+            if ret and frame is not None:
+                with self._frame_lock:
+                    self._latest_frame = frame
+                    self._latest_frame_ts = time.time()
+                    self._last_read_error = ""
+                    self._frames_captured += 1
+                    self._fps_window_count += 1
+                    elapsed = self._latest_frame_ts - self._fps_window_start
+                    if elapsed >= 1.0:
+                        self._capture_fps = self._fps_window_count / max(elapsed, 1e-6)
+                        self._fps_window_start = self._latest_frame_ts
+                        self._fps_window_count = 0
+            else:
+                self._last_read_error = "camera returned no frame"
+                time.sleep(0.01)
 
     def _prepare_rectify_maps(self) -> None:
         if self.camera_matrix is None or self.dist_coeffs is None:
@@ -155,18 +210,47 @@ class OrinCamera:
         )
         self._rectify_ready = True
 
+    def read_bgr(self, timeout: float = 2.0, max_age: float = 0.5) -> np.ndarray:
+        """返回后台采集线程保存的最新 BGR 帧。"""
+        deadline = time.time() + max(float(timeout), 0.0)
+        while True:
+            with self._frame_lock:
+                frame = None if self._latest_frame is None else self._latest_frame.copy()
+                frame_ts = self._latest_frame_ts
+            if frame is not None:
+                frame_age = time.time() - frame_ts
+                if frame_age <= max(float(max_age), 0.0):
+                    if self._rectify_ready and self._map1 is not None and self._map2 is not None:
+                        frame = cv2.remap(frame, self._map1, self._map2, interpolation=cv2.INTER_LINEAR)
+                    return frame
+            if self._closed:
+                raise RuntimeError("[OrinCamera] 相机已经关闭")
+            if time.time() >= deadline:
+                detail = f": {self._last_read_error}" if self._last_read_error else ""
+                raise RuntimeError(f"[OrinCamera] 等待最新相机帧超时或帧已陈旧{detail}")
+            time.sleep(0.005)
+
     def read(self) -> Image.Image:
-        """读取一帧并返回 PIL Image (RGB)。"""
-        ret, frame = self.cap.read()
-        if not ret or frame is None:
-            raise RuntimeError("[OrinCamera] 相机读取失败")
-        if self._rectify_ready and self._map1 is not None and self._map2 is not None:
-            frame = cv2.remap(frame, self._map1, self._map2, interpolation=cv2.INTER_LINEAR)
+        """读取最新帧并返回 PIL Image (RGB)。"""
+        frame = self.read_bgr()
         # BGR -> RGB -> PIL
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         return Image.fromarray(rgb)
 
+    def status(self) -> str:
+        with self._frame_lock:
+            frame_age = time.time() - self._latest_frame_ts if self._latest_frame is not None else None
+            fps = self._capture_fps
+            total = self._frames_captured
+        if frame_age is None:
+            return "camera=no-frame"
+        return f"camera_fps={fps:.1f}, frame_age={frame_age:.3f}s, frames={total}"
+
     def close(self) -> None:
+        self._closed = True
+        if self._capture_thread is not None:
+            self._capture_thread.join(timeout=1.0)
+            self._capture_thread = None
         if self.cap is not None:
             self.cap.release()
             self.cap = None
@@ -198,6 +282,8 @@ class Lite3RealBridge:
         camera_width: int = 640,
         camera_height: int = 480,
         camera_fps: int = 30,
+        camera_backend: str = "v4l2",
+        camera_fourcc: str | None = "MJPG",
         use_csi: bool = False,
         csi_sensor_id: int = 0,
         csi_flip: int = 0,
@@ -241,6 +327,8 @@ class Lite3RealBridge:
                 width=camera_width,
                 height=camera_height,
                 fps=camera_fps,
+                backend=camera_backend,
+                fourcc=camera_fourcc,
                 use_csi=use_csi,
                 csi_sensor_id=csi_sensor_id,
                 csi_flip=csi_flip,
@@ -276,6 +364,11 @@ class Lite3RealBridge:
         if self.camera is None:
             raise RuntimeError("Lite3RealBridge camera is disabled for this host run.")
         return self.camera.read()
+
+    def camera_status(self) -> str:
+        if self.camera is None:
+            return "camera=disabled"
+        return self.camera.status()
 
     def standup(self, duration: float | None = None) -> None:
         """控制机器人起立并准备接收速度指令。

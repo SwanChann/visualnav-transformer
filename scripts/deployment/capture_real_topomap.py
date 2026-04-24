@@ -10,6 +10,8 @@ import time
 from datetime import datetime
 from pathlib import Path
 
+import cv2
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS_ROOT = REPO_ROOT / "scripts"
 if str(SCRIPTS_ROOT) not in sys.path:
@@ -63,7 +65,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--undistort-alpha", type=float, default=0.0)
     parser.add_argument("--count", type=int, default=30)
     parser.add_argument("--interval", type=float, default=0.5)
-    parser.add_argument("--manual", action="store_true", help="Press Enter before each capture.")
+    parser.add_argument("--manual", action="store_true", help="Open live preview; press Enter/Space/s to save each node, ESC to exit.")
     parser.add_argument("--start-index", type=int, default=None)
     return parser
 
@@ -93,10 +95,53 @@ def main() -> int:
     print("[TopomapCapture] 沿真实路线缓慢移动相机，保持高度和朝向接近机器人第一视角。")
     saved_files: list[Path] = []
     try:
-        for offset in range(max(int(args.count), 1)):
+        offset = 0
+        target_count = max(int(args.count), 1)
+        while offset < target_count:
             image_index = start_index + offset
             if args.manual:
-                input(f"[TopomapCapture] 移动到节点 {image_index:03d} 后按 Enter 保存...")
+                print(
+                    f"[TopomapCapture] 手动模式: 预览节点 {image_index:03d}，"
+                    "Enter/Space/s 保存，ESC 退出。"
+                )
+                while True:
+                    frame_bgr = camera.read_bgr()
+                    preview = frame_bgr.copy()
+                    cv2.putText(
+                        preview,
+                        f"Node {image_index:03d}/{start_index + target_count - 1:03d}",
+                        (12, 30),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        0.8,
+                        (0, 255, 0),
+                        2,
+                    )
+                    cv2.putText(
+                        preview,
+                        "Enter/Space/s: save   ESC: exit",
+                        (12, 62),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        0.65,
+                        (0, 255, 255),
+                        2,
+                    )
+                    cv2.imshow("Real Topomap Capture", preview)
+                    key = cv2.waitKey(1) & 0xFF
+                    if key == 255:
+                        continue
+                    if key == 27:
+                        print("[TopomapCapture] ESC pressed; stop manual capture.")
+                        offset = target_count
+                        break
+                    if key in (13, 10, 32, ord("s"), ord("S")):
+                        image = camera.read()
+                        image_path = output_dir / f"{image_index:03d}.png"
+                        image.save(image_path)
+                        saved_files.append(image_path)
+                        print(f"[TopomapCapture] 保存 {image_path.name}: size={image.size}")
+                        offset += 1
+                        break
+                continue
             else:
                 if offset > 0:
                     time.sleep(max(float(args.interval), 0.0))
@@ -106,7 +151,12 @@ def main() -> int:
             image.save(image_path)
             saved_files.append(image_path)
             print(f"[TopomapCapture] 保存 {image_path.name}: size={image.size}")
+            offset += 1
     finally:
+        try:
+            cv2.destroyWindow("Real Topomap Capture")
+        except cv2.error:
+            pass
         camera.close()
 
     _write_metadata(output_dir, args, saved_files)

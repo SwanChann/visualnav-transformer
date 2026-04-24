@@ -34,7 +34,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--max-steps", type=int, default=200)
     parser.add_argument("--waypoint", type=int, default=2)
     parser.add_argument("--standup-time", type=float, default=3.0)
-    parser.add_argument("--save-fpv", action="store_true")
+    parser.add_argument(
+        "--save-images",
+        action="store_true",
+        help="Save run images under the session images/ directory. Navigation saves FPV+goal composites.",
+    )
     parser.add_argument(
         "--topomap-traj",
         type=str,
@@ -73,6 +77,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--radius", type=int, default=4)
     parser.add_argument("--close-threshold", type=float, default=3.0)
     parser.add_argument("--yaw-sign", type=float, choices=[-1.0, 1.0], default=1.0)
+    parser.add_argument("--pd-linear-scale", type=float, default=1.0, help="Scale PD linear velocity after waypoint conversion.")
+    parser.add_argument("--pd-yaw-scale", type=float, default=1.0, help="Scale PD yaw-rate after waypoint conversion.")
+    parser.add_argument("--pd-max-v", type=float, default=None, help="Optional PD linear velocity clamp before bridge clipping.")
+    parser.add_argument("--pd-max-w", type=float, default=None, help="Optional PD yaw-rate clamp before bridge clipping.")
+    parser.add_argument("--profile-timing", action="store_true", help="Print per-tick timing diagnostics.")
+    parser.add_argument("--profile-interval", type=int, default=10, help="Timing diagnostics print interval in ticks.")
     parser.add_argument("--scheduler", choices=["ddpm", "ddim"], default="ddpm")
     parser.add_argument("--ddim-steps", type=int, default=10)
     parser.add_argument(

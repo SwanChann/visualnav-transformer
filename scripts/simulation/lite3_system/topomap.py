@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from lite3_system.legacy_bridge import load_legacy
+from project_paths import repo_path
 
 if TYPE_CHECKING:
     from lite3_system.session import NavigationSession
@@ -21,6 +22,8 @@ class MissionTarget:
     topomap: list
     goal_view: object | None
     goal_position: np.ndarray | None = None
+    goal_node_index: int | None = None
+    topomap_tensor: object | None = None
 
 
 class MissionQueue:
@@ -37,7 +40,10 @@ class MissionQueue:
 
     @property
     def goal_node(self) -> int:
-        return len(self.current.topomap) - 1
+        node = self.current.goal_node_index
+        if node is None:
+            node = len(self.current.topomap) - 1
+        return int(np.clip(node, 0, len(self.current.topomap) - 1))
 
     def reset_localization(self) -> None:
         self.closest_node = 0
@@ -48,6 +54,17 @@ class MissionQueue:
         self.index += 1
         self.reset_localization()
         return True
+
+    def set_goal_node(self, goal_node: int) -> int:
+        clamped = int(np.clip(goal_node, 0, len(self.current.topomap) - 1))
+        self.current.goal_node_index = clamped
+        self.current.goal_view = self.current.topomap[clamped]
+        if self.closest_node > clamped:
+            self.closest_node = clamped
+        return clamped
+
+    def shift_goal_node(self, delta: int) -> int:
+        return self.set_goal_node(self.goal_node + int(delta))
 
 
 def _is_relative_to(path: Path, other: Path) -> bool:
@@ -63,12 +80,14 @@ def _repo_root(legacy) -> Path:
 
 
 def get_mujoco_topomap_root(legacy=None) -> Path:
-    legacy = legacy or load_legacy()
+    if legacy is None:
+        return repo_path("topomaps").resolve()
     return _repo_root(legacy) / "topomaps"
 
 
 def get_real_topomap_root(legacy=None) -> Path:
-    legacy = legacy or load_legacy()
+    if legacy is None:
+        return repo_path("deployment", "topomaps", "images").resolve()
     return _repo_root(legacy) / "deployment" / "topomaps" / "images"
 
 
@@ -85,7 +104,6 @@ def load_topomap_metadata(topomap_dir: Path) -> dict | None:
 
 
 def infer_topomap_domain(topomap_dir: Path, legacy=None) -> str | None:
-    legacy = legacy or load_legacy()
     meta = load_topomap_metadata(topomap_dir)
     if meta is not None:
         domain = meta.get("domain")
@@ -100,7 +118,6 @@ def infer_topomap_domain(topomap_dir: Path, legacy=None) -> str | None:
 
 
 def validate_topomap_dir_for_domain(topomap_dir: str | Path, expected_domain: str, legacy=None) -> Path:
-    legacy = legacy or load_legacy()
     resolved = Path(topomap_dir).expanduser().resolve()
     if not resolved.is_dir():
         raise FileNotFoundError(f"Topomap directory not found: {resolved}")
@@ -163,11 +180,17 @@ def validate_task_topomap_args(args, expected_domain: str, legacy=None) -> None:
             raise ValueError("num-goals must be >= 1 for goal-source=random_points.")
         return
 
-    legacy = legacy or load_legacy()
-    if getattr(args, "mode", "") == "navigate":
-        resolve_navigation_topomap_dir(args, expected_domain, legacy)
+    mission_topomaps = getattr(args, "mission_topomap", None) or []
+    if getattr(args, "mode", "") == "navigate" and mission_topomaps:
+        for topomap_dir in mission_topomaps:
+            validate_topomap_dir_for_domain(topomap_dir, expected_domain, legacy)
+    elif getattr(args, "mode", "") == "navigate":
+        if getattr(args, "topomap_dir", None):
+            validate_topomap_dir_for_domain(args.topomap_dir, expected_domain, legacy)
+        else:
+            legacy = legacy or load_legacy()
+            resolve_navigation_topomap_dir(args, expected_domain, legacy)
     elif getattr(args, "mode", "") == "mission":
-        mission_topomaps = getattr(args, "mission_topomap", None) or []
         if not mission_topomaps and expected_domain == "real":
             raise ValueError("Real backend mission mode requires one or more --mission-topomap directories.")
         for topomap_dir in mission_topomaps:

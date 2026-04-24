@@ -41,7 +41,7 @@ Orin Camera -> NoMaDInferenceModule -> waypoint sequence
 | `scripts/configs/navigation_host/lite3_real_bridge_config.json` | 真机桥接配置 |
 | `scripts/shared/nomad_inference.py` | NoMaD 推理模块 |
 | `scripts/simulation/lite3_system/system.py` | 闭环状态机系统 |
-| `scripts/simulation/lite3_system/session.py` | `fpv/`、`goal_views/`、`captures/` 保存 |
+| `scripts/simulation/lite3_system/session.py` | `images/`、`goal_views/`、`captures/` 保存 |
 | `lite3_host_control/lite3_controller.py` | UDP 上位机控制器 |
 | `scripts/nomad_real_deployment_checklist.py` | 真机部署检查清单生成器 |
 
@@ -52,7 +52,7 @@ Orin Camera -> NoMaDInferenceModule -> waypoint sequence
 3. 用 Orin 相机采集真实环境 topomap，并写入 `topomap_meta.json`。
 4. 通过 `Lite3RealBridge` 把高层命令转成 Lite3 的 UDP Twist 控制。
 5. 用导航主机启动交互式 `stand`、`explore`、`navigate`、`estop`。
-6. 保存运行目录下的 `captures/`、`goal_views/`、`fpv/`。
+6. 保存运行目录下的 `captures/`、`goal_views/`、`images/`。
 
 ### 2.4 当前代码不应误写的限制
 
@@ -287,7 +287,7 @@ python scripts/deployment/capture_real_topomap.py \
   --map-name real_hallway \
   --camera-device 0 \
   --count 40 \
-  --interval 0.5
+  --interval 2
 ```
 
 如果场地狭窄、需要每移动一段距离再手动保存一帧，使用手动模式：
@@ -301,21 +301,22 @@ python scripts/deployment/capture_real_topomap.py \
   --manual
 ```
 
-带 `--manual` 的命令是**手动采集**，不是自动定时采集。脚本启动后会在终端逐张提示：
+带 `--manual` 的命令是**手动采集**，不是自动定时采集。当前脚本会打开实时预览窗口，而不是停在终端 `input()` 上等待。预览窗口中的按键规则是：
 
 ```text
-[TopomapCapture] 移动到节点 000 后按 Enter 保存...
+Enter / Space / s  保存当前节点图像
+ESC                结束采集并写入已有图像的 topomap_meta.json
 ```
 
-此时脚本会停在 `input()` 等待状态，不会自动保存图像。正确操作流程是：
+正确操作流程是：
 
 1. 操作者用手推 Orin 相机，或在另一个终端用导航主机 `keyboard` 模式低速移动 Lite3。
 2. 到达第一个节点位置后，让机器人或相机短暂停稳，确认朝向与机器人第一视角一致。
-3. 在运行采集脚本的终端按一次 `Enter`，脚本立即读取当前相机帧并保存为 `000.png`。
-4. 继续移动到下一个节点，再按一次 `Enter`，保存为 `001.png`。
+3. 在预览窗口确认画面是实时更新的，然后按一次 `Enter`、空格或 `s`，保存为 `000.png`。
+4. 继续移动到下一个节点，再按一次保存键，保存为 `001.png`。
 5. 重复直到达到 `--count 40` 指定的数量，脚本最后写入 `topomap_meta.json`。
 
-手动模式适合走廊窄、需要避让障碍、需要保证每个节点都停稳取景的情况。若不带 `--manual`，脚本才会按照 `--interval` 自动间隔采集；例如 `--interval 0.5` 表示除第一帧外，每隔 0.5 秒保存一帧。
+手动模式适合走廊窄、需要避让障碍、需要保证每个节点都停稳取景的情况。若不带 `--manual`，脚本才会按照 `--interval` 自动间隔采集；例如 `--interval 0.5` 表示除第一帧外，每隔 0.5 秒保存一帧。若手动预览窗口停在第一帧，优先确认没有另一个进程同时占用相机；当前代码已经在 `OrinCamera` 内部用后台线程持续读取最新帧，正常情况下预览应持续刷新。
 
 采集操作要求：
 
@@ -388,7 +389,7 @@ python scripts/deployment/orin_standalone_test.py \
 在当前 Orin 实测中，可参考如下输出：
 
 ```text
-[OrinCamera] 相机已打开: 640x480@30fps, CSI=False
+[OrinCamera] 相机已打开: requested=640x480@30fps, actual=640x480@30.0fps, CSI=False, backend=v4l2, fourcc=MJPG
   帧 0: size=(640, 480), latency=41.4ms
   帧 1: size=(640, 480), latency=41.4ms
   帧 2: size=(640, 480), latency=37.8ms
@@ -396,7 +397,7 @@ python scripts/deployment/orin_standalone_test.py \
   ✅ 相机正常 | 平均延迟: 40.0ms | FPS: 25.0
 ```
 
-这说明当前 USB 相机链路稳定，帧率虽然略低于标称 30 FPS，但足以支撑后续 NoMaD 端到端测试。
+这说明当前 USB 相机链路稳定。桥接层默认使用 V4L2 后端和 MJPG 编码，并把缓冲区压到 1 帧，目的是避免 OpenCV 积压旧帧导致导航开始时拿到“过期画面”。
 
 如果失败：
 
@@ -726,12 +727,14 @@ cat scripts/configs/navigation_host/lite3_real_bridge_config.json
     "camera_width": 640,
     "camera_height": 480,
     "camera_fps": 30,
+    "camera_backend": "v4l2",
+    "camera_fourcc": "MJPG",
     "use_csi": false,
     "csi_sensor_id": 0,
     "csi_flip": 0,
     "twist_hz": 25.0,
-    "max_linear_x": 0.2,
-    "max_yaw_rate": 0.6,
+    "max_linear_x": 0.12,
+    "max_yaw_rate": 0.35,
     "gait": "low",
     "standup_wait": 3.0
   }
@@ -740,10 +743,19 @@ cat scripts/configs/navigation_host/lite3_real_bridge_config.json
 
 注意：仓库自带 `lite3_real_bridge_config.json` 当前默认使用 Lite3 WiFi 网段，`robot_ip=192.168.2.1`，并在顶层 `network` 字段记录 Orin 当前地址 `192.168.2.17`。其中只有 `bridge_kwargs.robot_ip` 会传给桥接代码，顶层 `network` 只用于人工核对。当前默认限幅已经按首次真机调试改为保守值：
 
-1. `max_linear_x` 改为 `0.2`
-2. `max_yaw_rate` 改为 `0.6`
-3. `gait` 保持 `low`
-4. `standup_wait` 字段的实际等待时间为 `max(0, standup_wait - 3.0)` 秒（因为底层 `prepare_for_twist_control` 已内置 3 秒等待）；若希望额外延长起立稳定时间，应设 `> 3.0`，例如 `4.5`。
+1. `camera_backend` 使用 `v4l2`，`camera_fourcc` 使用 `MJPG`，减少 USB 相机在 YUYV 原始格式下带宽不足导致的低帧率。
+2. `max_linear_x` 改为 `0.12`。
+3. `max_yaw_rate` 改为 `0.35`。
+4. `gait` 保持 `low`。
+5. `standup_wait` 字段的实际等待时间为 `max(0, standup_wait - 3.0)` 秒（因为底层 `prepare_for_twist_control` 已内置 3 秒等待）；若希望额外延长起立稳定时间，应设 `> 3.0`，例如 `4.5`。
+
+速度指令还可以在 PD 中层继续缩小，不只依赖桥接层限幅。导航主机支持：
+
+```text
+--pd-linear-scale 0.6 --pd-yaw-scale 0.6 --pd-max-v 0.12 --pd-max-w 0.35
+```
+
+其中 `pd-linear-scale / pd-yaw-scale` 是把 PD 输出按比例缩小，`pd-max-v / pd-max-w` 是在 PD 输出后再限幅。首次真机建议先使用这一组保守值。
 
 ### 5.3 通讯与相机联通测试
 
@@ -833,7 +845,13 @@ python scripts/deployment/nomad_navigation_host.py \
   --bridge-class Lite3RealBridge \
   --bridge-config scripts/configs/navigation_host/lite3_real_bridge_config.json \
   --policy-config scripts/configs/vision_encoder/nomad_encoder_efficientnet_b0.yaml \
-  --policy-checkpoint deployment/model_weights/nomad/nomad.pth
+  --policy-checkpoint deployment/model_weights/nomad/nomad.pth \
+  --pd-linear-scale 0.6 \
+  --pd-yaw-scale 0.6 \
+  --pd-max-v 0.12 \
+  --pd-max-w 0.35 \
+  --profile-timing \
+  --profile-interval 5
 ```
 
 预期结果：
@@ -860,6 +878,7 @@ python scripts/deployment/nomad_navigation_host.py \
 2. 一人扶持，一人按回车启动。
 3. 遥控急停始终可用。
 4. 桥接配置中的 `max_linear_x / max_yaw_rate` 已按首次调试值改小。
+5. `--profile-timing` 会在导航/探索时打印相机、显示、预处理、推理、下发命令各阶段耗时；如果排查结束，可以去掉这两个 profile 参数。
 
 由于启动时已自动完成起立，§6.2 中第一条 `stand --stand-steps 20` 实质上只是再次维持站立，不是真正的"起立动作"，请勿把它当作安全测试的替代。
 
@@ -960,7 +979,7 @@ python scripts/deployment/nomad_navigation_host.py \
 ### 7.3 在交互模式中下发导航命令
 
 ```text
-navigate --topomap-dir deployment/topomaps/images/real_hallway --max-steps 200 --scheduler ddim --ddim-steps 5 --cfg-weight 0.0
+navigate --topomap-dir deployment/topomaps/images/real_hallway --max-steps 20 --scheduler ddim --ddim-steps 5 --cfg-weight 0.0
 ```
 
 预期结果：
@@ -968,7 +987,9 @@ navigate --topomap-dir deployment/topomaps/images/real_hallway --max-steps 200 -
 1. 系统会加载真实 topomap。
 2. 运行期间实时画面会显示当前图像与目标图像。
 3. 当前任务对应的目标图像会保存到运行目录下的 `goal_views/`。
-4. 任务结束后回到 idle，并打印任务成功或失败。
+4. 运行窗口中按 `ESC` 会退出当前导航任务并回到交互主机 idle；按 `e` 才是软急停。
+5. 导航窗口中按 `[` / `]` 可以把当前 topomap 目标节点向前/向后切换，用于临时更换 goal 图像；状态栏会显示当前目标节点编号。
+6. 任务结束后回到 idle，并打印任务成功或失败。
 
 如果这一步直接报错：
 
@@ -983,11 +1004,36 @@ navigate --topomap-dir deployment/topomaps/images/real_hallway --max-steps 200 -
 
 ---
 
-## 8. 可视化模式、无可视化模式与图像保存
+## 8. 导航运行方式、可视化模式与图像保存
 
-### 8.1 可视化模式
+### 8.1 常规可视化导航
 
-用于调试，命令如下：
+用于调试和观察闭环状态。启动主机时打开相机窗口：
+
+```bash
+python scripts/deployment/nomad_navigation_host.py \
+  --interactive \
+  --backend real \
+  --map real_hallway \
+  --camera on \
+  --bridge-module deployment.lite3_real_bridge \
+  --bridge-class Lite3RealBridge \
+  --bridge-config scripts/configs/navigation_host/lite3_real_bridge_config.json \
+  --policy-config scripts/configs/vision_encoder/nomad_encoder_efficientnet_b0.yaml \
+  --policy-checkpoint deployment/model_weights/nomad/nomad.pth
+```
+
+进入交互主机后下发导航任务：
+
+```text
+navigate --topomap-dir deployment/topomaps/images/real_hallway --max-steps 200 --scheduler ddim --ddim-steps 5 --cfg-weight 0.0
+```
+
+窗口左侧是实时 FPV 图像，右侧是当前 goal 图像；按 `[` / `]` 可以切换 goal 节点，按 `ESC` 退出当前任务并回到 idle。
+
+### 8.2 保存图像的导航
+
+若需要复盘导航过程，只保留一个保存开关：`--save-images`。
 
 ```bash
 python scripts/deployment/nomad_navigation_host.py \
@@ -1000,19 +1046,22 @@ python scripts/deployment/nomad_navigation_host.py \
   --bridge-config scripts/configs/navigation_host/lite3_real_bridge_config.json \
   --policy-config scripts/configs/vision_encoder/nomad_encoder_efficientnet_b0.yaml \
   --policy-checkpoint deployment/model_weights/nomad/nomad.pth \
-  --save-fpv
+  --pd-linear-scale 0.6 \
+  --pd-yaw-scale 0.6 \
+  --pd-max-v 0.12 \
+  --pd-max-w 0.35 \
+  --save-images
 ```
 
-预期结果：
+保存逻辑如下：
 
-1. 出现实时相机窗口。
-2. 执行 `navigate` 或 `explore` 时，会把过程帧保存到 `fpv/`。
-3. `capture` 会保存到 `captures/`。
-4. `navigate` 会把目标图像保存到 `goal_views/`。
+1. `navigate` / `mission` 中有目标图像时，每个导航 tick 保存一张“实时 FPV + 当前 goal”的左右拼接图。
+2. `explore`、`keyboard` 等无 goal 图像的任务中，按较低频率保存实时 FPV 图像。
+3. 所有运行过程图像统一保存在 `images/<timestamp>_.../`，不再拆成两套保存开关和两套运行目录。
 
-### 8.2 无可视化模式
+### 8.3 无可视化导航
 
-用于正式跑实验时减少 GUI 开销：
+用于正式跑实验时减少 GUI 开销。若仍想保留复盘图像，可以继续加 `--save-images`：
 
 ```bash
 python scripts/deployment/nomad_navigation_host.py \
@@ -1026,17 +1075,47 @@ python scripts/deployment/nomad_navigation_host.py \
   --bridge-config scripts/configs/navigation_host/lite3_real_bridge_config.json \
   --policy-config scripts/configs/vision_encoder/nomad_encoder_efficientnet_b0.yaml \
   --policy-checkpoint deployment/model_weights/nomad/nomad.pth \
-  --save-fpv
+  --save-images
 ```
 
 预期结果：
 
-1. 不弹出任何 GUI 窗口。
+1. 不弹出实时相机窗口。
 2. 仍可执行 `capture`。
-3. 仍可保存：
-   `fpv/`、`captures/`、`goal_views/`。
+3. 若带 `--save-images`，仍会保存 `images/`、`captures/`、`goal_views/`。
 
-### 8.3 图像保存目录
+### 8.4 指定地图或真实场景
+
+真机 backend 的 `--map` 是运行标签和真实场景名，默认是 `real_hallway`。如果要换成其他真实场景，例如 `lab_corridor`，topomap 目录应与 `real_hallway` 同级：
+
+```text
+deployment/topomaps/images/
+  real_hallway/
+  lab_corridor/
+```
+
+启动主机时指定场景名：
+
+```bash
+python scripts/deployment/nomad_navigation_host.py \
+  --interactive \
+  --backend real \
+  --map lab_corridor \
+  --camera on \
+  --bridge-module deployment.lite3_real_bridge \
+  --bridge-class Lite3RealBridge \
+  --bridge-config scripts/configs/navigation_host/lite3_real_bridge_config.json \
+  --policy-config scripts/configs/vision_encoder/nomad_encoder_efficientnet_b0.yaml \
+  --policy-checkpoint deployment/model_weights/nomad/nomad.pth
+```
+
+进入交互主机后也要传入对应真实 topomap：
+
+```text
+navigate --topomap-dir deployment/topomaps/images/lab_corridor --max-steps 200 --scheduler ddim --ddim-steps 5 --cfg-weight 0.0
+```
+
+### 8.5 图像保存目录
 
 每次主机启动后会创建一个新的运行目录：
 
@@ -1050,7 +1129,7 @@ results/deployment/<timestamp>_lite3_real_interactive/
 |------|----------|------|
 | `captures/` | 执行 `capture` | 当前相机图像 |
 | `goal_views/` | 执行 `navigate` 且任务有目标图像 | 当前任务目标图像 |
-| `fpv/` | 主机启动时带 `--save-fpv` | 运行过程中的实时图像 |
+| `images/<timestamp>_.../` | 主机或任务带 `--save-images` | 导航时为实时图像与目标图像拼接图；无目标任务中为实时图像 |
 
 检查命令：
 
@@ -1127,7 +1206,70 @@ sudo jetson_clocks
 explore --max-steps 30 --scheduler ddim --ddim-steps 2 --cfg-weight 0.0
 ```
 
-### 9.3 导航主机启动时报桥接参数错误
+### 9.3 真机画面帧率低或拖拽感强
+
+先区分两类“低帧率”：
+
+1. 相机采集低帧率：后台相机线程本身只能拿到很低 FPS，这会影响模型输入实时性。
+2. 导航窗口低帧率：相机后台仍在 20-30 FPS 更新，但 NoMaD 推理循环较慢，OpenCV 窗口只在每个高层 tick 刷新一次；此时模型读取的是后台最新帧，不是窗口上一帧。
+
+排查方法：
+
+```text
+status
+```
+
+`status` 会打印类似：
+
+```text
+Camera: camera_fps=28.7, frame_age=0.012s, frames=1234
+```
+
+若 `camera_fps` 很低，先检查 USB 相机是否支持 `MJPG`：
+
+```bash
+v4l2-ctl --device=/dev/video0 --list-formats-ext
+```
+
+当前桥接配置默认使用：
+
+```json
+"camera_backend": "v4l2",
+"camera_fourcc": "MJPG"
+```
+
+若相机不支持 MJPG，可以把 `camera_fourcc` 改成 `null` 或相机支持的格式，再重新测试。若 `camera_fps` 正常但窗口刷新慢，瓶颈在推理循环，优先使用 `--scheduler ddim --ddim-steps 2`，并在主机启动时加：
+
+```text
+--profile-timing --profile-interval 5
+```
+
+导航时会打印每个阶段耗时，例如 `camera / ui / preprocess / infer / command / total`。其中 `infer` 大说明模型推理慢；`ui` 大说明显示窗口拖慢；`preprocess` 大通常说明图像预处理或 topomap 预处理有问题。当前代码已把 topomap 图像预处理缓存到任务开始阶段，避免每个导航 tick 重复把 topomap 从 PIL 转 tensor。
+
+正式实验如果不需要看窗口，推荐：
+
+```text
+--camera off --no-gui
+```
+
+这样闭环仍使用后台相机最新帧，但不再让 OpenCV 显示参与高层循环。
+
+### 9.4 速度指令太大或机器人动作太猛
+
+有两处可以调小速度：
+
+1. 桥接层最终限幅：`scripts/configs/navigation_host/lite3_real_bridge_config.json` 中的 `max_linear_x / max_yaw_rate`。
+2. PD 中层输出缩放：导航主机参数 `--pd-linear-scale / --pd-yaw-scale / --pd-max-v / --pd-max-w`。
+
+首次真机推荐：
+
+```text
+--pd-linear-scale 0.6 --pd-yaw-scale 0.6 --pd-max-v 0.12 --pd-max-w 0.35
+```
+
+如果仍然过快，把 `pd-linear-scale` 降到 `0.4`，或把 `max_linear_x` / `pd-max-v` 降到 `0.08`。如果只是转向太猛，优先降低 `pd-yaw-scale` 或 `pd-max-w`，不要同时大幅降低线速度。
+
+### 9.5 导航主机启动时报桥接参数错误
 
 当前代码支持两种 bridge 配置方式：
 
@@ -1140,7 +1282,7 @@ explore --max-steps 30 --scheduler ddim --ddim-steps 2 --cfg-weight 0.0
 scripts/configs/navigation_host/lite3_real_bridge_config.json
 ```
 
-### 9.4 `navigate` 一启动就报 topomap 错误
+### 9.6 `navigate` 一启动就报 topomap 错误
 
 这是最常见问题。检查三件事：
 
@@ -1148,16 +1290,16 @@ scripts/configs/navigation_host/lite3_real_bridge_config.json
 2. 目录是否真实存在。
 3. 目录中的图像是不是实拍图，而不是 MuJoCo 图。
 
-### 9.5 没有保存 `fpv/`
+### 9.7 没有保存 `images/`
 
 要满足两个条件：
 
-1. 启动导航主机时带 `--save-fpv`。
+1. 启动导航主机时带 `--save-images`。
 2. 实际执行了 `explore` 或 `navigate` 这类会循环运行的任务。
 
-仅仅进入 idle 或只执行 `capture`，不会产生整段 `fpv/`。
+仅仅进入 idle 或只执行 `capture`，不会产生整段 `images/` 运行图像。
 
-### 9.6 交互式主机任务时报 `No module named 'torchvision'`
+### 9.8 交互式主机任务时报 `No module named 'torchvision'`
 
 如果交互式主机已经完成相机打开、Lite3 连接、自动起立，并在输入 `stand`、`explore`、`estop` 后出现：
 
@@ -1189,7 +1331,7 @@ pd (...)
 
 如果这里仍然报 `torchvision`，说明 Orin 上代码还不是当前版本；重新 `git fetch` 并切到 `new` 分支最新提交后再运行。只有在你额外运行训练脚本或研究脚本时，才考虑单独准备带 Jetson 兼容 `torchvision` 的实验环境。
 
-### 9.7 输入 `stand` 后立刻软急停
+### 9.9 输入 `stand` 后立刻软急停
 
 如果交互式主机启动后已经自动起立，并且输入 `stand` 后出现：
 
@@ -1263,7 +1405,7 @@ python scripts/deployment/nomad_navigation_host.py \
   --bridge-config scripts/configs/navigation_host/lite3_real_bridge_config.json \
   --policy-config scripts/configs/vision_encoder/nomad_encoder_efficientnet_b0.yaml \
   --policy-checkpoint deployment/model_weights/nomad/nomad.pth \
-  --save-fpv
+  --save-images
 ```
 
 进入交互模式后依次执行：
@@ -1290,10 +1432,11 @@ estop
 2. 真实 topomap 应由 Orin 相机或同等视角相机在真实场景采集，目录中需要有 `"domain": "real"` 的 `topomap_meta.json`。
 3. 真机 backend 的默认 map/run label 是 `real_hallway`；其他真实场景应放在 `deployment/topomaps/images/<map_name>/`，与 `real_hallway` 同级。`easy/medium/hard` 只属于 MuJoCo backend。
 4. 当前无线部署中，Orin 导航主机地址为 `192.168.2.17`，Lite3 运动主机地址为 `192.168.2.1`；`robot_ip` 必须写运动主机地址，不能写 Orin 地址。
-5. `bridge-config` 使用项目自带 JSON 即可，当前代码已兼容其 `bridge_kwargs` 包装格式；默认已使用首次真机推荐限幅 `max_linear_x=0.2 / max_yaw_rate=0.6`（见 §5.2）。
+5. `bridge-config` 使用项目自带 JSON 即可，当前代码已兼容其 `bridge_kwargs` 包装格式；默认已使用更保守的首次真机限幅 `max_linear_x=0.12 / max_yaw_rate=0.35`，并默认启用 `camera_backend=v4l2 / camera_fourcc=MJPG`（见 §5.2）。
 6. `640x480` USB 相机可以先用默认 `stretch` 进入 NoMaD；若真实闭环出现横向几何异常，再测试 `center_crop` 或 `letterbox`。
-7. 若要保存运行过程中的实时图像，启动导航主机时必须带 `--save-fpv`。
-8. `captures/`、`goal_views/`、`fpv/` 三类图像都已经有对应代码路径，不是纯文档设计。
+7. 若要保存运行过程图像，启动导航主机时带 `--save-images`；导航任务会逐帧保存实时图像与目标图像拼接图，非目标任务保存实时图像。
+8. `captures/`、`goal_views/`、`images/` 都已经有对应代码路径，不是纯文档设计。
 9. **交互式主机启动即自动起立**：`nomad_navigation_host.py --interactive` 的 `run()` 会在进入 idle 之前调用一次 `_ensure_standing()`，所以必须在启动命令回车之前就完成安全准备，不能指望"启动后再有时间反应"。
-10. 当前最稳的真机流程是：
+10. 若机器人动作仍偏猛，先加或继续降低 `--pd-linear-scale / --pd-yaw-scale / --pd-max-v / --pd-max-w`，再考虑改桥接层最终限幅。
+11. 当前最稳的真机流程是：
    先独立调试，再桥接通讯（仅连接），再用 `--test-standup/--test-twist` 手工验证起立与低速前进，再打开交互式主机（建议 `--camera off`）进入 `keyboard` 模式采集真实 topomap，最后再切回正常主机相机配置做探索和基于真实 topomap 的单目标导航。

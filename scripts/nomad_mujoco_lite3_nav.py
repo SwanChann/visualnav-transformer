@@ -64,7 +64,7 @@ NoMaD + Lite3 MuJoCo 集成仿真导航（纯 Python，无 ROS 依赖）
   --max-steps         最大 NoMaD 推理步数 (默认 200 ≈ 50s 仿真时间)
   --waypoint          选择扩散轨迹中第几个路径点 (默认 2, 范围 0~7)
   --standup-time      站立预热时间 (默认 3.0s)
-  --save-fpv          保存头部 FPV 相机图像到 results 目录
+  --save-images       保存运行图像到 results 目录；导航时保存 FPV+goal 拼接图
   --topomap-dir       自定义 topomap 目录 (覆盖 --map 默认路径)
   --topomap-traj      GoStanford 轨迹名 (未指定 --topomap-dir 时使用)
   --topomap-step      数据集 topomap 采样步长 (默认 5)
@@ -884,6 +884,23 @@ def camera_visualization_enabled(args):
     return not bool(getattr(args, "no_gui", False))
 
 
+def save_runtime_image(cam_img, output_dir, step_i, label="run", goal_view=None):
+    os.makedirs(output_dir, exist_ok=True)
+    safe_label = "".join(ch if ch.isalnum() or ch in {"-", "_"} else "_" for ch in label).strip("_") or "run"
+    fpv = cam_img.convert("RGB")
+    if goal_view is None:
+        fpv.save(os.path.join(output_dir, f"{step_i:06d}_{safe_label}.png"))
+        return
+    goal = goal_view.convert("RGB")
+    if goal.size != fpv.size:
+        resampling = getattr(PILImage, "Resampling", PILImage)
+        goal = goal.resize(fpv.size, resampling.BILINEAR)
+    combined = PILImage.new("RGB", (fpv.width + goal.width, max(fpv.height, goal.height)), (0, 0, 0))
+    combined.paste(fpv, (0, 0))
+    combined.paste(goal, (fpv.width, 0))
+    combined.save(os.path.join(output_dir, f"{step_i:06d}_{safe_label}.png"))
+
+
 # ══════════════════════════════════════════════════════════
 #  NoMaD 模型加载与推理（复用 nomad_pybullet_nav.py 逻辑）
 # ══════════════════════════════════════════════════════════
@@ -1364,11 +1381,11 @@ def run_explore(args):
     env.reset_wall_clock()  # warmup 后重置实时时钟
 
     # FPV 头部视角保存
-    fpv_dir = None
-    if args.save_fpv:
-        fpv_dir = os.path.join(PROJECT_ROOT, f"results/nomad_mujoco/{RUN_TAG}_explore_mujoco/fpv")
-        os.makedirs(fpv_dir, exist_ok=True)
-        print(f"[Explore] FPV frames will be saved to {fpv_dir}")
+    image_dir = None
+    if args.save_images:
+        image_dir = os.path.join(PROJECT_ROOT, f"results/nomad_mujoco/{RUN_TAG}_explore_mujoco/images")
+        os.makedirs(image_dir, exist_ok=True)
+        print(f"[Explore] Run images will be saved to {image_dir}")
 
     # 闭环: 卡住检测器
     stuck_detector = StuckDetector()
@@ -1396,8 +1413,8 @@ def run_explore(args):
 
         # 1. 渲染头部 FPV 相机
         cam_img = env.render_camera()
-        if fpv_dir and step_i % 5 == 0:
-            cam_img.save(os.path.join(fpv_dir, f"{step_i:04d}.png"))
+        if image_dir and step_i % 5 == 0:
+            save_runtime_image(cam_img, image_dir, step_i, label="explore")
 
         # ── 实时 FPV 显示 ──
         actual_vel = env.get_body_speed_forward()
@@ -1587,11 +1604,11 @@ def run_navigate(args):
     closest_node = 0
 
     # FPV 头部视角保存
-    fpv_dir = None
-    if args.save_fpv:
-        fpv_dir = os.path.join(PROJECT_ROOT, f"results/nomad_mujoco/{RUN_TAG}_navigate_mujoco/fpv")
-        os.makedirs(fpv_dir, exist_ok=True)
-        print(f"[Navigate] FPV frames will be saved to {fpv_dir}")
+    image_dir = None
+    if args.save_images:
+        image_dir = os.path.join(PROJECT_ROOT, f"results/nomad_mujoco/{RUN_TAG}_navigate_mujoco/images")
+        os.makedirs(image_dir, exist_ok=True)
+        print(f"[Navigate] Run images will be saved to {image_dir}")
 
     # 闭环: 卡住检测器
     stuck_detector = StuckDetector()
@@ -1620,8 +1637,8 @@ def run_navigate(args):
         t0 = time.time()
 
         cam_img = env.render_camera()
-        if fpv_dir and step_i % 5 == 0:
-            cam_img.save(os.path.join(fpv_dir, f"{step_i:04d}.png"))
+        if image_dir:
+            save_runtime_image(cam_img, image_dir, step_i, label="navigate", goal_view=goal_view_img)
 
         # ── 实时 FPV + 目标点视角显示 ──
         actual_vel = env.get_body_speed_forward()
@@ -1866,8 +1883,8 @@ def main():
     parser.add_argument(
         "--standup-time", type=float, default=3.0, help="站立预热时间 (s)"
     )
-    parser.add_argument("--save-fpv", action="store_true",
-                        help="保存头部 FPV 相机图像到 results 目录")
+    parser.add_argument("--save-images", action="store_true",
+                        help="Save run images under results; navigation saves FPV+goal composites.")
 
     # 导航/topomap 参数
     parser.add_argument("--topomap-traj", type=str, default=None,
