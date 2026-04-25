@@ -31,7 +31,9 @@ def build_parser() -> argparse.ArgumentParser:
         default="on",
         help="Whether to show the unified FPV + goal-vision camera window.",
     )
-    parser.add_argument("--max-steps", type=int, default=200)
+    # 默认值给到 10^9（实际上限），让 navigate/explore 模式不受 step 上限干扰；
+    # 真正的退出由 ESC、键盘 estop、摔倒检测或物理到达判定负责。
+    parser.add_argument("--max-steps", type=int, default=1_000_000_000)
     parser.add_argument("--waypoint", type=int, default=2)
     parser.add_argument("--standup-time", type=float, default=3.0)
     parser.add_argument(

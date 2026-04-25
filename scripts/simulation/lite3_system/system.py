@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import atexit
 from datetime import datetime
 import json
 import os
@@ -98,6 +99,7 @@ class Lite3System:
         self._video_started_at = None
         self._last_video_frame_at = 0.0
         self._video_lock = threading.Lock()
+        self._atexit_registered = False
         self.result_prefix = result_prefix
         self.close_platform_on_finalize = close_platform_on_finalize
         self.is_standing = bool(getattr(self.platform, "_nomad_is_standing", False))
@@ -332,6 +334,9 @@ class Lite3System:
 
     def _async_viewer_loop(self, fps: float) -> None:
         period = 1.0 / max(fps, 1.0)
+        consecutive_failures = 0
+        # 注意：这里吞掉单次异常（相机抖动、imshow 偶发失败等）只打印告警继续循环，
+        # 不再 break——否则一次相机错误会让整段录像和右栏显示同时停摆。
         while not self._viewer_stop.is_set():
             loop_start = time.perf_counter()
             with self._viewer_lock:
@@ -347,17 +352,32 @@ class Lite3System:
                     footer_lines=state.get("footer_lines") or [],
                 )
                 if self._should_write_wall_clock_video_frame():
-                    self._write_run_video_frame(camera_image, display_goal, label=self.state_name)
+                    try:
+                        self._write_run_video_frame(camera_image, display_goal, label=self.state_name)
+                    except Exception as write_exc:
+                        if not self._viewer_stop.is_set():
+                            print(
+                                f"[Recorder] Async viewer write skipped ({type(write_exc).__name__}): {write_exc}"
+                            )
                 if key_code != 255:
                     self._queue_async_viewer_key(key_code)
                     if key_code == 27:
                         self.session.request_exit()
                     elif key_code in (ord("e"), ord("E")):
                         self.session.request_estop()
+                consecutive_failures = 0
             except Exception as exc:
-                if not self._viewer_stop.is_set():
-                    print(f"[Camera] Async viewer stopped after {type(exc).__name__}: {exc}")
-                break
+                consecutive_failures += 1
+                if not self._viewer_stop.is_set() and consecutive_failures <= 3:
+                    print(
+                        f"[Camera] Async viewer iteration failed ({type(exc).__name__}): {exc}; "
+                        f"continuing (consecutive failures={consecutive_failures})"
+                    )
+                if consecutive_failures >= 60:
+                    # 60 次连续失败（约 4 秒@15Hz）才放弃，给临时性的相机/显示故障留出恢复机会。
+                    if not self._viewer_stop.is_set():
+                        print("[Camera] Async viewer giving up after 60 consecutive failures.")
+                    break
             elapsed = time.perf_counter() - loop_start
             time.sleep(max(0.0, period - elapsed))
 
@@ -385,7 +405,11 @@ class Lite3System:
             goal_view=None,
             footer_lines=[self._keyboard_help_line()],
         )
-        self._write_run_video_frame(camera_image, label="keyboard", every_n=5)
+        if self._should_write_wall_clock_video_frame():
+            try:
+                self._write_run_video_frame(camera_image, label="keyboard", every_n=1)
+            except Exception as exc:
+                print(f"[Recorder] Keyboard video write skipped ({type(exc).__name__}): {exc}")
         return key_code
 
     def _handle_keyboard_key(self, key: str | None) -> None:
@@ -577,19 +601,23 @@ class Lite3System:
         return None
 
     def _compose_video_frame(self, camera_image, display_goal=None):
+        # 固定输出"FPV + goal"双面板尺寸，无论 display_goal 是否到位：
+        # 这样 cv2.VideoWriter 在第一帧就锁定到双面板宽度，后续不会因尺寸跳变而被
+        # resize 压扁或丢帧；任务尚未提供子目标时，右半使用同尺寸的灰色占位面板。
+        from PIL import Image as _PILImage
+
         fpv = camera_image.convert("RGB")
         if display_goal is None:
-            return cv2.cvtColor(np.asarray(fpv), cv2.COLOR_RGB2BGR)
-        goal = display_goal.convert("RGB")
-        if goal.size != fpv.size:
-            resampling = getattr(type(goal), "Resampling", None)
-            if resampling is None:
-                from PIL import Image
-
-                resample_mode = getattr(Image, "Resampling", Image).BILINEAR
-            else:
-                resample_mode = resampling.BILINEAR
-            goal = goal.resize(fpv.size, resample_mode)
+            goal = _PILImage.new("RGB", fpv.size, (32, 32, 32))
+        else:
+            goal = display_goal.convert("RGB")
+            if goal.size != fpv.size:
+                resampling = getattr(type(goal), "Resampling", None)
+                if resampling is None:
+                    resample_mode = getattr(_PILImage, "Resampling", _PILImage).BILINEAR
+                else:
+                    resample_mode = resampling.BILINEAR
+                goal = goal.resize(fpv.size, resample_mode)
         combined = np.concatenate([np.asarray(fpv), np.asarray(goal)], axis=1)
         return cv2.cvtColor(combined, cv2.COLOR_RGB2BGR)
 
@@ -623,6 +651,26 @@ class Lite3System:
         self._last_video_frame_at = now
         return True
 
+    def _open_video_writer(self, size: tuple[int, int], fps: float):
+        """按优先级尝试 H264(avc1) → mp4v → MJPG(.avi) 三种 codec，返回成功打开的 writer。"""
+        candidates = [
+            ("avc1", str(self.video_path)),
+            ("mp4v", str(self.video_path)),
+            ("MJPG", str(self.video_path.with_suffix(".avi"))),
+        ]
+        for codec, path in candidates:
+            fourcc = cv2.VideoWriter_fourcc(*codec)
+            writer = cv2.VideoWriter(path, fourcc, fps, size)
+            if writer.isOpened():
+                if path != str(self.video_path):
+                    print(f"[Recorder] Codec {codec} fallback active; saving to: {path}")
+                    self.video_path = Path(path)
+                else:
+                    print(f"[Recorder] Codec={codec}, fps={fps}, size={size}")
+                return writer
+            writer.release()
+        return None
+
     def _write_run_video_frame(self, camera_image, display_goal=None, label: str | None = None, every_n: int = 1) -> None:
         if self.video_path is None:
             return
@@ -633,19 +681,30 @@ class Lite3System:
         with self._video_lock:
             if self._video_writer is None:
                 fps = max(1.0, float(getattr(self.args, "record_fps", 10.0)))
-                fourcc = cv2.VideoWriter_fourcc(*"mp4v")
                 self._video_size = (width, height)
                 self._video_started_at = datetime.now().isoformat(timespec="seconds")
-                self._video_writer = cv2.VideoWriter(str(self.video_path), fourcc, fps, self._video_size)
-                if not self._video_writer.isOpened():
-                    self._video_writer = None
-                    print(f"[Recorder] Unable to open video writer: {self.video_path}")
+                self._video_writer = self._open_video_writer(self._video_size, fps)
+                if self._video_writer is None:
+                    print(f"[Recorder] Unable to open video writer at any codec: {self.video_path}")
+                    self.video_path = None  # 一次失败后不再反复尝试，避免每帧都打印告警
                     return
+                # 注册一次性 atexit，确保 Ctrl+C / 异常退出时也会 release writer，
+                # 否则 mp4v/avc1 容器没有写入 moov atom，整段视频只能播前几秒。
+                if not self._atexit_registered:
+                    atexit.register(self._close_video_writer_safe)
+                    self._atexit_registered = True
                 self._write_video_metadata(finished=False)
             if (width, height) != self._video_size:
                 frame = cv2.resize(frame, self._video_size, interpolation=cv2.INTER_AREA)
             self._video_writer.write(frame)
             self._video_frames += 1
+
+    def _close_video_writer_safe(self) -> None:
+        """atexit 钩子：能 release 就 release，吞掉所有异常防止退出报错。"""
+        try:
+            self._close_video_writer()
+        except Exception as exc:
+            print(f"[Recorder] atexit close failed ({type(exc).__name__}): {exc}")
 
     def _close_video_writer(self) -> None:
         with self._video_lock:
@@ -682,10 +741,14 @@ class Lite3System:
             self._handle_ui_key(key_code, camera_image)
         mission = self._current_mission()
         label = mission.label if self.state_name == "navigate" and mission is not None else self.state_name
-        every_n = 1 if self.state_name == "navigate" and display_goal is not None else 5
         goal_for_save = display_goal if self.state_name == "navigate" else None
-        if not self._async_viewer_enabled:
-            self._write_run_video_frame(camera_image, goal_for_save, label=label, every_n=every_n)
+        # Sync 路径（MuJoCo / async 关闭）也走 wall-clock pacing：
+        # 这样视频帧率稳定为 record_fps，避免推理慢/快导致视频比真实时长短或抖动。
+        if not self._async_viewer_enabled and self._should_write_wall_clock_video_frame():
+            try:
+                self._write_run_video_frame(camera_image, goal_for_save, label=label, every_n=1)
+            except Exception as exc:
+                print(f"[Recorder] Sync video write skipped ({type(exc).__name__}): {exc}")
 
     def show_task_camera(self, task_label: str, goal_view=None) -> None:
         camera_image = self.platform.render_camera()
@@ -778,6 +841,17 @@ class Lite3System:
         # 任务切换后清空实时子目标缓存，避免显示上一段 mission 的节点
         self.last_subgoal_node = None
         self.last_subgoal_view = None
+        # 但是立刻用即将开始任务的"下一节点"作为 viewer 占位推送一次，避免
+        # navigate 起始瞬间 async viewer 还在显示 stand 阶段的 None placeholder。
+        if current_goal is not None and current_goal.topomap is not None and len(current_goal.topomap) > 0:
+            preview_idx = int(np.clip(self.missions.closest_node + 1, 0, len(current_goal.topomap) - 1))
+            preview_view = current_goal.topomap[preview_idx]
+            if self._async_viewer_enabled:
+                self._update_async_viewer_state(
+                    extra_text=f"NAVIGATE | mission={current_goal.label} | warming up",
+                    goal_view=preview_view,
+                    footer_lines=self._footer_lines(),
+                )
 
     def step_navigation(self) -> str:
         mission = self._current_mission()
@@ -855,6 +929,19 @@ class Lite3System:
         selected_node_clamped = int(np.clip(result.selected_node, 0, len(mission.topomap) - 1))
         self.last_subgoal_node = selected_node_clamped
         self.last_subgoal_view = mission.topomap[selected_node_clamped]
+        # 立刻把新子目标推回异步 viewer 状态，避免右栏要等下一次 step_navigation 才刷新——
+        # 在 ~6Hz 的高层节奏下，这一推送可以让右栏在 ~67ms 内（async viewer 15Hz）完成切换，
+        # 否则用户看到的右栏会"卡"在上一周期的子目标上接近 150ms。
+        if self._async_viewer_enabled:
+            self._update_async_viewer_state(
+                extra_text=(
+                    f"NAVIGATE | mission={mission.label} | "
+                    f"node={self.missions.closest_node}/{self.missions.goal_node} | "
+                    f"subgoal={selected_node_clamped} | v_body={forward_speed:.3f}"
+                ),
+                goal_view=self.last_subgoal_view,
+                footer_lines=self._footer_lines(),
+            )
         command = self.middle_layer.waypoint_to_command(result.chosen_waypoint)
         pre_position, pre_yaw = self.platform.get_pose()
         command = self._stabilize_mujoco_route(command, pre_position, pre_yaw, mission.goal_position)
