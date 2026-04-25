@@ -5,6 +5,7 @@ import numpy as np
 import yaml
 import time
 import pdb
+from pathlib import Path
 
 import torch
 import torch.nn as nn
@@ -34,6 +35,54 @@ from vint_train.training.train_eval_loop import (
     train_eval_loop_nomad,
     load_model,
 )
+
+TRAIN_DIR = Path(__file__).resolve().parent
+REPO_ROOT = TRAIN_DIR.parent
+
+
+def _resolve_existing_or_repo_path(raw_path: str) -> str:
+    path = Path(raw_path).expanduser()
+    if path.is_absolute():
+        return str(path)
+    for base in (Path.cwd(), TRAIN_DIR, REPO_ROOT):
+        candidate = (base / path).resolve()
+        if candidate.exists():
+            return str(candidate)
+    return str((REPO_ROOT / path).resolve())
+
+
+def _resolve_config_path(raw_path: str) -> Path:
+    path = Path(raw_path).expanduser()
+    if path.is_absolute():
+        return path
+    for base in (Path.cwd(), TRAIN_DIR, REPO_ROOT):
+        candidate = (base / path).resolve()
+        if candidate.is_file():
+            return candidate
+    return (TRAIN_DIR / path).resolve()
+
+
+def _normalize_dataset_paths(config: dict) -> None:
+    for data_config in config.get("datasets", {}).values():
+        for key in ("data_folder", "train", "test"):
+            if key in data_config and data_config[key]:
+                data_config[key] = _resolve_existing_or_repo_path(data_config[key])
+
+
+def _validate_split_file(dataset_name: str, data_folder: str, split_folder: str) -> None:
+    traj_names_file = Path(split_folder) / "traj_names.txt"
+    if traj_names_file.is_file():
+        return
+    suggestion = (
+        f"Missing split file: {traj_names_file}\n"
+        "Create the split first, for example:\n"
+        f"  cd {TRAIN_DIR}\n"
+        f"  python data_split.py -i {Path(data_folder)} -d {dataset_name} "
+        f"-s 0.8 -o {TRAIN_DIR / 'vint_train' / 'data' / 'data_splits'}\n"
+        "Then rerun:\n"
+        "  python train.py -c config/nomad.yaml"
+    )
+    raise FileNotFoundError(suggestion)
 
 
 def main(config):
@@ -92,33 +141,38 @@ def main(config):
 
         for data_split_type in ["train", "test"]:
             if data_split_type in data_config:
-                    dataset = ViNT_Dataset(
-                        data_folder=data_config["data_folder"],
-                        data_split_folder=data_config[data_split_type],
-                        dataset_name=dataset_name,
-                        image_size=config["image_size"],
-                        waypoint_spacing=data_config["waypoint_spacing"],
-                        min_dist_cat=config["distance"]["min_dist_cat"],
-                        max_dist_cat=config["distance"]["max_dist_cat"],
-                        min_action_distance=config["action"]["min_dist_cat"],
-                        max_action_distance=config["action"]["max_dist_cat"],
-                        negative_mining=data_config["negative_mining"],
-                        len_traj_pred=config["len_traj_pred"],
-                        learn_angle=config["learn_angle"],
-                        context_size=config["context_size"],
-                        context_type=config["context_type"],
-                        end_slack=data_config["end_slack"],
-                        goals_per_obs=data_config["goals_per_obs"],
-                        normalize=config["normalize"],
-                        goal_type=config["goal_type"],
-                    )
-                    if data_split_type == "train":
-                        train_dataset.append(dataset)
-                    else:
-                        dataset_type = f"{dataset_name}_{data_split_type}"
-                        if dataset_type not in test_dataloaders:
-                            test_dataloaders[dataset_type] = {}
-                        test_dataloaders[dataset_type] = dataset
+                _validate_split_file(
+                    dataset_name,
+                    data_config["data_folder"],
+                    data_config[data_split_type],
+                )
+                dataset = ViNT_Dataset(
+                    data_folder=data_config["data_folder"],
+                    data_split_folder=data_config[data_split_type],
+                    dataset_name=dataset_name,
+                    image_size=config["image_size"],
+                    waypoint_spacing=data_config["waypoint_spacing"],
+                    min_dist_cat=config["distance"]["min_dist_cat"],
+                    max_dist_cat=config["distance"]["max_dist_cat"],
+                    min_action_distance=config["action"]["min_dist_cat"],
+                    max_action_distance=config["action"]["max_dist_cat"],
+                    negative_mining=data_config["negative_mining"],
+                    len_traj_pred=config["len_traj_pred"],
+                    learn_angle=config["learn_angle"],
+                    context_size=config["context_size"],
+                    context_type=config["context_type"],
+                    end_slack=data_config["end_slack"],
+                    goals_per_obs=data_config["goals_per_obs"],
+                    normalize=config["normalize"],
+                    goal_type=config["goal_type"],
+                )
+                if data_split_type == "train":
+                    train_dataset.append(dataset)
+                else:
+                    dataset_type = f"{dataset_name}_{data_split_type}"
+                    if dataset_type not in test_dataloaders:
+                        test_dataloaders[dataset_type] = {}
+                    test_dataloaders[dataset_type] = dataset
 
     # combine all the datasets from different robots
     train_dataset = ConcatDataset(train_dataset)
@@ -365,15 +419,19 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    with open("config/defaults.yaml", "r") as f:
+    config_path = _resolve_config_path(args.config)
+    default_config_path = TRAIN_DIR / "config" / "defaults.yaml"
+
+    with open(default_config_path, "r") as f:
         default_config = yaml.safe_load(f)
 
     config = default_config
 
-    with open(args.config, "r") as f:
+    with open(config_path, "r") as f:
         user_config = yaml.safe_load(f)
 
     config.update(user_config)
+    _normalize_dataset_paths(config)
 
     config["run_name"] += "_" + time.strftime("%Y_%m_%d_%H_%M_%S")
     config["project_folder"] = os.path.join(
@@ -396,9 +454,9 @@ if __name__ == "__main__":
         wandb.init(
             project=config["project_name"],
             settings=wandb.Settings(start_method="fork"),
-            entity="gnmv2", # TODO: change this to your wandb entity
+            entity="mvasl", # TODO: change this to your wandb entity
         )
-        wandb.save(args.config, policy="now")  # save the config file
+        wandb.save(str(config_path), policy="now")  # save the config file
         wandb.run.name = config["run_name"]
         # update the wandb args with the training configurations
         if wandb.run:

@@ -18,15 +18,15 @@ def remove_files_in_dir(dir_path: str):
 
 def main(args: argparse.Namespace):
     # Get the names of the folders in the data directory that contain the file 'traj_data.pkl'
-    folder_names = [
+    folder_names = sorted([
         f
         for f in os.listdir(args.data_dir)
         if os.path.isdir(os.path.join(args.data_dir, f))
         and "traj_data.pkl" in os.listdir(os.path.join(args.data_dir, f))
-    ]
+    ])
 
-    # Randomly shuffle the names of the folders
-    random.shuffle(folder_names)
+    # Randomly shuffle the names of the folders with a fixed seed for reproducibility.
+    random.Random(args.seed).shuffle(folder_names)
 
     # Split the names of the folders into train and test sets
     split_index = int(args.split * len(folder_names))
@@ -69,6 +69,9 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--data-splits-dir", "-o", default="vint_train/data/data_splits", help="Data splits directory"
+    )
+    parser.add_argument(
+        "--seed", type=int, default=0, help="Random seed for deterministic split generation"
     )
     args = parser.parse_args()
     main(args)
