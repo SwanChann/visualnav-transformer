@@ -8,7 +8,7 @@
 \begin{equation}
 p(\mathbf{A}_t \mid \mathcal{O}_t, I_g),
 \end{equation}
-其中 $\mathcal{O}_t$ 表示时刻 $t$ 的历史视觉观察，$I_g$ 表示目标图像或从 topomap 中筛选得到的局部目标节点，$\mathbf{A}_t$ 表示未来局部 waypoint 序列。
+其中 $\mathcal{O}_t$ 表示时刻 $t$ 的历史视觉观察，$I_g$ 表示当前控制周期使用的目标图像，在拓扑导航中是 topomap 序列上"当前定位的下一节点"图像（详见第二章关于 topomap 序列推进的讨论），$\mathbf{A}_t$ 表示未来局部 waypoint 序列。
 
 \subsection{问题的形式化建模}
 

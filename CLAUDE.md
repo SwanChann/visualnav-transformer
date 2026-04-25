@@ -42,8 +42,6 @@ python data_split.py      # produces traj_names.txt under data/data_splits/<data
 
 ### Training
 
-All training commands run from inside `train/`:
-
 ```bash
 python train.py -c config/vint.yaml          # ViNT
 python train.py -c config/gnm.yaml           # GNM
@@ -52,7 +50,11 @@ python train.py -c config/nomad_dinov2.yaml  # NoMaD with DINOv2 vision encoder
 python train.py -c config/late_fusion.yaml   # ViNT late-fusion variant
 ```
 
-Config merging: `config/defaults.yaml` is loaded first, then the specified config overrides it. Don't train directly with `defaults.yaml`.
+`train.py` resolves config paths and dataset paths against the cwd, `train/`, and the repo root (see `_resolve_existing_or_repo_path`/`_resolve_config_path`), so you can launch training from either `train/` or the repo root with the same arguments. Config merging: `config/defaults.yaml` is loaded first, then the specified config overrides it. Don't train directly with `defaults.yaml`.
+
+### Tests & Linting
+
+There is no automated test suite or linter configured for this repo. `train/setup.py` and `scripts/requirements.txt` are package-install manifests, not test runners. Validation is done via the `scripts/analysis/` (e.g. `check_dataset.py`, `offline_inference.py`, `realtime_inference.py`) and `scripts/experiments/` entrypoints, plus `scripts/tooling/env_check.py` and `path_audit.py` for environment / path sanity checks.
 
 ### Robot Deployment
 
@@ -82,7 +84,8 @@ Root-level scripts are kept as legacy-compatible entrypoints; prefer the categor
 ### Quadruped Deployment (Lite3)
 
 Beyond the ROS LoCoBot stack in `deployment/`, the repo ships three Lite3-specific stacks:
-- `Lite3_rl_deploy/` — C++/CMake deployment for the Unitree Lite3 quadruped (policy/, run_policy/, state_machine/, vendored MuJoCo + ONNX Runtime + MotionSDK under `third_party/`). Build with CMake.
+
+- `Lite3_rl_deploy/` — C++/CMake deployment for the Unitree Lite3 quadruped (policy/, run_policy/, state_machine/, vendored MuJoCo + ONNX Runtime + MotionSDK under `third_party/`). Build via `cmake -S Lite3_rl_deploy -B Lite3_rl_deploy/build` then `cmake --build Lite3_rl_deploy/build`. Toggleable CMake options: `BUILD_PLATFORM` (`x86` for desktop, `arm` cross-compiles with `aarch64-linux-gnu-g++` for the on-robot SDK), `BUILD_SIM` + one of `USE_PYBULLET` / `USE_RAISIM` / `USE_MJCPP` for sim backend, and `SEND_REMOTE` to trigger `scripts/sftp_to_remote.sh` post-build push to the robot.
 - `sdk_deploy/src/` — Python-side SDK integration glue.
 - `lite3_host_control/` — upper-computer control scripts (`lite3_controller.py`, `lite3_command.py`, `keyboard_demo.py`). See [lite3_host_control/Lite3上位机通讯控制文档.md](lite3_host_control/Lite3上位机通讯控制文档.md).
 
@@ -115,6 +118,14 @@ Images are normalized with ImageNet statistics (mean=[0.485, 0.456, 0.406], std=
 ### Deployment Pipeline
 
 The deployment stack is ROS-based (noetic). The inference loop in `deployment/src/navigate.py`: reads camera images from `/usb_cam/image_raw` -> runs model forward pass -> publishes waypoints to `/waypoint` -> PD controller converts to velocity commands. Model configs are in `deployment/config/models.yaml`, robot params in `deployment/config/robot.yaml`.
+
+### Lite3 Sim & Navigation Host
+
+`scripts/simulation/nomad_mujoco_lite3_state_machine.py` is the modular Lite3 MuJoCo stack and supersedes the legacy monolithic `scripts/nomad_mujoco_lite3_nav.py`. It splits inference (DDPM/DDIM/CFG/TTS), high-level NoMaD topomap localization + waypoint generation, mid-level waypoint-to-velocity PD bridge, and low-level Lite3 ONNX locomotion + MuJoCo physics into separate components, driven by a state machine: `idle / standup / navigate / explore / recovery_back / recovery_turn / completed / failed`. Supporting modules live under `scripts/simulation/lite3_system/` (`interfaces.py`, `topomap.py`, `states.py`, `system.py`).
+
+`scripts/deployment/nomad_navigation_host.py` is a **separate** concern from the state machine: the host handles task scheduling, backend selection (`mujoco` vs `real`), and mission switching (single CLI task or multi-task plan from `scripts/configs/navigation_host/lite3_navigation_host_plan.json`). The state machine handles closed-loop execution, recovery, and result logging.
+
+Topomap nodes are pre-collected reference images (loaded from GoStanford trajectories via `load_topomap_from_dataset`, or generated online/offline from real/MuJoCo scenes); NoMaD matches the current observation against them — they are **not** generated from encoder features at deploy time.
 
 ### Key Config Files
 

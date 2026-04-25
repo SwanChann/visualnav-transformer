@@ -102,6 +102,10 @@ class Lite3System:
         self.close_platform_on_finalize = close_platform_on_finalize
         self.is_standing = bool(getattr(self.platform, "_nomad_is_standing", False))
         self.stand_counter = 0
+        # The right-side viewer/video panel tracks the subgoal that actually
+        # conditions the latest NoMaD action, not the mission endpoint.
+        self.last_subgoal_node: int | None = None
+        self.last_subgoal_view = None
         self.keyboard_exit_requested = False
         self.keyboard_vx = 0.0
         self.keyboard_vy = 0.0
@@ -771,6 +775,9 @@ class Lite3System:
         if current_goal is not None and current_goal.goal_view is not None:
             saved_path = self.session.save_goal_view(current_goal.goal_view, current_goal.label)
             setattr(current_goal, "saved_goal_path", saved_path)
+        # 任务切换后清空实时子目标缓存，避免显示上一段 mission 的节点
+        self.last_subgoal_node = None
+        self.last_subgoal_view = None
 
     def step_navigation(self) -> str:
         mission = self._current_mission()
@@ -781,10 +788,25 @@ class Lite3System:
         camera_image = self.platform.render_camera()
         after_camera = time.perf_counter()
         forward_speed = self.platform.get_forward_speed()
+        # 计算可视化用的实时子目标：
+        #   - 优先使用上一次推理实际条件化的节点 (self.last_subgoal_node)
+        #   - 任务刚启动尚未推理时，回退为 closest_node 的下一个节点 (NoMaD 即将瞄准的"下一站")
+        #   - 仅当列表越界等异常情况下才退化为 mission 终点
+        subgoal_node_for_display = self.last_subgoal_node
+        if subgoal_node_for_display is None:
+            subgoal_node_for_display = min(self.missions.closest_node + 1, self.missions.goal_node)
+        subgoal_node_for_display = int(np.clip(subgoal_node_for_display, 0, len(mission.topomap) - 1))
+        subgoal_view_for_display = self.last_subgoal_view
+        if subgoal_view_for_display is None:
+            subgoal_view_for_display = mission.topomap[subgoal_node_for_display]
         self._show_camera(
             camera_image,
-            extra_text=f"NAVIGATE | mission={mission.label} | node={self.missions.closest_node}/{self.missions.goal_node} | v_body={forward_speed:.3f}",
-            goal_view=mission.goal_view,
+            extra_text=(
+                f"NAVIGATE | mission={mission.label} | "
+                f"node={self.missions.closest_node}/{self.missions.goal_node} | "
+                f"subgoal={subgoal_node_for_display} | v_body={forward_speed:.3f}"
+            ),
+            goal_view=subgoal_view_for_display,
         )
         after_ui = time.perf_counter()
         if self.session.exit_requested:
@@ -828,6 +850,11 @@ class Lite3System:
             self.safe_stop()
             return "failed"
         self.missions.closest_node = result.closest_node
+        # 记录本次推理实际条件化的 topomap 节点，下一周期的相机叠加显示与录像将使用它，
+        # 而不是 mission 的最终目标图像。
+        selected_node_clamped = int(np.clip(result.selected_node, 0, len(mission.topomap) - 1))
+        self.last_subgoal_node = selected_node_clamped
+        self.last_subgoal_view = mission.topomap[selected_node_clamped]
         command = self.middle_layer.waypoint_to_command(result.chosen_waypoint)
         pre_position, pre_yaw = self.platform.get_pose()
         command = self._stabilize_mujoco_route(command, pre_position, pre_yaw, mission.goal_position)
