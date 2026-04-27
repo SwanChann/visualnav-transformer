@@ -29,10 +29,12 @@ class NavigationSession:
         self.goal_dir = self.run_dir / "goal_views"
         self.images_root = self.run_dir / "images"
         self.videos_root = self.run_dir / "videos"
+        self.logs_dir = self.run_dir / "logs"
         self.capture_dir.mkdir(parents=True, exist_ok=True)
         self.goal_dir.mkdir(parents=True, exist_ok=True)
         self.images_root.mkdir(parents=True, exist_ok=True)
         self.videos_root.mkdir(parents=True, exist_ok=True)
+        self.logs_dir.mkdir(parents=True, exist_ok=True)
         self.capture_queue: list[CaptureFrame] = []
         self.selected_capture_index = -1
         self.estop_requested = False

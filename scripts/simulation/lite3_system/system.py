@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import atexit
+import csv
 from datetime import datetime
 import json
 import os
@@ -52,6 +53,10 @@ class Lite3System:
             self.legacy.SCENE_CONFIG = self.legacy.SCENE_MAPS["easy"]
         self.platform.prepare_task(args.mode)
         self.session = session or NavigationSession(run_label=result_prefix)
+        self.logs_dir = getattr(self.session, "logs_dir", self.session.run_dir / "logs")
+        self.logs_dir.mkdir(parents=True, exist_ok=True)
+        self.timing_csv_path = self.logs_dir / "timing_profile.csv"
+        self.timing_text_path = self.logs_dir / "timing_profile.txt"
         self.high_level = Lite3HighLevelNoMaD(
             scheduler_kind=args.scheduler,
             ddim_steps=args.ddim_steps,
@@ -720,9 +725,73 @@ class Lite3System:
         if self.tick % interval != 0:
             return
         timing_text = " ".join(f"{name}={value * 1000.0:.1f}ms" for name, value in timings.items())
+        fps_parts = []
+        infer_time = float(timings.get("infer", 0.0))
+        total_time = float(timings.get("total", 0.0))
+        infer_fps = None
+        loop_fps = None
+        if infer_time > 1e-9:
+            infer_fps = 1.0 / infer_time
+            fps_parts.append(f"infer_fps={infer_fps:.2f}")
+        if total_time > 1e-9:
+            loop_fps = 1.0 / total_time
+            fps_parts.append(f"loop_fps={loop_fps:.2f}")
+        fps_text = f" | {' '.join(fps_parts)}" if fps_parts else ""
         camera_status = self.platform.camera_status()
         suffix = f" | {camera_status}" if camera_status else ""
-        print(f"[Timing] {label} tick={self.tick} {timing_text}{suffix}")
+        line = f"[Timing] {label} tick={self.tick} {timing_text}{fps_text}{suffix}"
+        print(line)
+        self._write_timing_profile(label, timings, infer_fps, loop_fps, camera_status, line)
+
+    def _write_timing_profile(
+        self,
+        label: str,
+        timings: dict[str, float],
+        infer_fps: float | None,
+        loop_fps: float | None,
+        camera_status: str,
+        line: str,
+    ) -> None:
+        timestamp = datetime.now().isoformat(timespec="milliseconds")
+        fields = [
+            "timestamp",
+            "label",
+            "tick",
+            "camera_ms",
+            "ui_ms",
+            "preprocess_ms",
+            "infer_ms",
+            "command_ms",
+            "total_ms",
+            "infer_fps",
+            "loop_fps",
+            "camera_status",
+        ]
+        row = {
+            "timestamp": timestamp,
+            "label": label,
+            "tick": int(self.tick),
+            "camera_ms": float(timings.get("camera", 0.0)) * 1000.0,
+            "ui_ms": float(timings.get("ui", 0.0)) * 1000.0,
+            "preprocess_ms": float(timings.get("preprocess", 0.0)) * 1000.0,
+            "infer_ms": float(timings.get("infer", 0.0)) * 1000.0,
+            "command_ms": float(timings.get("command", 0.0)) * 1000.0,
+            "total_ms": float(timings.get("total", 0.0)) * 1000.0,
+            "infer_fps": "" if infer_fps is None else infer_fps,
+            "loop_fps": "" if loop_fps is None else loop_fps,
+            "camera_status": camera_status,
+        }
+        try:
+            write_header = not self.timing_csv_path.exists()
+            with self.timing_csv_path.open("a", newline="", encoding="utf-8") as handle:
+                writer = csv.DictWriter(handle, fieldnames=fields)
+                if write_header:
+                    writer.writeheader()
+                writer.writerow(row)
+            with self.timing_text_path.open("a", encoding="utf-8") as handle:
+                handle.write(line + "\n")
+        except OSError as exc:
+            print(f"[Timing] Unable to write timing log ({type(exc).__name__}): {exc}")
 
     def _show_camera(self, camera_image, extra_text: str, goal_view=None) -> None:
         key_code = 255

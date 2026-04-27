@@ -1,0 +1,13 @@
+{
+  "domain": "real",
+  "generated_by": "scripts/deployment/capture_real_topomap.py",
+  "generated_at": "2026-04-25T21:43:42",
+  "map_name": "real_hallway",
+  "camera_device": "0",
+  "use_csi": false,
+  "image_width": 640,
+  "image_height": 480,
+  "capture_count": 21,
+  "total_png_count": 21,
+  "note": "Real-world topomap captured by Orin camera. Use this directory with --topomap-dir on the real backend."
+}

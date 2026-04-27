@@ -770,9 +770,33 @@ python scripts/deployment/nomad_navigation_host.py \
 
 ### 7.3 下发导航任务
 
+**基线方案(DDPM-10,不启用 CFG/TTS):**
+
 ```text
 navigate --topomap-dir deployment/topomaps/images/real_hallway \
-         --max-steps 200 --scheduler ddim --ddim-steps 5 --cfg-weight 0.0
+         --max-steps 200 \
+         --scheduler ddpm \
+         --cfg-weight 0.0 \
+         --profile-timing --profile-interval 5
+```
+
+**推荐最优推理方案(DDIM-2 + TTS-8,默认关闭 CFG):**
+
+```text
+navigate --topomap-dir deployment/topomaps/images/real_hallway \
+         --max-steps 200 \
+         --scheduler ddim \
+         --ddim-steps 2 \
+         --cfg-weight 0.0 \
+         --tts --tts-budget 8 --tts-topk 4 \
+         --profile-timing --profile-interval 5
+```
+
+`--profile-timing --profile-interval 5` 会每 5 个 tick 在终端打印 `camera/ui/preprocess/infer/command/total`、`infer_fps`、`loop_fps` 和相机状态,并同步写入当前运行目录:
+
+```text
+results/deployment/<timestamp>_<run_label>/logs/timing_profile.csv
+results/deployment/<timestamp>_<run_label>/logs/timing_profile.txt
 ```
 
 **运行期窗口键位:**

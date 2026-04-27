@@ -1,0 +1,13 @@
+{
+  "domain": "real",
+  "generated_by": "scripts/deployment/capture_real_topomap.py",
+  "generated_at": "2026-04-26T15:12:48",
+  "map_name": "lab_cori",
+  "camera_device": "0",
+  "use_csi": false,
+  "image_width": 640,
+  "image_height": 480,
+  "capture_count": 40,
+  "total_png_count": 40,
+  "note": "Real-world topomap captured by Orin camera. Use this directory with --topomap-dir on the real backend."
+}

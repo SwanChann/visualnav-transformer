@@ -1,0 +1,12 @@
+{
+  "video_path": "/home/guest/visualnav-transformer/results/deployment/20260426_150934_lite3_real_interactive/videos/20260426_151006_lite3_real_interactive_navigate/navigation_record.mp4",
+  "video_dir": "/home/guest/visualnav-transformer/results/deployment/20260426_150934_lite3_real_interactive/videos/20260426_151006_lite3_real_interactive_navigate",
+  "frames": 576,
+  "fps": 10.0,
+  "mode": "navigate",
+  "map": "lab",
+  "backend": "real",
+  "started_at": "2026-04-26T15:10:06",
+  "updated_at": "2026-04-26T15:12:10",
+  "finished": true
+}
