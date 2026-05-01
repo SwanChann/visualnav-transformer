@@ -1,0 +1,12 @@
+{
+  "video_path": "/home/guest/visualnav-transformer/results/deployment/20260426_154901_lite3_real_interactive/videos/20260426_154927_lite3_real_interactive_navigate/navigation_record.mp4",
+  "video_dir": "/home/guest/visualnav-transformer/results/deployment/20260426_154901_lite3_real_interactive/videos/20260426_154927_lite3_real_interactive_navigate",
+  "frames": 568,
+  "fps": 10.0,
+  "mode": "navigate",
+  "map": "shiwai1",
+  "backend": "real",
+  "started_at": "2026-04-26T15:49:28",
+  "updated_at": "2026-04-26T15:50:57",
+  "finished": true
+}

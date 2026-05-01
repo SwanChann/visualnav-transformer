@@ -1,0 +1,13 @@
+{
+  "domain": "real",
+  "generated_by": "scripts/deployment/capture_real_topomap.py",
+  "generated_at": "2026-04-28T15:23:11",
+  "map_name": "houfang",
+  "camera_device": "0",
+  "use_csi": false,
+  "image_width": 640,
+  "image_height": 480,
+  "capture_count": 20,
+  "total_png_count": 20,
+  "note": "Real-world topomap captured by Orin camera. Use this directory with --topomap-dir on the real backend."
+}

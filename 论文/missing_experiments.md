@@ -69,23 +69,6 @@
 | 编码器 × CFG 联合消融（仅 EfficientNet-B0 / ResNet-50） | §3.9 tab:encoder-cfg-joint | ✅ 同上 |
 | 算法层事实校正（双编码器、池化方式、冻结口径、时延基准） | §3.2 / §3.4 | ✅ 2026-04-22 按代码核对后修订 |
 
-### 1.2 待补
-
-#### 1.2.1 真机最终配置对照（高优先）
-- **目的**：验证第三章默认方案 DDPM-10 vs DDIM-2 vs DDIM-2+TTS-8 在 Lite3 真机上是否仍然成立。
-- **配置**：3 种推理方案 × 每方案 5 次 run，同一条室内走廊 topomap。
-- **指标**：成功率 SR、前进长度、跌倒/干预次数（按 §0.1）；额外加平均周期时延 $\bar L_{ms}$（按 §0.1 可选项）。
-- **数据来源**：每条 run 的 `results.json`；时延来自 `inference_log.csv`。
-- **章节**：§5.6 / 结论。
-
-#### 1.2.2 DDIM-2 在 Orin 上的单独 wall-clock 测量（低优先）
-- **目的**：替换正文中按算力比推算的 "2--5 Hz"。
-- **方法**：在 Orin 上空载（不连机器人）跑 100 次 `run_diffusion_sampling`，取 `time.perf_counter` 差值。
-- **指标**：吞吐 $f = 1000 / \bar L_{ms}$（Hz），mean ± CI95（按 §0.2）。
-- **脚本**：复用 [scripts/experiments/ddim_stat_experiment.py](scripts/experiments/ddim_stat_experiment.py)，把 `device` 改成 Orin GPU。
-- **章节**：§3.4 末段。
-
----
 
 ## 二、仿真层（第四章）
 
@@ -135,25 +118,6 @@
 - **指标**：SR、前进长度。
 - **章节**：§4.5（新增 `tab:mujoco-topomap-density`）。
 
-#### 2.2.5 Recovery 子机有效性消融（中优先，新增完整性）
-- **目的**：第四章方法部分介绍了 stuck → recovery_back → recovery_turn 的设计，但没有"关掉 recovery 后会怎样"的对照证据。
-- **配置矩阵**：3 地图 × {recovery 开 / 关} × DDIM-3 × 3 种子 = 18 条。
-- **指标**：SR；并报告 $\Delta\text{SR}=\text{SR}_{\text{on}}-\text{SR}_{\text{off}}$。
-- **方法**：在 `nomad_mujoco_lite3_state_machine.py` 加临时开关 `--disable-recovery`（让 `_handle_stuck` 直接返回 None）。
-- **章节**：§4.5（新增 `tab:mujoco-recovery-ablation`）。
-
-#### 2.2.6 失败案例可视化（中优先）
-- **目的**：填 `tab:mujoco-results` 注释中已预留的"推理超时 / 轨迹震荡 / 到达误触发"三类失败的图像证据链。
-- **产出**：每类挑 1 条 `goal_reached=False` 的 run，渲染 8 张连续 FPV + waypoint 叠加图。无指标，定性图。
-- **来源**：从 `results/benchmark/20260421_*` 按错误类型挑；用 [scripts/analysis/offline_inference.py](scripts/analysis/offline_inference.py) 渲染。
-- **章节**：§4.5 / 附录。
-
-#### 2.2.7 MuJoCo 与状态机界面截图（中优先）
-- **目的**：替换 `fig:framework-mujoco-env-placeholder`、`fig:state-machine-placeholder` 等占位图。
-- **产出**：MuJoCo 主视图 + FPV + 状态机 OSD 三联截图各两张。
-- **章节**：§4 多处 figure 占位。
-
----
 
 ## 三、真机层（第五章）
 

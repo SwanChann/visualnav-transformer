@@ -1,0 +1,12 @@
+{
+  "video_path": "/home/guest/visualnav-transformer/results/deployment/20260428_152425_lite3_real_interactive/videos/20260428_152437_lite3_real_interactive_navigate/navigation_record.mp4",
+  "video_dir": "/home/guest/visualnav-transformer/results/deployment/20260428_152425_lite3_real_interactive/videos/20260428_152437_lite3_real_interactive_navigate",
+  "frames": 988,
+  "fps": 10.0,
+  "mode": "navigate",
+  "map": "houfang",
+  "backend": "real",
+  "started_at": "2026-04-28T15:24:37",
+  "updated_at": "2026-04-28T15:27:00",
+  "finished": true
+}

@@ -6,16 +6,16 @@ python scripts/deployment/capture_real_topomap.py \
   --interval 0.5
 
 python scripts/deployment/capture_real_topomap.py \
-  --output-dir deployment/topomaps/images/lab_cori \
-  --map-name lab_cori \
+  --output-dir deployment/topomaps/images/pingpong-road \
+  --map-name pingpong-road \
   --camera-device 0 \
-  --count 20 \
+  --count 8 \
   --manual
 
 python scripts/deployment/nomad_navigation_host.py \
   --interactive \
   --backend real \
-  --map real_hallway \
+  --map pingpong-road \
   --camera on \
   --bridge-module deployment.lite3_real_bridge \
   --bridge-class Lite3RealBridge \
@@ -26,16 +26,8 @@ python scripts/deployment/nomad_navigation_host.py \
   --pd-max-v 0.12 --pd-max-w 0.35
 
 
-navigate --topomap-dir deployment/topomaps/images/real_hallway \
-         --max-steps 1000 \
-         --scheduler ddpm \
-         --cfg-weight 0.0 \
-         --profile-timing --profile-interval 5
+navigate --topomap-dir deployment/topomaps/images/pingpong-road --max-steps 1000  --scheduler ddpm  --cfg-weight 0.0 --profile-timing --profile-interval 5 --save-images
 
-navigate --topomap-dir deployment/topomaps/images/real_hallway \
-         --max-steps 1000 \
-         --scheduler ddim \
-         --ddim-steps 2 \
-         --cfg-weight 0.0 \
-         --tts --tts-budget 8 --tts-topk 4 \
-         --profile-timing --profile-interval 5
+navigate --topomap-dir deployment/topomaps/images/pingpong-road -max-steps 1000   --scheduler ddim   --ddim-steps 3         --cfg-weight 0.0  --tts --tts-budget 8 --tts-topk 4          --profile-timing --profile-interval 5
+
+navigate --topomap-dir deployment/topomaps/images/houfang -max-steps 1000   --scheduler ddim   --ddim-steps 2         --cfg-weight 0.0    --profile-timing --profile-interval 5 --save-images
