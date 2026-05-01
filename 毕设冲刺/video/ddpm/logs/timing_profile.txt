@@ -1,0 +1,10 @@
+[Timing] navigate tick=5 camera=0.8ms ui=0.2ms preprocess=3.0ms infer=315.7ms command=0.7ms total=320.3ms | infer_fps=3.17 loop_fps=3.12 | camera_fps=25.1, frame_age=0.016s, frames=528
+[Timing] navigate tick=10 camera=1.3ms ui=0.2ms preprocess=2.5ms infer=346.5ms command=0.7ms total=351.2ms | infer_fps=2.89 loop_fps=2.85 | camera_fps=24.0, frame_age=0.037s, frames=569
+[Timing] navigate tick=15 camera=0.9ms ui=0.2ms preprocess=2.1ms infer=331.3ms command=0.7ms total=335.2ms | infer_fps=3.02 loop_fps=2.98 | camera_fps=18.3, frame_age=0.026s, frames=622
+[Timing] navigate tick=20 camera=0.9ms ui=0.6ms preprocess=2.8ms infer=362.6ms command=0.6ms total=367.6ms | infer_fps=2.76 loop_fps=2.72 | camera_fps=25.0, frame_age=0.019s, frames=666
+[Timing] navigate tick=25 camera=0.8ms ui=0.2ms preprocess=2.2ms infer=310.9ms command=0.7ms total=314.8ms | infer_fps=3.22 loop_fps=3.18 | camera_fps=21.1, frame_age=0.039s, frames=702
+[Timing] navigate tick=30 camera=0.8ms ui=0.2ms preprocess=2.1ms infer=347.2ms command=0.6ms total=351.0ms | infer_fps=2.88 loop_fps=2.85 | camera_fps=21.1, frame_age=0.019s, frames=744
+[Timing] navigate tick=35 camera=1.2ms ui=0.2ms preprocess=2.3ms infer=366.0ms command=0.6ms total=370.3ms | infer_fps=2.73 loop_fps=2.70 | camera_fps=24.1, frame_age=0.031s, frames=787
+[Timing] navigate tick=40 camera=0.8ms ui=0.2ms preprocess=2.2ms infer=346.5ms command=0.7ms total=350.4ms | infer_fps=2.89 loop_fps=2.85 | camera_fps=25.0, frame_age=0.023s, frames=831
+[Timing] navigate tick=45 camera=0.9ms ui=0.2ms preprocess=2.4ms infer=350.1ms command=0.7ms total=354.3ms | infer_fps=2.86 loop_fps=2.82 | camera_fps=25.0, frame_age=0.021s, frames=875
+[Timing] navigate tick=50 camera=0.7ms ui=0.2ms preprocess=2.1ms infer=348.8ms command=0.7ms total=352.5ms | infer_fps=2.87 loop_fps=2.84 | camera_fps=23.1, frame_age=0.034s, frames=915

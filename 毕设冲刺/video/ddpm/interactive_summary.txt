@@ -1,0 +1,4 @@
+Interactive session: 1 tasks completed
+Backend: real, Map: pingpong
+
+  Task 1: mode=navigate status=success

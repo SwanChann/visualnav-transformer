@@ -1,0 +1,12 @@
+{
+  "video_path": "/home/guest/visualnav-transformer/results/deployment/19700101_084943_lite3_real_interactive/videos/19700101_085012_lite3_real_interactive_navigate/navigation_record.mp4",
+  "video_dir": "/home/guest/visualnav-transformer/results/deployment/19700101_084943_lite3_real_interactive/videos/19700101_085012_lite3_real_interactive_navigate",
+  "frames": 724,
+  "fps": 10.0,
+  "mode": "navigate",
+  "map": "pingpong",
+  "backend": "real",
+  "started_at": "1970-01-01T08:50:12",
+  "updated_at": "1970-01-01T08:51:57",
+  "finished": true
+}

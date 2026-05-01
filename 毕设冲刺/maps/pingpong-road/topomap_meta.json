@@ -1,0 +1,13 @@
+{
+  "domain": "real",
+  "generated_by": "scripts/deployment/capture_real_topomap.py",
+  "generated_at": "1970-01-01T08:33:39",
+  "map_name": "pingpong-road",
+  "camera_device": "0",
+  "use_csi": false,
+  "image_width": 640,
+  "image_height": 480,
+  "capture_count": 8,
+  "total_png_count": 8,
+  "note": "Real-world topomap captured by Orin camera. Use this directory with --topomap-dir on the real backend."
+}
