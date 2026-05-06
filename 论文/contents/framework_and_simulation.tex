@@ -27,7 +27,7 @@
 \subsection{统一推理模块}
 
 统一推理模块集中管理 \pathbreak{policy\_config}、\pathbreak{policy\_checkpoint}、\pathbreak{scheduler\_kind}、\pathbreak{ddim\_steps}、\pathbreak{cfg\_weight}、\pathbreak{tts\_budget} 等推理参数。
-其作用是把 DDIM、CFG、TTS 和视觉编码器替换都限制在高层策略层，使状态机、导航主机与平台后端不需要感知采样器和编码器细节。该模块直接承接第三章实验最终确定的"EfficientNet-B0 + \texttt{DDIM-2} + \texttt{CFG=0} + \texttt{TTS-8}"默认配置——前述六个参数的默认值即由该方案逐一映射而来：\pathbreak{policy\_config}/\pathbreak{policy\_checkpoint} 指向 EfficientNet-B0 训练权重，\pathbreak{scheduler\_kind} 取 DDIM，\pathbreak{ddim\_steps} 取 2，\pathbreak{cfg\_weight} 取 0，\pathbreak{tts\_budget} 取 8；统一推理模块对外暴露的标准推理流程也与第三章算法~\ref{algo:inference-pipeline} 描述的"视觉编码 $\to$ DDIM 去噪 $\to$ CFG 外推 $\to$ TTS 评分"层级一致。这样，第三章的算法结论被完整地"提炼"为系统层的可复用模块，而不再以零散的实验脚本形式存在。
+其作用是把 DDIM、CFG、TTS 和视觉编码器替换都限制在高层策略层，使状态机、导航主机与平台后端不需要感知采样器和编码器细节。该模块直接承接第三章实验最终确定的``EfficientNet-B0 + \texttt{DDIM-2} + \texttt{CFG=0} + \texttt{TTS-8}''默认配置——前述六个参数的默认值即由该方案逐一映射而来：\pathbreak{policy\_config}/\pathbreak{policy\_checkpoint} 指向 EfficientNet-B0 训练权重，\pathbreak{scheduler\_kind} 取 DDIM，\pathbreak{ddim\_steps} 取 2，\pathbreak{cfg\_weight} 取 0，\pathbreak{tts\_budget} 取 8；统一推理模块对外暴露的标准推理流程也与第三章算法~\ref{algo:inference-pipeline} 描述的``视觉编码 $\to$ DDIM 去噪 $\to$ CFG 外推 $\to$ TTS 评分''层级一致。这样，第三章的算法结论被完整地``提炼''为系统层的可复用模块，而不再以零散的实验脚本形式存在。
 
 
 参数变更在系统中的传播路径是单向且受限的。比如当使用者将 \pathbreak{ddim\_steps} 从 4 修改为 2 时，这一变更只影响推理模块内部的采样循环，不会传播到状态机的状态转移逻辑或平台后端的指令格式。
@@ -63,7 +63,7 @@
 
 在任务组织方面，当前导航主机支持从json文件中批量读取任务和实时控制两种入口。
 
-在目标选择策略方面，对于单目标导航，系统加载一个与后端域匹配的 topomap 目录，并在以"当前定位指针 \texttt{closest\_node}"为中心的局部搜索窗口内用距离预测头推进序列指针，再把序列上比该指针再前进一格的节点图像作为本周期送入 NoMaD 的目标条件；对于多目标仿真任务，系统可以在同一 MuJoCo 场景中采样多个目标点并为每个目标在线生成局部 topomap；对于真实部署，目标来源应是预先采集的真实 topomap 目录。探索模式不提供真实目标图像，而是通过 goal mask 构造无目标条件，推理模块在该条件下生成探索轨迹。
+在目标选择策略方面，对于单目标导航，系统加载一个与后端域匹配的 topomap 目录，并在以``当前定位指针 \texttt{closest\_node}''为中心的局部搜索窗口内用距离预测头推进序列指针，再把序列上比该指针再前进一格的节点图像作为本周期送入 NoMaD 的目标条件；对于多目标仿真任务，系统可以在同一 MuJoCo 场景中采样多个目标点并为每个目标在线生成局部 topomap；对于真实部署，目标来源应是预先采集的真实 topomap 目录。探索模式不提供真实目标图像，而是通过 goal mask 构造无目标条件，推理模块在该条件下生成探索轨迹。
 
 模式切换逻辑方面，当前系统支持由操作者或 plan 文件显式切换不同任务；同一任务内部则由状态机在 \texttt{stand}、\texttt{navigate}/\texttt{explore}、\texttt{recovery}、\texttt{completed}/\texttt{failed} 之间切换。
 
@@ -196,6 +196,13 @@ MuJoCo 具有较好的接触动力学建模能力和可调仿真接口，被广�
         \bottomrule
     \end{tabular}
 \end{table}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.8\linewidth]{mujoco.png}
+    \caption{仿真实验}
+    \label{fig:mujoco}
+\end{figure}
 
 \subsection{结果分析}
 

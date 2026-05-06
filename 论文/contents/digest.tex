@@ -26,7 +26,7 @@
 实现上如何耦合，推理层有哪些优化空间；第二，是否可以在不重新训练模型的前提下，
 通过采样加速、条件引导、测试时搜索与视觉编码器替换等手段显著提升策略可用性；
 第三，这些优化能否整合进面向 Lite3 的分层闭环系统，并完成 MuJoCo 仿真与
-Jetson Orin 真机部署的完整验证。技术路线沿"算法层优化—系统层集成—部署层验证"
+Jetson Orin 真机部署的完整验证。技术路线沿``算法层优化—系统层集成—部署层验证''
 三级递进展开，对应论文第三、四、五章。
 
 \subsection*{主要工作与创新点}
@@ -35,8 +35,8 @@ Jetson Orin 真机部署的完整验证。技术路线沿"算法层优化—系�
 Guidance (CFG) 引导增强、Test-Time Scaling (TTS) 推理时搜索与视觉编码器升级进行了
 系统对比。DDIM 实验中 \texttt{ddim\_2} 配置相对 DDPM-10 基线实现约 4.84 倍加速且
 轨迹质量无显著退化；CFG 实验通过 score function 修改分析给出引导尺度选择准则，
-指出其有效范围有限、宜作为可调参数；TTS 实验提出将总收益分解为"评分筛选"
-（近乎零时延代价）与"候选池扩容"（时延线性增长但边际递减）两部分，TTS-8 在三因素
+指出其有效范围有限、宜作为可调参数；TTS 实验提出将总收益分解为``评分筛选''
+（近乎零时延代价）与``候选池扩容''（时延线性增长但边际递减）两部分，TTS-8 在三因素
 联合排序中以最小代价取得综合最优，为推理预算分配提供了新的诠释；视觉编码器升级
 采用两阶段框架比较 EfficientNet-B0、ResNet-50、DINOv2-Small、ConvNeXt-Tiny 的
 离线指标，为后续部署筛选出候选组合。
@@ -74,76 +74,169 @@ Visual goal navigation is a core task in embodied intelligence that connects per
 with decision-making. Given the current visual observation and a goal image, the policy
 must output executable local motion without relying on high-precision maps or global
 localization, thereby achieving autonomous movement from the current viewpoint to the
-goal viewpoint. Recently, general navigation models such as NoMaD have introduced
+goal viewpoint. As robots are increasingly deployed in unstructured open-world
+environments such as campus patrol, indoor guidance, last-mile delivery and home
+service, navigation can no longer be reduced to a pure geometric path-planning problem
+on a known map. It must instead handle weak priors, partial observability, dynamic
+obstacles and ambiguous goal specifications, which has motivated a paradigm shift from
+classical SLAM-plus-planner pipelines toward learning-based, image-conditioned policies
+that consume raw visual observations directly.
+
+Recently, general navigation models such as GNM, ViNT, and NoMaD have introduced
 diffusion policies into visual navigation, modelling the future local trajectory as a
-conditional distribution and generating multi-modal candidates through denoising
-sampling, with significantly stronger expressive power than regression-based end-to-end
-policies. However, closed-loop validation of these models has so far concentrated on
-wheeled platforms (LoCoBot, TurtleBot, Jackal), while deployment pipelines targeting
-legged robots remain underexplored. Legged platforms differ substantially from wheeled
-ones in gait-induced jitter, control-loop frequency, and body-posture coupling, which
-poses new challenges for the collaboration between high-level diffusion policies and
-mid-/low-level control interfaces.
+conditional distribution and generating multi-modal candidates through iterative
+denoising sampling. This formulation has significantly stronger expressive power than
+regression-based end-to-end policies that collapse multi-modal decisions (such as
+turning left or right at a T-junction) into a single mean output. By modelling the
+full distribution of feasible local trajectories, diffusion-based policies are able to
+preserve multi-modality, sample diverse candidates, and integrate naturally with
+test-time selection and guidance mechanisms. However, closed-loop validation of these
+models has so far concentrated on wheeled platforms (LoCoBot, TurtleBot, Jackal),
+while deployment pipelines targeting legged robots remain underexplored. Legged
+platforms differ substantially from wheeled ones in gait-induced jitter, control-loop
+frequency, body-posture coupling, foot-impact disturbance, and real-time safety
+requirements. These differences pose new challenges for the collaboration between
+high-level diffusion policies and mid-/low-level control interfaces, and they cannot
+be addressed by simply re-routing the wheeled-robot velocity command to a quadruped's
+locomotion controller.
 
 \subsection*{Objectives and Approach}
 
 This thesis takes NoMaD as the high-level navigation core and the DeepRobotics Lite3
 quadruped as the target deployment platform, and addresses three deployment-oriented
 questions: (i) how the visual encoder, distance-prediction head, and diffusion policy
-head are coupled in the NoMaD implementation and where inference-level optimizations are
-possible; (ii) whether, without retraining, sampling acceleration, conditional guidance,
-test-time search, and encoder replacement can meaningfully improve policy usability; and
+head are coupled in the NoMaD implementation and where inference-level optimizations
+are possible without retraining the model; (ii) whether, without retraining, sampling
+acceleration via DDIM, conditional guidance via Classifier-Free Guidance (CFG),
+test-time search via Test-Time Scaling (TTS), and visual encoder replacement can
+meaningfully improve policy usability for resource-constrained edge deployment; and
 (iii) whether these optimizations can be integrated into a hierarchical closed-loop
-system for Lite3 and validated through MuJoCo simulation and Jetson Orin real-robot
-deployment. The technical roadmap proceeds through algorithm-level optimization,
-system-level integration, and deployment-level validation, corresponding respectively
-to Chapters 3, 4, and 5.
+system for Lite3 and validated through MuJoCo simulation as well as real-world
+deployment on the Jetson Orin onboard computer. The technical roadmap proceeds through
+algorithm-level optimization, system-level integration, and deployment-level
+validation, corresponding respectively to Chapters 3, 4, and 5 of the thesis. A
+deliberate emphasis is placed on bridging the offline-evaluation versus closed-loop
+deployment gap, ensuring that every algorithmic conclusion is re-examined under
+realistic timing, safety, and platform constraints.
 
 \subsection*{Main Contributions}
 
 \textbf{Algorithm layer.} A unified offline statistical pipeline is built to compare
 DDIM inference acceleration, Classifier-Free Guidance (CFG) enhancement, Test-Time
-Scaling (TTS) search, and visual encoder upgrades. DDIM-2 attains about $4.84\times$
-speedup over the DDPM-10 baseline without notable trajectory-quality degradation. The
-CFG analysis, derived from score-function modification, establishes a guidance-scale
-selection rule and shows that CFG is best used as a tunable knob rather than a default.
-The TTS analysis decomposes total gain into a nearly zero-latency \emph{scoring-based
-selection} component and a linearly priced but rapidly diminishing \emph{candidate-pool
-expansion} component; TTS-8 wins the three-factor joint ranking at minimal cost,
-providing a novel interpretation of inference-budget allocation. Encoder upgrades use
-a two-stage framework to compare EfficientNet-B0, ResNet-50, DINOv2-Small, and
-ConvNeXt-Tiny on offline metrics.
+Scaling (TTS) search, and visual encoder upgrades under a single evaluation protocol.
+Concretely, DDIM-2 attains about $4.84\times$ speedup over the DDPM-10 baseline on the
+GoStanford evaluation set without notable trajectory-quality degradation, with the
+mean-squared deviation against the baseline trajectory distribution remaining below
+$0.022$. The CFG analysis, derived from score-function modification, establishes a
+guidance-scale selection rule and shows that CFG roughly doubles the per-step compute
+while delivering only marginal Forward-Progress gain in the diffusion-policy regime;
+hence CFG is best treated as a tunable knob rather than a default-on component. The
+TTS analysis decomposes total gain into a nearly zero-latency \emph{scoring-based
+selection} component (which re-ranks the eight candidates already produced by a single
+diffusion batch) and a linearly priced but rapidly diminishing \emph{candidate-pool
+expansion} component (which spawns extra batches to enlarge the pool). TTS-8 wins the
+three-factor joint ranking at minimal cost, providing a novel interpretation of
+inference-budget allocation as ``re-rank cheaply first, expand only when necessary.''
+Encoder upgrades use a two-stage framework to compare EfficientNet-B0, ResNet-50,
+DINOv2-Small, and ConvNeXt-Tiny on identical offline cases; the encoder $\times$ DDIM
+$/$ CFG $/$ TTS joint ablation establishes that DDIM-2 and CFG default-off remain
+robust across all four encoders, while TTS gain scales with the initial candidate
+diversity of the chosen encoder.
 
 \textbf{System layer.} A hierarchical closed-loop system---comprising a unified
-inference module, state machine, navigation host, mid-level control mapping, and
-platform interface---supports both MuJoCo and real-robot backends. The state machine
-(idle / stand / navigate / explore / recovery / estop / completed / failed) is decoupled
-from platforms through a uniform interface. The navigation host supports both batched
-JSON plans and interactive commands, allowing capture, topomap building, navigation,
-and exploration to be composed within one session. In MuJoCo closed-loop experiments,
-Lite3 successfully completes point navigation, multi-goal navigation, and free
-exploration on easy / medium / hard maps, reaching every goal.
+inference module, an explicit finite-state machine, a navigation host, a mid-level
+waypoint-to-velocity mapping, and a platform interface---supports both MuJoCo and
+real-robot backends through one set of high-level code. The state machine
+(\texttt{idle / stand / navigate / explore / recovery / estop / completed / failed})
+is decoupled from the physical platform via a uniform interface, so that switching
+between MuJoCo and Lite3 only changes the backend implementation rather than the
+high-level logic. The navigation host supports both batched JSON plans and interactive
+single commands, allowing capture, topomap building, navigation, and exploration to be
+composed within a single experiment session. Mid-level mapping converts the diffusion
+policy's local waypoints into bounded forward, lateral, and yaw velocity commands,
+respecting Lite3-specific safety envelopes ($v_x \le 0.4\,\text{m/s}$ in simulation,
+$v_x \le 0.12\,\text{m/s}$ during real-robot deployment). In MuJoCo closed-loop
+experiments, Lite3 successfully completes point navigation, multi-goal navigation, and
+free exploration on easy / medium / hard maps, reaching every goal across repeated
+runs. The same unified inference module that handles the four offline optimizations is
+re-used at deployment time, demonstrating that the algorithm-layer findings translate
+directly into operational system behaviour.
 
-\textbf{Deployment layer.} For the Jetson Orin host and the Lite3 upper-computer link,
-the thesis develops a staged commissioning procedure, multi-level safety mechanisms,
-and an image-recording convention. Orin Stage 1 (standalone commissioning) validates
-camera capture, model loading, inference benchmarking, and the end-to-end pipeline. The
-bridging layer adds NaN/Inf guards, amplitude clamping, and connection-health checks to
-the velocity commands, routing any inference anomaly to a safe stop. A global fall check
-is added at the state-machine level so that idle / stand states no longer miss
-fallen-robot situations.
+\textbf{Deployment layer.} For the Jetson Orin onboard host and the Lite3
+upper-computer link, the thesis develops a staged commissioning procedure, multi-level
+safety mechanisms, and an image-recording convention. Stage 1 (Orin standalone
+commissioning) validates camera capture, model loading, inference benchmarking, and
+the end-to-end pipeline in isolation from the robot, so that any inference-side defect
+is discovered before the platform is energized. Stage 2 (Orin and Lite3 joint
+commissioning) progresses from network and heartbeat verification, through standup and
+low-speed twist tests, to interactive and goal-directed navigation under conservative
+speed limits. The bridging layer wraps the Lite3 SDK with a 25\,Hz velocity-refresh
+thread and a 5\,Hz heartbeat thread, repeating the most recent clipped velocity
+between higher-level NoMaD inference cycles to guarantee continuous control flow even
+when the policy runs at single-digit hertz. Multi-level safety guards include
+NaN/Inf clipping, magnitude limits, fallen-robot detection, and a connection-stale
+threshold of two seconds; any inference anomaly or platform fault is routed to a soft
+emergency stop. Real-robot experiments on multiple indoor scenes with pre-collected
+topomaps record closed-loop frequencies of 2.89\,Hz (DDPM baseline), 6.80\,Hz
+(DDIM-2 + CFG=0 + TTS-8), 3.43\,Hz (DDIM-2 + CFG=2 + TTS-8), and 5.90\,Hz
+(DDIM-3 + CFG=0, no TTS), with a 100\% success rate across all four configurations
+under the present conservative speed setting. The frequency ranking is fully
+consistent with the offline analysis in Chapter 3: DDIM step count dominates latency,
+CFG approximately halves the achievable rate, and TTS-8's overhead is negligible
+because re-ranking eight already-generated candidates does not require an extra
+diffusion batch.
 
 \subsection*{Experiments and Conclusions}
 
-Offline results indicate that DDIM-2 plus optional CFG and configurable TTS is the most
-promising configuration to bring into closed-loop validation. MuJoCo experiments confirm
-that the hierarchical system can robustly complete quadruped navigation and exploration
-tasks, and that multi-goal task switching preserves visual context. Orin Stage-1
-validation demonstrates the baseline feasibility of the real-robot pipeline. The thesis
-extends NoMaD from a wheeled-platform framework into an analyzable, simulatable, and
-deployable research pipeline for quadruped platforms, and distills a reusable
-inference-optimization protocol, a closed-loop system organization, and a real-robot
-safety-guard checklist---providing a practical basis for subsequent research on
-diffusion-policy-based visual navigation for legged robots.
+Offline results indicate that DDIM-2 plus optional CFG and configurable TTS-8 is the
+most promising configuration to bring into closed-loop validation, and the encoder
+upgrade pipeline supplies a reusable framework for future visual-backbone exploration
+rather than a single best-encoder verdict. MuJoCo experiments confirm that the
+hierarchical system can robustly complete quadruped navigation and exploration tasks,
+that multi-goal task switching preserves visual context, and that the recovery
+sub-state successfully unblocks the robot from corridor-corner stalls without
+requiring task abortion. Stage-1 validation on Jetson Orin demonstrates the baseline
+feasibility of the real-robot pipeline (about 7\,Hz benchmarked NoMaD inference,
+$\approx 151$--$157\,\mathrm{ms}$ steady-state pipeline cycle once warm-up cost is
+amortized), and Stage-2 multi-scene results provide the first real-robot evidence
+that diffusion-policy-based image-goal navigation can run end-to-end on a Lite3
+quadruped at single-digit hertz while still completing every commissioned trial.
+Crucially, the fact that even the slow 2.89\,Hz baseline achieves 100\% success
+demonstrates that the closed-loop system has substantial robustness margin: the
+conservative 0.12\,m/s speed cap means each cycle's displacement is only about
+4\,cm---far smaller than the topomap node spacing---so high-level latency tolerance is
+absorbed by the topomap sliding window and the 25\,Hz bridge replay rather than
+manifesting as catastrophic drift.
+
+\subsection*{Limitations and Future Work}
+
+Three limitations are explicitly acknowledged. First, the encoder upgrade conclusions
+remain offline statistics plus simulator validation, and a final
+real-robot-conditioned encoder ranking will require benchmarking inference latency,
+image-distribution robustness, and failure modes directly on the Orin/Lite3 stack with
+real cameras. Second, the present real-robot statistics, while sufficient to show that
+all four inference configurations succeed under the current scenario scale, do not yet
+include large-sample success-rate confidence intervals or formal trajectory-deviation
+distributions; expanding the experiment matrix to outdoor scenes, dynamic obstacles,
+and longer corridors should enhance differentiation between configurations and unlock
+the latency margin that the fastest scheme has reserved. Third, the topomap is still
+collected offline by an operator; an online maintenance loop that refreshes nodes when
+the environment changes would improve long-term autonomy. Future work will therefore
+focus on (i) finalizing the on-robot encoder choice with end-to-end real-world
+metrics, (ii) running large-scale repeated trials with formal statistics, (iii)
+generalizing the unified inference module and state machine to additional platforms
+such as the Tron1 humanoid robot to test cross-embodiment portability, and (iv)
+extending image-goal conditioning to language-grounded targets, allowing operators to
+issue natural-language commands such as ``go to the red door at the end of the
+corridor'' that get translated into NoMaD-compatible visual conditions.
+
+The thesis extends NoMaD from a wheeled-platform research framework into an
+analyzable, simulatable, and deployable research pipeline for quadruped platforms,
+distilling a reusable inference-optimization protocol, a hierarchical closed-loop
+system organization, and a real-robot safety-guard checklist. Together, these
+artefacts provide a practical basis for subsequent research on diffusion-policy-based
+visual navigation for legged robots, and they lower the engineering threshold for
+follow-up work that wishes to validate algorithmic ideas under genuine on-robot
+conditions rather than only on offline benchmarks.
 
 \end{digest}
