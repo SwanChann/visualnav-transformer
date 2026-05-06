@@ -44,13 +44,13 @@ Guidance (CFG) 引导增强、Test-Time Scaling (TTS) 推理时搜索与视觉�
 \textbf{系统层}：将统一推理模块、状态机、导航主机、中层控制映射与平台接口整合为
 分层闭环系统，支持 MuJoCo 仿真与真机两种后端。状态机由 idle / stand / navigate /
 explore / recovery / estop / completed / failed 组成，通过统一接口与平台解耦；
-导航主机支持批量计划（JSON）和交互式任务两种模式，允许在同一会话内完成拍照、建图、
+导航主机支持以 JavaScript 对象表示法（JavaScript Object Notation, JSON）描述的批量计划和交互式任务两种模式，允许在同一会话内完成拍照、建图、
 导航、探索等组合任务。MuJoCo 闭环实验中，Lite3 在 easy/medium/hard 三张地图上均
 成功完成定点导航、多目标导航、自由探索任务，所有目标均被到达。
 
 \textbf{部署层}：针对 Jetson Orin 与 Lite3 上位机链路，形成了分阶段联调流程、
 多级安全机制与图像记录规范。Orin 阶段一（独立调试）验证了相机采集、模型加载、
-推理基准与端到端流水线；在桥接层对速度命令加入 NaN/Inf 守卫、幅值限幅与
+推理基准与端到端流水线；在桥接层对速度命令加入非数字/无穷大（Not a Number/infinity, NaN/Inf）守卫、幅值限幅与
 连接健康监测，任意推理异常自动走安全急停；状态机层加入全局摔倒保护，使
 idle/stand 等状态也不再遗漏摔倒判定。
 
@@ -79,10 +79,10 @@ environments such as campus patrol, indoor guidance, last-mile delivery and home
 service, navigation can no longer be reduced to a pure geometric path-planning problem
 on a known map. It must instead handle weak priors, partial observability, dynamic
 obstacles and ambiguous goal specifications, which has motivated a paradigm shift from
-classical SLAM-plus-planner pipelines toward learning-based, image-conditioned policies
+classical Simultaneous Localization and Mapping (SLAM)-plus-planner pipelines toward learning-based, image-conditioned policies
 that consume raw visual observations directly.
 
-Recently, general navigation models such as GNM, ViNT, and NoMaD have introduced
+Recently, general navigation models such as General Navigation Model (GNM), Visual Navigation Transformer (ViNT), and Goal Masked Diffusion Policies for Navigation and Exploration (NoMaD) have introduced
 diffusion policies into visual navigation, modelling the future local trajectory as a
 conditional distribution and generating multi-modal candidates through iterative
 denoising sampling. This formulation has significantly stronger expressive power than
@@ -107,11 +107,11 @@ quadruped as the target deployment platform, and addresses three deployment-orie
 questions: (i) how the visual encoder, distance-prediction head, and diffusion policy
 head are coupled in the NoMaD implementation and where inference-level optimizations
 are possible without retraining the model; (ii) whether, without retraining, sampling
-acceleration via DDIM, conditional guidance via Classifier-Free Guidance (CFG),
+acceleration via Denoising Diffusion Implicit Model (DDIM), conditional guidance via Classifier-Free Guidance (CFG),
 test-time search via Test-Time Scaling (TTS), and visual encoder replacement can
 meaningfully improve policy usability for resource-constrained edge deployment; and
 (iii) whether these optimizations can be integrated into a hierarchical closed-loop
-system for Lite3 and validated through MuJoCo simulation as well as real-world
+system for Lite3 and validated through Multi-Joint dynamics with Contact (MuJoCo) simulation as well as real-world
 deployment on the Jetson Orin onboard computer. The technical roadmap proceeds through
 algorithm-level optimization, system-level integration, and deployment-level
 validation, corresponding respectively to Chapters 3, 4, and 5 of the thesis. A
@@ -122,9 +122,8 @@ realistic timing, safety, and platform constraints.
 \subsection*{Main Contributions}
 
 \textbf{Algorithm layer.} A unified offline statistical pipeline is built to compare
-DDIM inference acceleration, Classifier-Free Guidance (CFG) enhancement, Test-Time
-Scaling (TTS) search, and visual encoder upgrades under a single evaluation protocol.
-Concretely, DDIM-2 attains about $4.84\times$ speedup over the DDPM-10 baseline on the
+DDIM inference acceleration, CFG enhancement, Test-Time Scaling (TTS) search, and visual encoder upgrades under a single evaluation protocol.
+Concretely, DDIM-2 attains about $4.84\times$ speedup over the Denoising Diffusion Probabilistic Model (DDPM)-10 baseline on the
 GoStanford evaluation set without notable trajectory-quality degradation, with the
 mean-squared deviation against the baseline trajectory distribution remaining below
 $0.022$. The CFG analysis, derived from score-function modification, establishes a
@@ -150,7 +149,7 @@ real-robot backends through one set of high-level code. The state machine
 (\texttt{idle / stand / navigate / explore / recovery / estop / completed / failed})
 is decoupled from the physical platform via a uniform interface, so that switching
 between MuJoCo and Lite3 only changes the backend implementation rather than the
-high-level logic. The navigation host supports both batched JSON plans and interactive
+high-level logic. The navigation host supports both batched JavaScript Object Notation (JSON) plans and interactive
 single commands, allowing capture, topomap building, navigation, and exploration to be
 composed within a single experiment session. Mid-level mapping converts the diffusion
 policy's local waypoints into bounded forward, lateral, and yaw velocity commands,
@@ -170,11 +169,11 @@ the end-to-end pipeline in isolation from the robot, so that any inference-side 
 is discovered before the platform is energized. Stage 2 (Orin and Lite3 joint
 commissioning) progresses from network and heartbeat verification, through standup and
 low-speed twist tests, to interactive and goal-directed navigation under conservative
-speed limits. The bridging layer wraps the Lite3 SDK with a 25\,Hz velocity-refresh
+speed limits. The bridging layer wraps the Lite3 Software Development Kit (SDK) with a 25\,Hz velocity-refresh
 thread and a 5\,Hz heartbeat thread, repeating the most recent clipped velocity
 between higher-level NoMaD inference cycles to guarantee continuous control flow even
 when the policy runs at single-digit hertz. Multi-level safety guards include
-NaN/Inf clipping, magnitude limits, fallen-robot detection, and a connection-stale
+Not a Number/infinity (NaN/Inf) clipping, magnitude limits, fallen-robot detection, and a connection-stale
 threshold of two seconds; any inference anomaly or platform fault is routed to a soft
 emergency stop. Real-robot experiments on multiple indoor scenes with pre-collected
 topomaps record closed-loop frequencies of 2.89\,Hz (DDPM baseline), 6.80\,Hz

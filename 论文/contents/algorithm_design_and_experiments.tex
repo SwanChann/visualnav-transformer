@@ -1,16 +1,43 @@
 % !TEX root = ../main.tex
 
-\chapter{算法设计与实验}
+\chapter{基于动作扩散策略的视觉目标导航模型复现与优化}
 
-\section{任务定义与研究思路}
+\section{本章目标}
+
+第一章已经从应用需求和研究脉络两个层面说明了基于动作扩散策略的四足机器人视觉目标导航的研究意义。在进入系统层与平台层之前，本文必须先回答一个更基本的问题：在不重新训练模型的前提下，NoMaD 能否被进一步改造为可在边缘设备上稳定运行的高层视觉导航策略？这一问题既包含理论层面的扩散策略采样机制分析，也包含工程层面的推理参数选择。本章的目标即对这一问题做出系统化回答。
+
+具体来说，本章的工作目标包含三个层次。第一，建立可复现的离线推理基线。本章首先对 NoMaD 的视觉编码器、距离预测头与扩散策略头进行结构性梳理，并在 GoStanford 数据集上复现原始离线推理流程，给出参数量、单次推理时延和轨迹生成基线，作为后续所有优化实验的参照。第二，开展面向部署的推理优化对比。围绕 DDIM 采样加速、CFG 条件引导、TTS 推理时搜索和视觉编码器替换四个维度，本章设计统一的离线统计实验链路，并在相同测试 case 与评价指标下给出公平比较结果。第三，识别可以进入下一章闭环验证的候选配置。本章不直接给出真机部署的最终结论，而是在多指标联合分析的基础上筛选若干推理配置组合，为第三章的 MuJoCo 仿真验证和第四章的 Lite3 真机部署提供候选参数。
+
+为完成上述目标，本章按``任务定义—模型机制—基线实验—优化实验—消融分析—框架确定''六个步骤组织内容。先把视觉目标导航形式化为条件轨迹分布学习问题，并阐明 waypoint 表示的优势；然后系统说明 NoMaD 的扩散建模思想、视觉条件构造方式和训练目标；在此基础上，给出基线推理与各项优化实验的设计原则、实验结果与统计分析；最后通过跨方法、跨编码器的联合消融实验，确定本文最终采用的算法默认配置。需要强调的是，本章关注的是``哪些候选方法值得进入闭环验证''，因此所有结论都首先被限定在离线统计与离线代理指标层面。
+
+\section{视觉目标导航任务定义与 waypoint 表示}
+
+\subsection{视觉目标导航任务定义}
+
+机器人导航的目标是在给定观察、任务目标和运动约束的条件下，使机器人从当前状态移动到目标区域。一个完整导航系统通常涵盖环境感知、状态表示、目标表达、局部决策与运动执行五个环节\cite{thrun2005probabilistic,anderson2018evaluation}。在输出形式上，高层导航策略可以输出底层控制量、局部路径点或局部轨迹序列；本文让高层模型输出局部 waypoint 轨迹，再由中层控制器完成执行映射。
+
+如果把高层策略写成函数形式，则有
+\begin{equation}
+\pi : (\mathcal{O}_t, g) \mapsto \mathbf{A}_t ,
+\end{equation}
+其中 $\mathcal{O}_t$ 表示时刻 $t$ 的图像观察或观察序列，$g$ 表示任务目标，$\mathbf{A}_t$ 表示未来短时间内的局部轨迹。该表示天然适合与不同平台解耦，也是本文能够将高层视觉导航从轮式框架迁移到 Lite3 四足平台的重要原因。
+
+观察空间方面，本文统一使用 RGB 图像作为输入，并保留最近 $K+1$ 帧上下文 $\mathcal{O}_t = \{I_{t-K}, \ldots, I_t\}$。每个 waypoint $\mathbf{a}_i = (\Delta x_i, \Delta y_i)$ 表示相对于机器人当前位姿的二维增量位移（$x$ 前向、$y$ 左侧），策略输出因此不依赖全局定位。执行上采用闭环模式：每个高层周期生成长度 $H=8$ 的 waypoint 序列，固定取第 $k=2$ 个 waypoint 作为本次控制周期的局部目标位移，由中层 PD 控制器映射为单条 \texttt{Twist} 速度指令；下一周期再基于最新相机帧重新生成。这种``规划长 8 步、每周期只执行其中一个超前点''的策略与模型预测控制（MPC）一脉相承，扩散策略相当于把 MPC 的优化求解替换为条件扩散采样。
+
+视觉导航以图像作为主要环境输入，并基于视觉信息完成导航决策\cite{zhu2017targetdriven,anderson2018evaluation}。目标导航则进一步关注目标的给出形式，常见类别包括：
+\begin{itemize}
+    \item \textbf{point-goal 导航}\cite{ddppo2020}：目标以坐标点形式给出，要求机器人到达指定位置；
+    \item \textbf{image-goal 导航}：目标以一张或多张图像给出，要求机器人到达图像所对应的位置；
+    \item \textbf{object-goal 导航}：目标以物体类别给出（如``找到冰箱''），需要语义理解能力；
+    \item \textbf{language-goal 导航}：目标以自然语言指令给出，是最灵活但也最具挑战的形式。
+\end{itemize}
+本文研究 image-goal 场景：相较于绝对坐标，图像目标更符合真实应用——用户更容易给出``去这个画面对应的位置''，而非统一坐标系下的精确终点；相较 object-goal 与 language-goal，图像目标无需语义理解模块、表达歧义更低，能在无 GPS 与无预建地图的场景中直接工作。
 
 本文关注的核心任务是：给定机器人当前视觉观察、短历史观察和目标图像，生成一段局部 waypoint 轨迹，并将其作为中层控制器的参考输入。沿用 NoMaD 的基本思想\cite{nomad2023}，本方法不直接预测单步速度命令，而是学习条件轨迹分布
 \begin{equation}
 p(\mathbf{A}_t \mid \mathcal{O}_t, I_g),
 \end{equation}
-其中 $\mathcal{O}_t$ 表示时刻 $t$ 的历史视觉观察，$I_g$ 表示当前控制周期使用的目标图像，在拓扑导航中是 topomap 序列上``当前定位的下一节点''图像，$\mathbf{A}_t$ 表示未来局部 waypoint 序列。
-
-\subsection{问题建模}
+其中 $p(\cdot)$ 表示条件概率分布，$\mathcal{O}_t$ 表示时刻 $t$ 的历史视觉观察，$I_g$ 表示当前控制周期使用的目标图像，在拓扑导航中是 topomap 序列上``当前定位的下一节点''图像，$\mathbf{A}_t$ 表示未来局部 waypoint 序列。
 
 从马尔可夫决策过程（Markov Decision Process, MDP）的视角来看，视觉导航可以被建模为一个元组 $\mathcal{M} = (\mathcal{S}, \mathcal{A}, T, R, \gamma)$，其中 $\mathcal{S}$ 表示状态空间（即视觉观察空间），$\mathcal{A}$ 表示动作空间，$T$ 表示转移概率，$R$ 表示奖励函数，$\gamma$ 表示折扣因子。在本文的框架中，策略 $\pi$ 不是直接在 MDP 上求解单步最优动作，而是学习一个条件轨迹分布 $p(\mathbf{A}_t \mid \mathcal{O}_t, I_g)$，这种分布式策略具有天然的多模态建模能力。
 
@@ -18,9 +45,32 @@ p(\mathbf{A}_t \mid \mathcal{O}_t, I_g),
 \begin{equation}
 p(\mathbf{A}_t \mid \mathcal{O}_t, I_g) = p(\mathbf{a}_1, \mathbf{a}_2, \ldots, \mathbf{a}_H \mid \mathcal{O}_t, I_g),
 \end{equation}
-其中每个 $\mathbf{a}_i$ 并非独立采样，而是通过扩散过程的联合去噪一次性生成。
+其中 $p(\cdot)$ 表示条件概率分布，$H$ 表示未来预测步数，$\mathbf{a}_i$ 表示第 $i$ 个局部 waypoint。每个 $\mathbf{a}_i$ 并非独立采样，而是通过扩散过程的联合去噪一次性生成。
 
 这种建模方式与经典的行为克隆（Behavioral Cloning）策略存在本质区别。行为克隆通常将策略参数化为确定性映射 $\pi_\theta: \mathcal{O} \to \mathcal{A}$ 或简单的高斯分布，只能表达单峰的动作分布。而基于扩散模型的条件生成策略通过迭代去噪过程，能够从复杂的多模态分布中采样，天然适合处理导航任务中的分支决策场景。此外，扩散模型的训练目标（噪声预测损失）在数值上比最大似然目标更稳定，不容易出现模式坍塌（mode collapse）问题。
+
+\subsection{拓扑导航与 topomap 表示}
+
+为了降低对精确几何地图的依赖，拓扑导航只保留若干代表性视觉节点及其连通关系\cite{savinov2018sptm,chaplot2020nts,shah2021ving}。本文系统中 topomap 不是部署时由编码器在线生成的图结构，而是人工沿目标路径预先采集的一段\textbf{有序}视觉节点序列，文件名按 \texttt{0.png, 1.png, \ldots} 自然排序，节点编号同时编码``沿路径前进的方向''，因此 topomap 在使用上更接近一条按空间顺序排好的导航队列。
+
+设拓扑节点图像沿路径排列为 $\mathcal{G}=(I_g^{(0)}, \ldots, I_g^{(M-1)})$，导航任务给定起点附近索引 $0$ 与目标索引 $g\le M-1$。系统维护一个状态化的``当前定位''指针 $c_t$，距离预测头只在以 $c_t$ 为中心、半径 $r=4$ 的局部窗口
+\begin{equation}
+\mathcal{W}_t = \{j : \max(c_t-r,\,0) \le j \le \min(c_t+r+1,\,g)\}
+\end{equation}
+式中，$\mathcal{W}_t$ 表示第 $t$ 个控制周期的候选节点窗口，$j$ 为候选节点索引，$c_t$ 为当前定位指针，$r$ 为窗口半径，$g$ 为目标节点索引；$\max(\cdot)$ 与 $\min(\cdot)$ 用于保证窗口不越过 topomap 的起止边界。
+内对当前观察 $\mathcal{O}_t$ 与每个候选节点 $I_g^{(j)}$ 计算距离预测 $\hat d_j$，并据此更新定位：
+\begin{equation}
+c_{t+1} = \mathrm{clip}\bigl(\arg\min_{j\in\mathcal{W}_t} \hat d_j,\; c_t-1,\; c_t+\Delta_{\max}\bigr),
+\end{equation}
+其中 $c_{t+1}$ 表示更新后的定位指针，$\hat d_j$ 表示当前观察到候选节点 $j$ 的预测距离，$\arg\min$ 选择预测距离最小的候选节点，$\mathrm{clip}(\cdot)$ 将结果限制在 $[c_t-1,c_t+\Delta_{\max}]$ 内；本文取 $\Delta_{\max}=3$，使定位指针每周期至多前进 3 个节点、至多回退 1 个节点，从而强制定位整体沿 topomap 单向推进。
+
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.9\linewidth]{prelim-nav-pipeline-placeholder.png}
+    \caption{导航任务输入输出与 topomap 关系示意图}
+    \label{fig:prelim-nav-pipeline-placeholder}
+\end{figure}
 
 \subsection{Waypoint 表示的优势分析}
 
@@ -30,7 +80,7 @@ p(\mathbf{A}_t \mid \mathcal{O}_t, I_g) = p(\mathbf{a}_1, \mathbf{a}_2, \ldots, 
 
 第二，多模态表达能力。在面对 T 形路口或走廊分叉等场景时，合理的导航行为可能包含``左转''和``右转''两个互不相容的模态。若使用单步速度命令的均值回归策略，两个模态的平均结果可能是``直行撞墙''。而 waypoint 序列结合扩散模型的生成能力，能够保留这种多模态分布，通过采样不同轨迹来表达不同的决策意图。
 
-第三，闭环控制的友好性。中层控制器（如 PID 或 MPC）可以直接将 waypoint 序列作为参考路径进行跟踪，这比将高层策略输出的速度命令直接下发到底层更加鲁棒，因为 waypoint 跟踪器可以根据实际执行情况进行局部修正。
+第三，闭环控制的友好性。中层控制器（如 PID 控制器或 MPC）可以直接将 waypoint 序列作为参考路径进行跟踪，这比将高层策略输出的速度命令直接下发到底层更加鲁棒，因为 waypoint 跟踪器可以根据实际执行情况进行局部修正。
 
 waypoint 序列还提供了比单步动作更丰富的决策信息。单步速度命令仅编码了当前时刻的瞬时意图，而 waypoint 序列编码了未来一段时间窗口内的完整运动意图。这种``前瞻性''信息对于中层控制器的预测性规划至关重要——控制器可以提前预判即将到来的转弯或减速需求，从而生成更平滑的底层控制信号。特别是对于足式机器人，步态切换和身体姿态调整需要提前规划，单步速度命令无法提供足够的前瞻信息。
 
@@ -43,24 +93,205 @@ waypoint 序列还提供了比单步动作更丰富的决策信息。单步速�
     \label{fig:algo-overview-placeholder}
 \end{figure}
 
-\section{NoMaD 基础模型复现}
+\section{动作扩散策略与 NoMaD 模型机制}
 
-\subsection{输入输出形式}
+\subsection{扩散模型与动作扩散策略}
+
+\paragraph*{扩散模型基本原理}
+
+扩散模型通过``逐步加噪、逐步去噪''的方式学习复杂分布\cite{ddpm2020}。在前向过程里，数据样本 $x_0$ 被逐步扰动为高斯噪声：
+\begin{equation}
+q(x_t \mid x_{t-1}) = \mathcal{N}\!\left(\sqrt{1-\beta_t}x_{t-1}, \beta_t \mathbf{I}\right),
+\end{equation}
+其中 $q(\cdot)$ 表示前向加噪转移分布，$x_{t-1}$ 与 $x_t$ 分别表示相邻两个扩散时间步的样本，$\mathcal{N}(\cdot)$ 表示高斯分布，$\beta_t$ 为第 $t$ 步噪声调度系数，$\mathbf{I}$ 为单位矩阵。经过多步加噪后，样本会接近标准高斯分布。模型训练的目标是在反向过程中预测噪声，从而逐步恢复原始样本。常见训练目标写为
+\begin{equation}
+\mathcal{L}_{\text{diff}} = \mathbb{E}_{x_0,\epsilon,t}\left[\left\|\epsilon - \epsilon_\theta(x_t, t, c)\right\|_2^2\right],
+\end{equation}
+其中 $\mathcal{L}_{\text{diff}}$ 表示扩散噪声预测损失，$\mathbb{E}_{x_0,\epsilon,t}[\cdot]$ 表示对原始样本 $x_0$、噪声 $\epsilon$ 和时间步 $t$ 求期望，$\|\cdot\|_2^2$ 表示二范数平方，$\epsilon$ 为真实噪声，$\epsilon_\theta$ 为参数为 $\theta$ 的模型预测噪声，$c$ 表示条件信息。
+
+利用马尔可夫链的性质，可以推导出从 $x_0$ 到任意时刻 $x_t$ 的闭合形式。定义 $\alpha_t = 1 - \beta_t$，$\bar{\alpha}_t = \prod_{s=1}^{t} \alpha_s$，则有
+\begin{equation}
+q(x_t \mid x_0) = \mathcal{N}\!\left(\sqrt{\bar{\alpha}_t}\, x_0,\; (1 - \bar{\alpha}_t)\mathbf{I}\right).
+\label{eq:closed-form-forward}
+\end{equation}
+式中，$\alpha_t$ 表示单步保留系数，$\bar{\alpha}_t$ 表示从第 $1$ 步到第 $t$ 步的累计保留系数，$x_0$ 表示原始样本，$x_t$ 表示第 $t$ 步的加噪样本。这意味着可以直接从 $x_0$ 一步采样得到任意时刻的加噪样本 $x_t = \sqrt{\bar{\alpha}_t}\, x_0 + \sqrt{1 - \bar{\alpha}_t}\, \epsilon$，其中 $\epsilon \sim \mathcal{N}(0, \mathbf{I})$。这一闭合形式是训练过程高效进行的基础——训练时无需依次模拟整个前向链，只需随机采样时间步 $t$ 并直接计算 $x_t$ 即可。
+
+本工作中显式将训练扩散步数设为 $T = 10$，这远低于通用图像扩散的 $T = 1000$ 量级，原因是本工作的扩散对象不是高维像素而是 16 维 waypoint 轨迹，低维分布对去噪步数的需求大幅降低，这一配置在轨迹生成质量与训练稳定性之间取得了良好的平衡。
+
+从变分推断的角度来看，扩散模型的训练目标实际上是对数据对数似然的变分下界（Variational Lower Bound, VLB）的优化。具体而言，对数似然 $\log p_\theta(x_0)$ 的 VLB 可以分解为
+\begin{equation}
+\log p_\theta(x_0) \geq \mathbb{E}_q\!\left[-\log \frac{q(x_{1:T}\mid x_0)}{p_\theta(x_{0:T})}\right] = -\mathcal{L}_{\text{VLB}},
+\end{equation}
+其中 $p_\theta$ 表示参数为 $\theta$ 的生成模型分布，$q$ 表示前向扩散分布，$x_{1:T}$ 表示从第 $1$ 步到第 $T$ 步的隐变量序列，$x_{0:T}$ 表示包含原始样本的完整序列，$\mathbb{E}_q[\cdot]$ 表示对前向扩散过程求期望，$\mathcal{L}_{\text{VLB}}$ 表示变分下界对应的损失项。$\mathcal{L}_{\text{VLB}}$ 可进一步分解为逐步库尔贝克-莱布勒散度（Kullback-Leibler divergence, KL divergence）之和。Ho 等人\cite{ddpm2020}在实践中发现，直接使用简化的噪声预测损失 $\mathcal{L}_{\text{diff}}$ 训练效果更好，尽管它与严格的 VLB 目标并不完全等价。
+
+在轨迹生成的具体应用中，$x_0$ 不再是图像像素，而是轨迹 waypoint 序列 $\mathbf{A} = [\mathbf{a}_1, \ldots, \mathbf{a}_H] \in \mathbb{R}^{H \times 2}$。相应地，扩散过程在轨迹空间中进行：前向过程逐步向轨迹添加噪声，反向过程从纯噪声逐步恢复出合理轨迹。由于轨迹空间的维度远低于图像空间，扩散模型在轨迹生成中的收敛速度和采样效率都显著优于图像生成，这也是扩散策略能够在实时控制场景中应用的重要原因。
+
+这种建模方式在导航领域具有以下关键优势：
+\begin{enumerate}
+    \item \textbf{多模态建模能力}：扩散模型不强迫在多峰分布中只输出一个均值解，而是通过去噪过程逐步生成多种合理候选。在十字路口等存在多条合理路径的场景中，这种能力尤为重要；
+    \item \textbf{样本质量可控}：通过调节去噪步数和引导强度，可以在生成质量与计算开销之间灵活权衡；
+    \item \textbf{条件生成自然}：条件信息（如目标图像）可以自然地融入去噪过程，无需额外的条件注入机制。
+\end{enumerate}
+导航与控制任务中的未来轨迹本身就常常具有多模态特性，因此扩散建模天然适合此类问题。
+
+
+\paragraph*{DDPM 与 DDIM}
+
+DDPM 采用随机反向扩散过程生成样本，采样质量通常较好，但采样步数较多、推理开销较大\cite{ddpm2020}。DDIM 在保持训练目标不变的前提下，将反向过程改写为非马尔可夫且可确定性的更新形式，从而实现更少步数的快速采样\cite{ddim2020}。当取确定性采样形式时，其一步更新可写为
+\begin{equation}
+x_{t-1} = \sqrt{\bar\alpha_{t-1}}\hat x_0 + \sqrt{1-\bar\alpha_{t-1}}\,\epsilon_\theta(x_t,t,c),
+\end{equation}
+其中 $x_{t-1}$ 和 $x_t$ 表示相邻采样时间步的样本，$\hat x_0$ 由当前样本 $x_t$ 与预测噪声反推得到，$\epsilon_\theta(x_t,t,c)$ 表示模型在条件 $c$ 下对时间步 $t$ 的噪声预测，$\bar\alpha_{t-1}$ 与 $\bar\alpha_t$ 为累计噪声调度系数。
+
+更具体地，DDIM 的关键创新在于引入了一族非马尔可夫前向过程。Song 等人\cite{ddim2020}观察到，DDPM 的训练目标仅依赖于边际分布 $q(x_t \mid x_0)$ 而非联合分布 $q(x_{1:T} \mid x_0)$。因此可以构造一族具有相同边际分布但不同联合分布的前向过程，其反向过程可以写为
+\begin{equation}
+q_\sigma(x_{t-1} \mid x_t, x_0) = \mathcal{N}\!\left(\sqrt{\bar\alpha_{t-1}}\, x_0 + \sqrt{1-\bar\alpha_{t-1}-\sigma_t^2}\cdot\frac{x_t - \sqrt{\bar\alpha_t}\, x_0}{\sqrt{1-\bar\alpha_t}},\; \sigma_t^2 \mathbf{I}\right),
+\end{equation}
+其中 $q_\sigma(\cdot)$ 表示带随机性参数 $\sigma$ 的非马尔可夫反向分布，$x_{t-1}$、$x_t$ 和 $x_0$ 分别表示上一时间步、当前时间步与原始样本，$\bar{\alpha}_t$ 和 $\bar{\alpha}_{t-1}$ 为累计噪声调度系数，$\sigma_t$ 是可调随机性参数，$\mathbf{I}$ 为单位矩阵。定义 $\eta$ 参数使得
+\begin{equation}
+\sigma_t =
+\eta
+\sqrt{\frac{1-\bar\alpha_{t-1}}{1-\bar\alpha_t}}
+\sqrt{1-\frac{\bar\alpha_t}{\bar\alpha_{t-1}}},
+\end{equation}
+式中，$\eta$ 表示采样随机性调节系数，$\sigma_t$ 为由 $\eta$ 和相邻累计噪声系数共同确定的反向过程标准差。$\eta = 1$ 时恢复为 DDPM 的随机采样，$\eta = 0$ 时得到完全确定性的 DDIM 采样。$\eta$ 的中间值则在两者之间插值，提供了在采样多样性与确定性之间的连续调节能力。
+
+在导航轨迹生成的实际应用中，$\eta$ 的选择涉及探索与确定性之间的权衡。$\eta = 0$（完全确定性）意味着给定相同的初始噪声和条件，每次都会生成完全相同的轨迹，这在需要可复现行为的场景中有优势，但丧失了多样性。$\eta > 0$ 则引入随机性，使得每次采样可能产生不同的轨迹候选，在本文实验中，$\eta$ 被设置为 $\eta \in [0.3, 0.5]$），以确保候选轨迹之间有足够的多样性。
+
+\begin{table}[htbp]
+    \centering
+    \caption{DDPM 与 DDIM 的主要性质对比}
+    \label{tab:ddpm-ddim-compare}
+    \begin{tabular}{lll}
+        \toprule
+        性质 & DDPM & DDIM \\
+        \midrule
+        反向过程类型 & 随机（马尔可夫） & 确定性或半随机（非马尔可夫） \\
+        采样步数 & 通常需要完整 $T$ 步 & 支持子序列跳步采样 \\
+        $\eta$ 参数 & 固定为 1 & 可调，0 为确定性 \\
+        采样多样性 & 较高（每次结果不同） & $\eta=0$ 时完全确定 \\
+        训练目标 & 噪声预测 $\mathcal{L}_{\text{diff}}$ & 与 DDPM 相同，无需重新训练 \\
+        推理速度 & 较慢 & 可显著加速 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+本文后续所说的``DDIM 推理加速''，就是在不重新训练网络的前提下，用更少的去噪步数近似原始 DDPM 采样。
+
+在实际使用中，DDIM 的跳步采样通过选择原始时间步序列 $\{1, 2, \ldots, T\}$ 的一个子序列 $\{\tau_1, \tau_2, \ldots, \tau_S\}$（其中 $S \le T$）来实现加速。NoMaD 训练时已经把 $T$ 压到 $10$，因此本文 DDIM 实验的有效压缩区间是从 $S = 10$ 进一步减到 $S = 5/3/2/1$，对应每步覆盖 $1$ 到 $5$ 个原始时间步。子序列的选择方式（均匀间隔、二次间隔等）也会影响采样质量。在本文的导航场景中，由于轨迹空间的维度远低于图像空间，扩散模型对跳步采样的容忍度通常较高，这为在边缘设备上实现实时推理提供了可能。
+
+\paragraph*{Classifier-Free Guidance}
+
+Classifier-Free Guidance（CFG）最初用于条件生成任务中的引导增强\cite{cfg2022}。其思想是在训练阶段同时学习有条件与无条件预测，在推理阶段通过两者线性组合增强条件约束。若条件分支噪声预测为 $\epsilon_{\text{cond}}$，无条件分支为 $\epsilon_{\text{uncond}}$，则引导后的噪声预测写为
+\begin{equation}
+\epsilon_{\text{cfg}} = (1+w)\epsilon_{\text{cond}} - w\epsilon_{\text{uncond}},
+\end{equation}
+其中 $\epsilon_{\text{cfg}}$ 表示引导后的噪声预测，$\epsilon_{\text{cond}}$ 表示条件分支噪声预测，$\epsilon_{\text{uncond}}$ 表示无条件分支噪声预测，$w$ 为引导强度。当 $w=0$ 时退化为普通条件推理；当 $w>0$ 时，模型会更强地朝向条件约束；当 $w$ 过大时，也可能带来分布偏移与不稳定。
+
+CFG 之所以能在推理时实现无分类器引导，关键在于训练阶段的条件随机丢弃（condition dropout）机制。具体而言，在训练过程中以概率 $p_{\text{uncond}}$（通常取 $0.1$ 至 $0.2$）将条件信息 $c$ 替换为空条件 $\varnothing$，使得同一模型 $\epsilon_\theta$ 同时学习条件预测 $\epsilon_\theta(x_t, t, c)$ 与无条件预测 $\epsilon_\theta(x_t, t, \varnothing)$。在推理阶段，对同一输入分别执行条件和无条件前向传播，
+再通过线性组合实现引导，无需额外训练分类器网络。
+
+
+在本文中，CFG 的作用是增强轨迹对目标条件的牵引能力，即让生成的局部 waypoint 更明确地朝向目标图像或目标节点图像对应的方向。
+
+本工作中 CFG 的具体实现流程如下：
+\begin{enumerate}
+    \item 在每个去噪步骤中，分别以目标 token 和掩码 token 作为条件，执行两次前向传播；
+    \item 获得条件噪声预测 $\epsilon_{\text{cond}}$ 和无条件噪声预测 $\epsilon_{\text{uncond}}$；
+    \item 按照 CFG 公式计算引导后的噪声预测 $\epsilon_{\text{cfg}}$；
+    \item 使用 $\epsilon_{\text{cfg}}$ 执行一步去噪更新。
+\end{enumerate}
+需要注意的是，在实际实现中，CFG 的无条件分支并非完全无信息——它仍然接收历史观察 token，只是目标 token 被替换为掩码 token。因此 CFG 在这里增强的是``目标方向性''，而非``整体行为合理性''。这一区别使得即使在较大的 $w$ 值下，生成的轨迹仍然保持基本的可行性（因为观察条件始终存在），只是目标趋向性被放大。
+
+\paragraph*{扩散策略与 Test-Time Scaling}
+
+扩散策略将扩散模型从图像生成推广到动作序列或轨迹序列生成\cite{diffuser2022,diffusionpolicy2023}。在具身智能与机器人控制领域，Diffuser 和 Diffusion Policy 证明了扩散建模能够有效处理多步决策、长时序动作和多模态行为分布，因此被视为扩散模型在具身控制中的代表性应用。
+
+具体而言，Diffuser\cite{diffuser2022} 将整个轨迹（包括状态和动作序列）作为扩散对象，在推理时通过引导函数注入奖励信息来生成高回报轨迹。Diffusion Policy\cite{diffusionpolicy2023} 则只对动作序列进行扩散，将状态观察作为条件信息，更适合视觉观察驱动的控制任务。NoMaD 的扩散策略头采用了类似 Diffusion Policy 的设计——仅对 waypoint 轨迹进行扩散，视觉特征作为条件信息注入。这种设计使得扩散过程仅需在低维轨迹空间中进行，显著降低了计算开销。
+
+在此基础上，近年来出现了测试时扩展（Test-Time Scaling, TTS）的思路\cite{ttsdiffusion2025,ttssearch2025}。其核心思想不是修改训练过程，而是在推理阶段使用额外计算预算生成多条候选轨迹，再通过打分函数进行选择。若生成 $N$ 条候选轨迹 $\{\mathbf{A}^{(i)}\}_{i=1}^N$，评分函数为 $s(\cdot)$，则最优轨迹可表示为
+\begin{equation}
+\mathbf{A}^{\ast} = \arg\max_{i\in\{1,\ldots,N\}} s\!\left(\mathbf{A}^{(i)} \mid \mathcal{O}_t, I_g\right).
+\end{equation}
+其中 $\mathbf{A}^{\ast}$ 表示被选中的最优候选轨迹，$\mathbf{A}^{(i)}$ 表示第 $i$ 条候选轨迹，$N$ 表示候选轨迹数量，$s(\cdot)$ 表示评分函数，$\mathcal{O}_t$ 表示当前历史观察，$I_g$ 表示目标图像。
+
+评分函数的设计是 TTS 方法的核心。常见的评分维度包括：（1）目标一致性评分，衡量候选轨迹终点与目标方向的对齐程度，可以利用距离预测头对轨迹终点的距离估计作为代理指标；（2）轨迹平滑性评分，衡量相邻 waypoint 之间的方向变化和速度变化是否连续，过大的方向突变通常意味着不可执行或执行风险较高的轨迹；（3）前向进展评分，衡量轨迹整体是否朝目标方向前进，避免选择在原地打转或后退的候选。在实际实现中，这些评分维度通常以加权和的形式组合：
+\begin{equation}
+s(\mathbf{A}^{(i)}) = \lambda_{\text{goal}} \cdot s_{\text{goal}}(\mathbf{A}^{(i)}) + \lambda_{\text{smooth}} \cdot s_{\text{smooth}}(\mathbf{A}^{(i)}) + \lambda_{\text{prog}} \cdot s_{\text{prog}}(\mathbf{A}^{(i)}),
+\end{equation}
+其中 $s(\mathbf{A}^{(i)})$ 表示第 $i$ 条候选轨迹的综合评分，$s_{\text{goal}}$、$s_{\text{smooth}}$ 和 $s_{\text{prog}}$ 分别表示目标一致性、平滑性和前向进展评分，$\lambda_{\text{goal}}$、$\lambda_{\text{smooth}}$ 和 $\lambda_{\text{prog}}$ 为各维度的权重系数。具体地，平滑性评分可以定义为相邻 waypoint 方向变化角的负值之和：
+\begin{equation}
+s_{\text{smooth}}(\mathbf{A}) = -\sum_{i=2}^{H-1} \left|\angle(\mathbf{a}_{i+1} - \mathbf{a}_i) - \angle(\mathbf{a}_i - \mathbf{a}_{i-1})\right|,
+\end{equation}
+其中 $s_{\text{smooth}}(\mathbf{A})$ 表示轨迹 $\mathbf{A}$ 的平滑性评分，$H$ 表示轨迹长度，$\mathbf{a}_i$ 表示第 $i$ 个 waypoint，$\angle(\cdot)$ 表示二维向量的方向角，绝对值项刻画相邻方向变化的幅度。前向进展评分则可以定义为轨迹终点在目标方向上的投影距离：
+\begin{equation}
+s_{\text{prog}}(\mathbf{A}) = \mathbf{a}_H \cdot \hat{\mathbf{d}}_{\text{goal}},
+\end{equation}
+其中 $s_{\text{prog}}(\mathbf{A})$ 表示轨迹的前向进展评分，$\mathbf{a}_H$ 表示最后一个 waypoint，$\hat{\mathbf{d}}_{\text{goal}}$ 为指向目标的单位方向向量，点乘结果表示轨迹终点在目标方向上的投影长度。
+
+TTS 的工作方式与蒙特卡洛树搜索（Monte Carlo Tree Search, MCTS）存在概念上的相似性。MCTS 通过大量随机模拟评估不同决策路径的期望回报，TTS 则通过大量采样评估不同生成轨迹的综合质量。两者的核心共性在于``用额外计算换取更优决策''。区别在于 MCTS 通常涉及多步展开和回溯，而 TTS 在扩散策略中主要针对单次生成的多条候选进行比较选择，其计算开销的扩展方式更为简单和可控。
+
+从理论角度来看，TTS 的有效性建立在一个关键假设之上：扩散模型生成的候选集合中，高质量轨迹的存在概率随候选数量 $N$ 的增加而增大。设单次采样得到可接受轨迹的概率为 $p$，则 $N$ 次独立采样后至少存在一条可接受轨迹的概率为 $1 - (1-p)^N$。当 $p$ 较小时（对应困难场景），需要较大的 $N$ 才能保证成功率；当 $p$ 接近 1 时（对应简单场景），$N=1$ 即可，此时 TTS 退化为普通单次采样。这种``按需扩展''的
+特性使得 TTS 特别适合于计算预算可变的部署场景。
+
+需要强调的是，TTS 与 DDIM、CFG 作用位置不同。DDIM 决定``怎么采样''，CFG 决定``采样时如何增强条件''，而 TTS 决定``采样出多条候选后如何选择''。因此三者虽然都属于推理时优化，但不是简单相加关系，而是具有先后层次的组合关系。
+
+\paragraph*{扩散模型、视觉 Transformer 与导航建模的关系}
+
+Transformer 在视觉建模中的广泛应用，使得扩散模型与视觉编码方法的结合成为趋势。ViT 将图像切分为 patch token 并以自注意力机制进行建模\cite{vit2020}；扩散 Transformer（Diffusion Transformer, DiT）则将扩散过程进一步与 Transformer 架构结合，说明扩散模型可以在强表征模型之上获得更高质量生成能力\cite{dit2022}。在导航领域，ViNT 使用 Transformer 处理历史观察与目标图像\cite{vint2023}，NoMaD 则在此基础上引入动作扩散策略\cite{nomad2023}。因此，本文讨论的视觉编码器升级、扩散采样优化和系统部署，其实都位于这一技术演化脉络之中。
+
+具体而言，ViT 的核心操作是将输入图像划分为固定大小的 patch（如 $16 \times 16$ 像素），将每个 patch 线性映射为一个 token 向量，再加上位置编码后送入多层 Transformer 编码器。对于输入尺寸为 $H \times W$ 的图像和 patch 大小 $P$，token 序列长度为 $N = HW/P^2$。
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.84\linewidth]{prelim-diffusion-placeholder.png}
+    \caption{扩散模型、扩散策略、ViT 编码器与 NoMaD 系统之间的技术演化关系。
+    从左到右依次为基础扩散理论（DDPM/DDIM）、条件引导方法（CFG）、
+    扩散策略（Diffusion Policy）以及 NoMaD 的架构}
+    \label{fig:prelim-diffusion-placeholder}
+\end{figure}
+
+\subsection{NoMaD 基础模型结构}
+
+NoMaD 由视觉编码器、距离预测头和扩散策略头三部分构成\cite{nomad2023}。视觉编码器负责把历史观察与目标图像编码为统一条件特征；距离预测头估计当前观察与目标之间的相对距离
+（以离散时间步数为单位，表示从当前位置到达目标大约需要多少个导航步骤，而非物理距离）；扩散策略头则在该条件特征上生成未来局部 waypoint 轨迹。若记局部轨迹为
+\begin{equation}
+\mathbf{A} = [\mathbf{a}_1,\mathbf{a}_2,\ldots,\mathbf{a}_H], \qquad \mathbf{a}_i=(\Delta x_i,\Delta y_i),
+\end{equation}
+其中 $\mathbf{A}$ 表示完整的局部轨迹序列，$\mathbf{a}_i$ 表示第 $i$ 个 waypoint，$H$ 表示预测步数，$\Delta x_i$ 和 $\Delta y_i$ 分别表示机器人局部坐标系下的前向与横向位移增量。
+则 NoMaD 学习的是条件分布
+\begin{equation}
+p(\mathbf{A}\mid \mathcal{O}_t, I_g).
+\end{equation}
+式中，$p(\cdot)$ 表示条件轨迹分布，$\mathcal{O}_t$ 表示当前历史观察序列，$I_g$ 表示目标图像。
+
+在 NoMaD 的视觉编码器部分，其底层基于 ViNT 的 Transformer 架构。具体而言，每帧观察图像首先通过 CNN 或 ViT 前端提取特征图，再经过全局平均池化压缩成一个高维向量，最后由线性投影层映射到统一的 token 维度。一帧图像对应一个观察 token。在 NoMaD 中，定义 $K$ 为 \texttt{context\_size}（默认为 3，表示当前帧之外向前回看的步数），则模型一次前向需要把 $K+1$ 帧 RGB 图像送入观察编码器 \texttt{obs\_encoder} 独立编码，得到 $K+1$ 个观察 token；目标图像与当前帧沿通道维度拼接后再送入参数独立的目标编码器 ，得到一个目标 token。这些 token 被拼接为一个统一的序列，送入 Transformer 编码器进行联合注意力计算。形式化地，令观察 token 序列为 $\{\mathbf{z}_{\text{obs}}^{(k)}\}_{k=0}^{K}$，目标 token 为 $\mathbf{z}_{\text{goal}}$，则 Transformer 编码器的输入为
+\begin{equation}
+\mathbf{Z}_{\text{input}} = [\mathbf{z}_{\text{obs}}^{(0)}; \mathbf{z}_{\text{obs}}^{(1)}; \ldots; \mathbf{z}_{\text{obs}}^{(K)}; \mathbf{z}_{\text{goal}}],
+\end{equation}
+其中 $\mathbf{Z}_{\text{input}}$ 表示送入 Transformer 编码器的 token 序列，$\mathbf{z}_{\text{obs}}^{(k)}$ 表示第 $k$ 帧历史观察对应的观察 token，$\mathbf{z}_{\text{goal}}$ 表示目标 token，$K$ 为历史上下文长度参数；该序列共 $K+2$ 个 token。经过多层自注意力后，输出的 token 表征即为共享条件空间中的统一条件特征。
+
+在 ViNT\cite{vint2023} 的原始设计中，Transformer\cite{transformer2017} 编码器采用 4 层标准自注意力结构，
+隐藏维度为 256，注意力头数为 4。每帧图像经过 EfficientNet-B0\cite{efficientnet2019} 前端后再全局平均池化，将空间维度压缩为 1，从而每帧产生 1 个 1280 维特征，再由线性投影压缩到 256 维 token。因此对于 NoMaD 默认的 $K = 3$（\texttt{context\_size}）配置，模型一次前向得到 $K + 1 = 4$ 个观察 token 加 1 个目标 token，共 5 个 token 进入自注意力编码；ViNT 默认配置 $K = 5$ 时则为 7 个 token。为了区分不同帧的 token，系统为每帧添加可学习的帧级位置编码，使模型能够区分不同时间步的观察。Transformer 的输出 token 经过加权平均池化后产生一个固定维度的条件向量，该向量同时被距离预测头和扩散策略头使用。
+
+\paragraph*{输入输出形式}
 
 根据当前项目配置，NoMaD 的输入由历史视觉观察与目标图像构成。实验中设置为 \texttt{context\_size=3}，即模型同时接收三张历史观察帧与一张目标图像。输出则为固定长度的局部轨迹序列，每个 waypoint 用局部坐标系下的二维位移表示：
 \begin{equation}
 \mathbf{a}_i = (\Delta x_i, \Delta y_i), \qquad i=1,\ldots,H.
 \end{equation}
+式中，$\mathbf{a}_i$ 表示第 $i$ 个局部 waypoint，$\Delta x_i$ 与 $\Delta y_i$ 分别表示局部坐标系下前向和横向位移，$H$ 表示预测轨迹长度。
 整段轨迹写为
 \begin{equation}
 \mathbf{A} = [\mathbf{a}_1,\mathbf{a}_2,\ldots,\mathbf{a}_H].
 \end{equation}
+式中，$\mathbf{A}$ 表示由 $H$ 个 waypoint 组成的完整局部轨迹。
 
 这一表示的优点在于，它比直接输出底层速度命令更适合作为平台无关的高层接口，也比全局路径更适合闭环局部控制。对于足式平台，高层输出局部轨迹、中层完成控制映射的方式尤为关键。
 
-\subsection{视觉编码器架构}
+\paragraph*{视觉编码器架构}
 
-NoMaD 默认采用 EfficientNet-B0 作为视觉编码器骨干\cite{efficientnet2019}。EfficientNet-B0 是 EfficientNet 系列的基础模型，通过复合缩放（compound scaling）策略在深度、宽度和分辨率三个维度上进行统一缩放，在 ImageNet 上以约 5.3\,M 参数量达到了优异的精度-效率平衡。其核心构建块为 MBConv（Mobile Inverted Bottleneck Convolution），采用深度可分离卷积和 Squeeze-and-Excitation 注意力模块。
+NoMaD 默认采用 EfficientNet-B0 作为视觉编码器骨干\cite{efficientnet2019}。EfficientNet-B0 是 EfficientNet 系列的基础模型，通过复合缩放（compound scaling）策略在深度、宽度和分辨率三个维度上进行统一缩放，在 ImageNet 上以约 5.3\,M 参数量达到了优异的精度-效率平衡。其核心构建块为移动倒置瓶颈卷积（Mobile Inverted Bottleneck Convolution, MBConv），采用深度可分离卷积和 Squeeze-and-Excitation 注意力模块。
 
 NoMaD 实现中，\texttt{NoMaD\_ViNT} 内部实例化了两个 EfficientNet-B0：一个只处理单帧观察（3 通道输入），另一个处理``最后一帧观察 + 目标图像''的 6 通道拼接输入。二者权重独立、架构几乎相同，只在输入卷积的通道数上有差别。这一设计使得目标分支在特征层就完成了当前帧与目标帧的早期融合，但也使得视觉编码器部分的参数量近似等于两个 EfficientNet-B0 之和，再加上一个输出投影层（将 1280 维 backbone 特征压缩到 256 维 token 维度）。
 
@@ -68,19 +299,19 @@ NoMaD 实现中，\texttt{NoMaD\_ViNT} 内部实例化了两个 EfficientNet-B0�
 
 选择 EfficientNet-B0 而非更大的 EfficientNet 变体（如 B3 或 B5）是出于推理效率的考虑。在边缘设备上，视觉编码器的计算开销直接影响整体推理频率，而 B0 的 5.3\,M 参数量在精度与效率之间提供了合理的折中；由于 NoMaD 中需要同时维护两个 EfficientNet-B0 实例，骨干规模的选择对整体部署时延具有放大效应，这进一步佐证了 B0 作为默认选型的合理性。
 
-\subsection{Token 构建与条件拼接}
+\paragraph*{Token 构建与条件拼接}
 
 NoMaD 的视觉条件编码器 \texttt{NoMaD\_ViNT} 由两个相互独立的 EfficientNet-B0 实例组成：一个为观察编码器 \texttt{obs\_encoder}，输入 3 通道单帧图像，用来独立编码每一个历史观察帧；另一个为目标编码器 \texttt{goal\_encoder}，输入 6 通道图像，其输入是将当前帧（即观察窗口的最后一帧）与目标图像沿通道维度拼接而成。这样设计的原因是目标 token 天然需要同时携带``当前在哪''和``要去哪''两种信息，因此在特征提取层就进行早期融合能减轻后续 self-attention 的负担。
 
-对于 \texttt{context\_size=3} 的配置，模型一次前向会产生四个 token：由 \texttt{obs\_encoder} 独立编码的三个观察 token $[\mathbf{z}_{t-2}, \mathbf{z}_{t-1}, \mathbf{z}_t]$，以及由 \texttt{goal\_encoder} 编码的一个融合了当前帧与目标图像的目标 token $\mathbf{z}_g$。四个 token 经位置编码后送入 Transformer self-attention encoder，再对所得序列做掩码加权平均池化，得到固定维度的视觉条件向量：
+对于 \texttt{context\_size=3} 的配置，模型一次前向会产生四个 token：由 \texttt{obs\_encoder} 独立编码的三个观察 token $[\mathbf{z}_{t-2}, \mathbf{z}_{t-1}, \mathbf{z}_t]$，以及由 \texttt{goal\_encoder} 编码的一个融合了当前帧与目标图像的目标 token $\mathbf{z}_g$。四个 token 经位置编码后送入 Transformer self-attention encoder，再对所得序列做自注意力（Self-Attention, SA）编码与平均池化（Average Pooling, AvgPool），得到固定维度的视觉条件向量：
 \begin{equation}
 \mathbf{c} = \text{AvgPool}\bigl(\text{SA}\bigl([\mathbf{z}_{t-2}, \mathbf{z}_{t-1}, \mathbf{z}_t, \mathbf{z}_g]\bigr)\bigr).
 \end{equation}
-这一条件向量同时作为距离预测头和扩散策略头的输入。
+其中 $\mathbf{c}$ 表示池化后的视觉条件向量，$\mathbf{z}_{t-2}$、$\mathbf{z}_{t-1}$ 和 $\mathbf{z}_t$ 表示历史观察 token，$\mathbf{z}_g$ 表示目标 token，$\text{SA}(\cdot)$ 表示自注意力编码器，$\text{AvgPool}(\cdot)$ 表示平均池化操作。这一条件向量同时作为距离预测头和扩散策略头的输入。
 
-需要特别说明的是，NoMaD 通过目标掩码（goal mask）实现导航模式与探索模式的切换。当 goal mask 取 0 时，目标 token $\mathbf{z}_g$ 正常参与 self-attention，模型处于``带目标导航''模式；当 goal mask 取 1 时，$\mathbf{z}_g$ 所在位置被置为 padding 并在池化时去掉权重，模型退化为``无目标探索''模式。这一机制使得同一套权重既可用于导航也可用于探索，也是后续 CFG 引导能同时使用``带目标''与``不带目标''两次前向的直接原因。
+\paragraph*{距离预测头与模型训练目标}
 
-\subsection{模型结构与训练目标}
+距离预测头与扩散策略头共享同一条视觉条件空间，这意味着视觉编码器的改动会产生连锁效应。假设原始编码器输出的条件特征维度为 $d_{\text{orig}}$，新编码器输出维度为 $d_{\text{new}}$，则即使通过线性投影层将 $d_{\text{new}}$ 映射到 $d_{\text{orig}}$，投影后的特征分布也与原始特征不同。距离预测头是一个在原始特征分布上训练的回归网络，输入分布的偏移会直接导致距离预测不准确。因此，本文在编码器升级实验中采用端到端微调策略，同时更新编码器适配层、距离预测头和扩散策略头的参数。这种端到端微调策略虽然计算成本较高，但确保了三个组件在新的特征空间中重新对齐，避免了因局部更新导致的性能退化。
 
 NoMaD 由视觉编码器、距离预测头和扩散策略头三部分组成\cite{nomad2023}。视觉编码器负责将历史观察与目标条件编码为统一特征；距离预测头输出当前观察到目标的相对距离估计；扩散策略头在该条件上生成局部轨迹样本。
 
@@ -88,21 +319,40 @@ NoMaD 由视觉编码器、距离预测头和扩散策略头三部分组成\cite
 \begin{equation}
 \mathcal{L} = \alpha \mathcal{L}_{dist} + (1-\alpha)\mathcal{L}_{diff}.
 \end{equation}
-其中，$\mathcal{L}_{dist}$ 约束候选目标排序能力，$\mathcal{L}_{diff}$ 约束局部轨迹生成质量。
+其中 $\mathcal{L}$ 表示总训练损失，$\mathcal{L}_{dist}$ 约束候选目标排序能力，$\mathcal{L}_{diff}$ 约束局部轨迹生成质量，$\alpha$ 表示距离损失与扩散损失之间的权重系数。
 
 关于损失权重 $\alpha$ 的选择策略，需要注意以下两点。首先，$\mathcal{L}_{dist}$ 通常采用 $L_1$ 或 $L_2$ 回归损失，其数值尺度与扩散噪声预测损失 $\mathcal{L}_{diff}$ 存在差异，因此 $\alpha$ 实际上同时承担了任务权重和尺度归一化的双重角色。其次，距离预测头的梯度会回传至视觉编码器，这意味着 $\alpha$ 的选择会影响编码器学到的特征偏向——较大的 $\alpha$ 倾向于让编码器学习距离敏感的特征，较小的 $\alpha$ 则让编码器更侧重于轨迹生成所需的空间结构特征。
 
 距离预测头与视觉编码器是直接耦合的，因此更换视觉编码器后，距离预测分支必须同步重新训练，否则距离头与轨迹头将共享不一致的条件分布。
 
-\subsection{推理链路的统一封装}
+\paragraph*{推理链路的统一封装}
 
 在推理阶段，系统先编码观察与目标，再在需要时进行候选节点距离评估，最后通过扩散采样生成轨迹。
 
 统一推理模块的设计遵循``配置驱动''原则：所有推理行为由一组配置参数完全确定，不存在隐式的硬编码默认值。这使得后续的 DDIM、CFG 和 TTS 实验可以通过修改配置文件来切换，而不需要改动推理代码本身。同时，统一推理模块也提供了标准化的输出接口，包括候选轨迹集合、距离预测值和推理时间统计，方便下游的评估脚本和闭环系统直接使用。
 
-\section{数据集与实验设备}
+\subsection{goal mask 与导航/探索统一建模}
 
-\subsection{GoStanford 数据集}
+需要特别说明的是，NoMaD 通过目标掩码（goal mask）实现导航模式与探索模式的切换。当 goal mask 取 0 时，目标 token $\mathbf{z}_g$ 正常参与 self-attention，模型处于``带目标导航''模式；当 goal mask 取 1 时，$\mathbf{z}_g$ 所在位置被置为 padding 并在池化时去掉权重，模型退化为``无目标探索''模式。这一机制使得同一套权重既可用于导航也可用于探索，也是后续 CFG 引导能同时使用``带目标''与``不带目标''两次前向的直接原因。
+
+NoMaD 的另一个关键机制是 goal mask。训练时，模型以一定概率遮蔽目标 token，使其同时经历``有目标条件''和``无显式目标条件''两种情况\cite{nomad2023}。这并不意味着模型在无目标条件时进行随机游走，而是意味着它会学习在当前视觉上下文中生成连续、可执行且符合数据轨迹分布的探索性行为。正因为如此，NoMaD 才能在部署时同时支持导航模式与探索模式。
+
+goal mask 的设计还有一个重要的技术意义：它使得模型在训练时自然地学习了
+``当前观察本身蕴含的行为先验''。即使没有目标指引，训练数据中的轨迹通常
+也遵循特定的行为模式（如沿道路行驶、避开障碍物），goal mask 使模型能够
+将这些模式内化为无条件生成能力。
+
+在数学表述上，goal mask 的训练过程可以描述如下。设 goal mask 概率为 $p_{\text{mask}}$，对于每个训练样本，以概率 $p_{\text{mask}}$ 将目标 token $\mathbf{z}_{\text{goal}}$ 替换为可学习的掩码 token $\mathbf{z}_{\text{mask}}$。因此模型在训练过程中优化的是混合目标：
+\begin{equation}
+\mathcal{L} = p_{\text{mask}} \cdot \mathcal{L}_{\text{diff}}(\epsilon_\theta(x_t, t, \mathbf{z}_{\text{obs}}, \mathbf{z}_{\text{mask}})) + (1 - p_{\text{mask}}) \cdot \mathcal{L}_{\text{diff}}(\epsilon_\theta(x_t, t, \mathbf{z}_{\text{obs}}, \mathbf{z}_{\text{goal}})).
+\end{equation}
+式中，$\mathcal{L}$ 表示混合训练损失，$p_{\text{mask}}$ 表示目标掩码概率，$\mathbf{z}_{\text{obs}}$ 表示观察 token，$\mathbf{z}_{\text{mask}}$ 表示掩码 token，$\mathbf{z}_{\text{goal}}$ 表示目标 token，$\epsilon_\theta(\cdot)$ 表示噪声预测网络。在本文的配置中，$p_{\text{mask}}$ 设置为 $0.5$ ，确保两种模式都获得充分训练。值得注意的是，goal mask 机制与 CFG 中的条件随机丢弃（condition dropout）在形式上高度一致——两者都是在训练时以一定概率移除条件信息。因此 goal mask 实际上内在地为 CFG 推理提供了基础：在推理时，将条件分支（提供目标 token）与无条件分支（使用掩码 token）的噪声预测进行 CFG 组合，即可实现对目标方向的引导增强。这种设计使得探索能力与导航增强能力共享同一训练框架。
+
+在部署阶段，探索模式与导航模式的切换仅需改变推理时的条件输入：提供真实目标 token 时进入导航模式，提供掩码 token 时进入探索模式。两种模式之间的切换不需要加载不同的模型权重或改变网络结构，这大大简化了部署系统的设计。此外，探索模式下生成的轨迹并非随机——它们反映了训练数据中的轨迹分布特征，通常表现为沿走廊前进、绕过障碍物等符合环境结构的行为模式。
+
+\section{数据集、实验设备与基线复现}
+
+\subsection{GoStanford 数据集与数据预处理}
 
 本文所有离线实验均基于 GoStanford数据集进行。该数据集来源于斯坦福大学校园环境中通过自主采集机器人记录的视觉导航轨迹，是 NoMaD 项目使用的标准训练与评估数据来源之一\cite{gnm2022,vint2023,nomad2023}。数据集中的每条轨迹包含按时间顺序排列的第一人称 RGB 图像帧和对应的位姿信息。
 
@@ -110,15 +360,13 @@ GoStanford 数据集的场景多样性是其作为标准评估数据集的重要
 
 本文使用的本地数据集包含来自 GoStanford 的多条轨迹。在离线实验中，每次推理从轨迹中提取连续观察帧与目标帧，构建标准化测试 case。DDIM、CFG 与编码器实验使用 24 个 case；TTS 补充实验为控制组合规模使用 12 个 case，但保持相同的 case 构造规则和统计口径。
 
-\subsection{数据预处理流程}
-
 从原始轨迹到模型输入之间存在一个标准化的数据预处理流程。首先，RGB 图像从原始分辨率（通常为 $640 \times 480$）对齐至模型要求的输入尺寸（$96 \times 96$），缩放过程使用双线性插值。其次，像素值从 $[0, 255]$ 归一化至 $[0, 1]$ 范围。最后，根据 \texttt{context\_size} 参数从轨迹中提取连续帧作为历史观察，并从同一轨迹的未来位置选取目标帧。
 
 测试 case 的构建遵循以下原则：当前观察与目标帧之间的时间间隔覆盖短距离（5--10 帧）和中距离（20--50 帧）两种范围，以确保评估涵盖不同难度级别。每个 case 包含完整的历史观察序列、目标图像和对应的真实轨迹标签，使得所有实验在完全相同的数据条件下进行比较。
 
-值得说明的是，24 个测试 case 的数量虽然有限，但其设计覆盖了直行、转弯、宽阔区域和狭窄走廊等多种典型场景类型。在离线统计实验中，这一规模足以反映不同配置之间的趋势性差异，同时保持单次完整实验的运行时间在可接受范围内。对于需要更高统计置信度的结论，本文通过报告 CI95 来量化均值估计的不确定性。
+值得说明的是，24 个测试 case 的数量虽然有限，但其设计覆盖了直行、转弯、宽阔区域和狭窄走廊等多种典型场景类型。在离线统计实验中，这一规模足以反映不同配置之间的趋势性差异，同时保持单次完整实验的运行时间在可接受范围内。对于需要更高统计置信度的结论，本文通过报告 95\% 置信区间（95\% Confidence Interval, CI95）来量化均值估计的不确定性。
 
-\subsection{感知输入与设备说明}
+\subsection{感知输入与实验设备}
 
 本文系统采用纯 RGB 单目视觉作为唯一感知输入，不依赖深度传感器、激光雷达或惯性测量单元。这一设计选择与 NoMaD 原始框架一致，即高层导航策略仅以图像观察和目标图像为输入，不需要额外传感模态。
 
@@ -128,11 +376,11 @@ GoStanford 数据集的场景多样性是其作为标准评估数据集的重要
 
 RTX 4090 与 Jetson Orin 之间的算力差距是本文实验设计中需要特别关注的因素。RTX 4090 适合承担离线训练和统计实验，而 Jetson Orin 属于机载边缘计算平台，受功耗、散热和统一内存资源约束更强。这意味着在 RTX 4090 上可接受的推理时延，在 Jetson Orin 上仍需要通过板端 benchmark 重新确认。因此，本文在离线实验中特别关注时延指标的绝对值而非仅关注相对加速比，以便为部署阶段的配置选择提供直接参考。
 
-\section{基线实验}
+\subsection{基线推理与评价指标}
 
 为给后续所有优化实验建立统一参考，本文首先复现了原始 NoMaD 离线推理流程。输出结果表明，原始模型参数量约为 19,049,675。需要区分两种不同口径的时延：在端到端单次运行中，包含图像加载、编码、DDPM-10 采样与结果后处理的整体耗时约为 0.1250\,s；而在本章后续使用的 24 个 case 统计实验中（见表~\ref{tab:ddim-results}），\texttt{ddpm\_10} 的纯扩散采样平均时延约为 40\,ms，CI95 为 $\pm$1.37\,ms。两者数量级差异的根本原因是前者计入了一次性模型构建、首次 GPU kernel 编译与图像预处理开销，而后者在 warm-up 之后测量循环体内部的推理时间。由于后续 DDIM、CFG、TTS 与视觉编码器对比实验都运行在统一的统计脚本下，本文把``40\,ms 量级''视为基线推理时延的有效参考，而把``0.125\,s''仅保留作单次端到端流程的工程记录。
 
-关于参数量的构成，19.05\,M 参数中视觉条件编码器约占 15.18\,M（含两个 EfficientNet-B0、投影层、位置编码与 4 层 self-attention），扩散策略头（ConditionalUnet1D）约占 3.85\,M，距离预测头约占 0.02\,M。由此可见视觉编码器是主要参数来源，更换视觉编码器对总参数量的影响取决于新骨干的规模：若替换为 DINOv2-Small（22\,M backbone）或 ConvNeXt-Tiny（27\,M backbone）将使总参数量明显上升；若保持 backbone 在 B0 量级则总参数量相近。
+关于参数量的构成，19.05\,M 参数中视觉条件编码器约占 15.18\,M（含两个 EfficientNet-B0、投影层、位置编码与 4 层 self-attention），扩散策略头（条件一维 U-Net，ConditionalUnet1D）约占 3.85\,M，距离预测头约占 0.02\,M。由此可见视觉编码器是主要参数来源，更换视觉编码器对总参数量的影响取决于新骨干的规模：若替换为 DINOv2-Small（22\,M backbone）或 ConvNeXt-Tiny（27\,M backbone）将使总参数量明显上升；若保持 backbone 在 B0 量级则总参数量相近。
 
 扩散策略头中的 U-Net 架构采用了多尺度特征融合和条件注入机制。条件向量 $\mathbf{c}$ 通过 FiLM（Feature-wise Linear Modulation）机制注入到 U-Net 的各个分辨率层级中，使得噪声预测网络能够在每一步去噪中都感知到当前的视觉条件和目标信息。这种设计虽然增加了参数量，但保证了扩散过程对条件信号的充分响应。
 
@@ -158,7 +406,7 @@ RTX 4090 与 Jetson Orin 之间的算力差距是本文实验设计中需要特�
     \end{tabular}
 \end{table}
 
-\subsection{基线推理可视化}
+\paragraph*{基线推理可视化}
 
 为直观呈现 NoMaD 在导航与探索两种模式下的轨迹分布，本文对同一观察分别进行有目标条件采样与无目标条件采样，并在机器人当前位姿为原点的局部坐标系中绘制候选轨迹。图~\ref{fig:algo-baseline-navigate} 与图~\ref{fig:algo-baseline-explore} 分别给出 navigate 模式与 explore 模式的可视化结果。
 
@@ -178,11 +426,9 @@ RTX 4090 与 Jetson Orin 之间的算力差距是本文实验设计中需要特�
 
 两幅可视化图共用相同的局部坐标系：红色五角星为机器人当前位置，$x$ 轴指向机体正前方，$y$ 轴指向机体左侧。两图都生成了不同颜色的八条候选轨迹。两组可视化共同说明，NoMaD 在同一组观察下能够通过 goal mask 切换在``被目标牵引的窄分布''与``沿走廊自由展开的宽分布''之间切换，验证了导航与探索共享同一权重的可行性。
 
-\section{实验指标与统计原则}
+为了避免仅凭单次样本或单一指标做结论，本文采用多指标联合分析。主要指标包括：Latency，用于衡量推理开销；CI95，用于表示均值的 95\% 置信区间；均方误差（Mean Squared Error, MSE）vs DDPM-10，用于衡量与基线采样分布的偏移；Forward Progress，用于刻画轨迹在主前进方向上的推进程度；Lateral Abs，用于衡量横向偏摆幅度；Smoothness，用于衡量轨迹变化的平滑性；Dist Pred Mean，用于观察候选目标距离评估是否随条件空间变化发生系统偏移。
 
-为了避免仅凭单次样本或单一指标做结论，本文采用多指标联合分析。主要指标包括：Latency，用于衡量推理开销；CI95，用于表示均值的 95\% 置信区间；MSE vs DDPM-10，用于衡量与基线采样分布的偏移；Forward Progress，用于刻画轨迹在主前进方向上的推进程度；Lateral Abs，用于衡量横向偏摆幅度；Smoothness，用于衡量轨迹变化的平滑性；Dist Pred Mean，用于观察候选目标距离评估是否随条件空间变化发生系统偏移。
-
-\subsection{指标的形式化定义}
+\paragraph*{指标的形式化定义}
 
 为确保实验可复现性，本文给出各指标的形式化定义。
 
@@ -190,35 +436,39 @@ RTX 4090 与 Jetson Orin 之间的算力差距是本文实验设计中需要特�
 \begin{equation}
 \text{Latency} = t_{\text{end}} - t_{\text{start}}.
 \end{equation}
+式中，$t_{\text{start}}$ 与 $t_{\text{end}}$ 分别表示单次推理开始和结束的时间戳，二者差值即端到端推理耗时。
 
 \textbf{CI95} 表示均值的 95\% 置信区间半径，基于 $t$ 分布计算：
 \begin{equation}
 \text{CI95} = t_{0.975, n-1} \cdot \frac{s}{\sqrt{n}},
 \end{equation}
-其中 $s$ 为样本标准差，$n$ 为测试 case 数量。
+其中 $t_{0.975,n-1}$ 表示自由度为 $n-1$ 的 $t$ 分布在 0.975 分位处的临界值，$s$ 为样本标准差，$n$ 为测试 case 数量。
 
 \textbf{MSE vs DDPM-10} 衡量某配置生成轨迹均值与基线 DDPM-10 生成轨迹均值之间的均方误差：
 \begin{equation}
 \text{MSE} = \frac{1}{H} \sum_{i=1}^{H} \|\bar{\mathbf{a}}_i^{\text{test}} - \bar{\mathbf{a}}_i^{\text{base}}\|^2,
 \end{equation}
-其中 $\bar{\mathbf{a}}_i$ 表示第 $i$ 个 waypoint 在所有候选轨迹上的均值。
+其中 $\text{MSE}$ 表示均方误差，$H$ 表示预测轨迹长度，$\bar{\mathbf{a}}_i^{\text{test}}$ 表示测试配置下第 $i$ 个 waypoint 的候选均值，$\bar{\mathbf{a}}_i^{\text{base}}$ 表示基线配置下第 $i$ 个 waypoint 的候选均值，$\|\cdot\|^2$ 表示欧氏距离平方。
 
 \textbf{Forward Progress} 定义为轨迹在主前进方向（$x$ 轴）上的累计位移：
 \begin{equation}
 \text{FP} = \sum_{i=1}^{H} \Delta x_i.
 \end{equation}
+式中，$\text{FP}$ 表示前向进展指标，$\Delta x_i$ 表示第 $i$ 个 waypoint 的前向位移增量，$H$ 表示轨迹长度。
 
 \textbf{Lateral Abs} 定义为轨迹在横向（$y$ 轴）上的累计绝对位移：
 \begin{equation}
 \text{LA} = \sum_{i=1}^{H} |\Delta y_i|.
 \end{equation}
+式中，$\text{LA}$ 表示横向绝对偏摆指标，$\Delta y_i$ 表示第 $i$ 个 waypoint 的横向位移增量，$|\cdot|$ 表示绝对值。
 
 \textbf{Smoothness} 衡量相邻 waypoint 之间方向变化的一致性，定义为相邻位移向量差的范数均值：
 \begin{equation}
 \text{Smooth} = \frac{1}{H-1} \sum_{i=1}^{H-1} \|\mathbf{a}_{i+1} - \mathbf{a}_i\|.
 \end{equation}
+式中，$\text{Smooth}$ 表示平滑性代价，$\mathbf{a}_{i+1}-\mathbf{a}_i$ 表示相邻 waypoint 之间的位移变化，$\|\cdot\|$ 表示欧氏范数。
 
-\subsection{统计显著性与多指标分析原则}
+\paragraph*{统计显著性与多指标分析原则}
 
 本文采用多指标联合分析而非单一指标排序，原因在于导航任务的优化目标本质上是多目标的。仅优化前进性可能导致激进轨迹，仅优化平滑性可能导致过于保守的运动。通过同时报告 Forward Progress、Lateral Abs、Smoothness 和 Latency，可以判断某个配置是否在所有维度上都可接受，而不是在某一维度上表现突出但在其他维度上严重退化。
 
@@ -226,31 +476,33 @@ RTX 4090 与 Jetson Orin 之间的算力差距是本文实验设计中需要特�
 
 其中，CI95 并不是新的性能指标，而是均值稳定性的统计描述。若某个配置平均值较优但 CI95 很宽，说明其结果在不同 case 间波动较大。Forward Progress 也不能单独解释为越大越好，因为过大的前进量可能是激进采样带来的分布偏移，必须结合 MSE、Lateral Abs 和 Smoothness 一起分析。
 
-\section{DDIM 推理加速实验}
+\section{DDIM 推理加速与 CFG 引导增强实验}
 
-\subsection{理论动机}
+\subsection{DDIM 推理加速实验}
 
-DDIM 的核心思想是将扩散模型的随机微分方程（SDE）采样过程转换为确定性常微分方程（ODE）求解过程\cite{ddim2020}。在标准 DDPM 中，反向去噪过程由以下随机递推描述：
+\paragraph*{理论动机}
+
+DDIM 的核心思想是将扩散模型的随机微分方程（Stochastic Differential Equation, SDE）采样过程转换为确定性常微分方程（Ordinary Differential Equation, ODE）求解过程\cite{ddim2020}。在标准 DDPM 中，反向去噪过程由以下随机递推描述：
 \begin{equation}
 \mathbf{x}_{t-1} = \frac{1}{\sqrt{\alpha_t}} \left(\mathbf{x}_t - \frac{1-\alpha_t}{\sqrt{1-\bar{\alpha}_t}} \boldsymbol{\epsilon}_\theta(\mathbf{x}_t, t)\right) + \sigma_t \mathbf{z},
 \end{equation}
-其中 $\mathbf{z} \sim \mathcal{N}(\mathbf{0}, \mathbf{I})$ 引入了随机性。DDIM 的关键洞察是：当令随机项 $\sigma_t = 0$ 时，上述过程退化为确定性的 ODE 积分：
+其中 $\mathbf{x}_t$ 与 $\mathbf{x}_{t-1}$ 分别表示当前和上一去噪时间步的轨迹噪声样本，$\alpha_t$ 与 $\bar{\alpha}_t$ 表示单步和累计噪声调度系数，$\boldsymbol{\epsilon}_\theta(\mathbf{x}_t,t)$ 表示模型预测噪声，$\sigma_t$ 表示随机噪声强度，$\mathbf{z} \sim \mathcal{N}(\mathbf{0}, \mathbf{I})$ 表示标准高斯噪声。DDIM 的关键洞察是：当令随机项 $\sigma_t = 0$ 时，上述过程退化为确定性的 ODE 积分：
 \begin{equation}
 \mathbf{x}_{t-1} = \sqrt{\bar{\alpha}_{t-1}} \cdot \hat{\mathbf{x}}_0(\mathbf{x}_t, t) + \sqrt{1-\bar{\alpha}_{t-1}} \cdot \boldsymbol{\epsilon}_\theta(\mathbf{x}_t, t),
 \end{equation}
-其中 $\hat{\mathbf{x}}_0$ 是基于当前噪声预测的干净样本估计。
+其中 $\hat{\mathbf{x}}_0(\mathbf{x}_t,t)$ 是基于当前噪声预测得到的干净样本估计，$\bar{\alpha}_{t-1}$ 表示上一时间步的累计保留系数，其他符号含义与上式一致。
 
 由于 ODE 的解路径是确定性的且连续的，可以在时间轴上使用更大的步长进行积分而不引入额外随机噪声的累积。这就是 DDIM 能够用更少步数完成去噪的数学基础——本质上是用粗粒度的数值积分近似原始的细粒度 ODE 轨迹。步数越少，积分越粗糙，但对于 smooth 的 ODE 解路径，适度的步数减少不会显著改变最终结果。
 
 从数值分析的角度，DDIM 的步数减少可以类比为 ODE 求解器中步长的增大。对于一阶 Euler 方法，截断误差与步长 $h$ 成正比；而 DDIM 的更新规则实际上对应一种隐式的高阶积分格式，因此在步数适度减少时能保持较小的截断误差。但当步数降至极端（如仅 1 步）时，单步积分的假设不再成立，误差会急剧增大。
 
-\subsection{实验设计}
+\paragraph*{实验设计}
 
 DDIM 的作用是在不重新训练模型的情况下减少扩散去噪步数，从而降低推理时延\cite{ddim2020}。本文以\texttt{ddim\_x}来定义采用DDIM采样 x 步的配置。本文在统一脚本下比较 \texttt{ddpm\_10}、\texttt{ddim\_10}、\texttt{ddim\_5}、\texttt{ddim\_3}、\texttt{ddim\_2} 和 \texttt{ddim\_1} 六种配置，测试集共包含 24 个 case。该实验的目标是回答两个问题：第一，步数减少后推理能快多少；第二，轨迹分布是否仍保持在可接受范围。
 
 六种配置的选择覆盖了相比于基线，从``不减少步数''到``极端压缩至单步''的完整频谱。\texttt{ddim\_10} 与 \texttt{ddpm\_10} 步数相同，用于验证 DDIM 在不减步时是否引入额外偏差；\texttt{ddim\_5} 和 \texttt{ddim\_3} 代表中等程度的加速；\texttt{ddim\_2} 代表较为激进但仍可控的加速；\texttt{ddim\_1} 则代表理论极限，用于探测 DDIM 的失效边界。这种全频谱设计使得本文能够精确定位速度与质量的平衡点。
 
-\subsection{实验结果}
+\paragraph*{实验结果}
 
 \begin{table}[htbp]
     \centering
@@ -270,11 +522,11 @@ DDIM 的作用是在不重新训练模型的情况下减少扩散去噪步数，
     \end{tabular}
 \end{table}
 
-\subsection{详细分析}
+\paragraph*{详细分析}
 
 \texttt{ddim\_10} 与 \texttt{ddpm\_10} 的 MSE 仅为 0.0062，说明在相同步数下 DDIM 的确定性采样与 DDPM 的随机采样生成的轨迹均值几乎一致，验证了 DDIM 的理论无损性。\texttt{ddim\_5} 在步数减半的情况下 MSE 反而略低于 \texttt{ddim\_10}（0.0048 vs 0.0062），这可能源于采样噪声的统计波动，也说明 5 步 ODE 积分的截断误差仍然可以忽略。\texttt{ddim\_3} 的 MSE 上升至 0.0124，开始出现可观测的分布偏移但仍在可控范围内。\texttt{ddim\_2} 的 MSE 为 0.0210，虽然进一步升高但 Forward Progress 仅从 6.50 变为 6.65，偏移幅度有限。
 
-\subsection{结果分析}
+\paragraph*{结果分析}
 
 结果表明，DDIM 的确能显著降低推理时延，其中 \texttt{ddim\_2} 已接近 5 倍加速。更关键的是，\texttt{ddim\_2} 在 MSE 与 Forward Progress 上仍保持相对平衡，说明它不是以严重破坏轨迹分布为代价换取速度。相比之下，\texttt{ddim\_1} 虽然最快，但 MSE 大幅升高，说明轨迹已明显偏离基线分布，不适合作为稳定部署方案。
 
@@ -289,29 +541,29 @@ DDIM 的作用是在不重新训练模型的情况下减少扩散去噪步数，
     \label{fig:ddim_comparison}
 \end{figure}
 
-\section{CFG 引导增强实验}
+\subsection{CFG 引导增强实验}
 
-\subsection{理论分析}
+\paragraph*{理论分析}
 
 Classifier-Free Guidance（CFG）的核心思想是在推理时通过线性外推来增强条件信号对生成结果的影响\cite{cfg2022}。具体来说，CFG 修改了扩散模型的噪声预测（score function）为：
 \begin{equation}
 \tilde{\boldsymbol{\epsilon}}_\theta(\mathbf{x}_t, t, \mathbf{c}) = (1+w) \cdot \boldsymbol{\epsilon}_\theta(\mathbf{x}_t, t, \mathbf{c}) - w \cdot \boldsymbol{\epsilon}_\theta(\mathbf{x}_t, t, \varnothing),
 \end{equation}
-其中 $\mathbf{c}$ 为条件向量（包含观察和目标信息），$\varnothing$ 表示空条件（训练时通过随机 dropout 条件实现），$w$ 为引导权重。
+其中 $\tilde{\boldsymbol{\epsilon}}_\theta$ 表示 CFG 修正后的噪声预测，$\mathbf{x}_t$ 表示当前噪声样本，$t$ 表示去噪时间步，$\mathbf{c}$ 为条件向量（包含观察和目标信息），$\varnothing$ 表示空条件（训练时通过随机 dropout 条件实现），$w$ 为引导权重。
 
 当 $w=0$ 时，退化为标准的条件采样；当 $w>0$ 时，生成结果在条件方向上被``放大''，使轨迹更强烈地朝向目标方向偏移；当 $w<0$ 时，则产生反向引导效果。从概率密度的角度，CFG 实质上是在对数概率空间中将条件分布与无条件分布的差异进行缩放：
 \begin{equation}
 \log \tilde{p}(\mathbf{x} \mid \mathbf{c}) \propto (1+w) \log p(\mathbf{x} \mid \mathbf{c}) - w \log p(\mathbf{x}).
 \end{equation}
-这意味着 $w$ 越大，生成分布越集中于条件分布的高概率区域，同时远离无条件先验的模态。
+式中，$\tilde{p}(\mathbf{x}\mid\mathbf{c})$ 表示经 CFG 修正后的条件分布，$p(\mathbf{x}\mid\mathbf{c})$ 表示原始条件分布，$p(\mathbf{x})$ 表示无条件先验分布，$\propto$ 表示两侧相差归一化常数。这意味着 $w$ 越大，生成分布越集中于条件分布的高概率区域，同时远离无条件先验的模态。
 
-\subsection{实验设计}
+\paragraph*{实验设计}
 
 CFG 的目标是在推理阶段增强轨迹对目标条件的响应\cite{cfg2022}。本文选取 $w\in\{-1.0,0.0,0.5,1.0,2.0,4.0\}$ 六组配置进行比较。实验探索最佳的引导强度的数值，能够在目标牵引与分布稳定性之间取得平衡。
 
 负值引导（$w=-1.0$）被包含在实验中，目的是验证反向引导是否会导致轨迹偏离目标方向。如果 $w=-1.0$ 的 Forward Progress 显著低于 $w=0.0$，则说明 CFG 的条件引导方向确实与目标方向一致，从而间接验证了 CFG 机制在导航任务中的有效性。
 
-\subsection{实验结果与分析}
+\paragraph*{实验结果与分析}
 
 结果表明，适度的 CFG 能提高轨迹对目标方向的响应，但代价是更高的推理时延和潜在的分布偏移。从表~\ref{tab:cfg-results} 可以看到，$w=0.0$ 时推理时延约为 42.65\,ms，而 $w \geq 0.5$ 后时延跃升至约 78--80\,ms，这是因为 CFG 需要同时执行条件分支与无条件分支的噪声预测。CFG 的每一步去噪都需要对噪声预测网络进行两次前向传播——一次使用完整条件 $\mathbf{c}$，一次使用空条件 $\varnothing$——然后将两次预测结果进行线性组合。因此，CFG 的计算成本近似为非 CFG 推理的 2 倍。实验中 $w=0.0$ 到 $w=0.5$ 的时延跳变（42.65\,ms $\to$ 78.27\,ms）正好反映了这一理论预期。
 
@@ -346,35 +598,37 @@ CFG 的目标是在推理阶段增强轨迹对目标条件的响应\cite{cfg2022
     \label{fig:cfg_comparison}
 \end{figure}
 
-\section{TTS 推理时搜索实验}
+\section{TTS 推理时搜索与视觉编码器升级实验}
 
-\subsection{实验设计}
+\subsection{TTS 推理时搜索实验}
+
+\paragraph*{实验设计}
 
 TTS 的作用是把额外预算用于``候选生成与选择''，而非用于修改训练过程\cite{ttsdiffusion2025,ttssearch2025}。在本文中，TTS 被设计为推理层的外层搜索组件：先用当前采样配置生成多条候选轨迹，再根据目标一致性、前进性和平滑性综合打分，最终选择一条更适合执行的轨迹。实验重点比较不同预算下的轨迹质量收益，以及它与 DDIM、CFG 的组合关系。
 
-\subsection{评分函数设计}
+\paragraph*{评分函数设计}
 
 TTS 的核心在于评分函数的设计。本文采用加权多目标评分函数：
 \begin{equation}
 \text{Score}(\mathbf{A}) = \beta_1 \cdot \text{FP}(\mathbf{A}) - \beta_2 \cdot \text{LA}(\mathbf{A}) - \beta_3 \cdot \text{Smooth}(\mathbf{A}),
 \end{equation}
-其中 $\text{FP}$ 为前进性，$\text{LA}$ 为横向绝对偏摆，$\text{Smooth}$ 为平滑性代价，$\beta_1, \beta_2, \beta_3$ 为权重系数。
+其中 $\text{Score}(\mathbf{A})$ 表示候选轨迹 $\mathbf{A}$ 的综合评分，$\text{FP}(\mathbf{A})$ 为前进性，$\text{LA}(\mathbf{A})$ 为横向绝对偏摆，$\text{Smooth}(\mathbf{A})$ 为平滑性代价，$\beta_1, \beta_2, \beta_3$ 为权重系数。
 
 评分函数中权重系数的选择需要根据具体部署场景进行调整。在开阔环境中，可以增大 $\beta_1$ 以鼓励更积极的前进；在狭窄走廊中，应增大 $\beta_2$ 以抑制横向偏摆；在需要精细控制的场景中，$\beta_3$ 应占主导以保证轨迹平滑性。本文在离线实验中采用固定权重配置，但在部署阶段可以根据场景类型动态调整。
 
-\subsection{计算预算分配策略}
+\paragraph*{计算预算分配策略}
 
 TTS 的计算开销与候选轨迹数（budget）总体正相关。设单次采样耗时为 $\tau$，则 TTS-$K$ 的总耗时可近似表示为候选生成开销与评分开销之和，其中评分与排序通常只占很小比例。由于实际实现会复用批量张量计算，耗时不会严格等于 $K \cdot \tau$。因此，DDIM 加速节省的时间预算可以部分重新分配给 TTS，形成``用更快的单次采样换取更多候选''的策略。
 
 这种预算分配思路可以形式化为一个受约束的优化问题：在总时延预算 $T_{\max}$ 的约束下，选择 DDIM 步数 $S$ 和 TTS budget $K$ 以最大化轨迹质量。由于 $K \cdot \tau(S) \leq T_{\max}$，减少 $S$（加速单次采样）就能增大 $K$（增加候选数量），两者之间存在自然的折中关系。
 
-\subsection{实验组织方式}
+\paragraph*{实验组织方式}
 
 为了保证结论具有统计意义，本文将 TTS 实验组织为三层：单因素实验，用于比较是否开启 TTS 以及不同 budget；两两组合实验，用于比较 DDIM+TTS、CFG+TTS 的相互作用；三因素联合实验，用于比较 DDIM、CFG、TTS 同时开启时是否存在部署上更优的折中组合。
 
 三层实验设计的逻辑是：单因素实验确认 TTS 本身的有效性和最优 budget 范围；两两组合实验检验 TTS 与其他优化手段之间是否存在交互效应；三因素联合实验给出面向实际部署的推荐配置。
 
-\subsection{结果与分析}
+\paragraph*{结果与分析}
 
 在讨论具体数值前，需要先澄清一个容易混淆的概念层次，以避免``默认生成 8 条候选''与``TTS-8''发生语义重合。NoMaD 扩散策略头的每次前向本身会以批次形式并行生成若干条候选轨迹（本文固定为 8 条），这一批次规格由扩散头本身决定，与是否启用 TTS 无关。TTS 在此基础上额外引入两个正交的组件：一是候选池预算 $K$（即 \texttt{tts\_budget}），当 $K > \texttt{num\_samples}$ 时通过多次扩散采样把候选池从默认的 8 条扩展到 $K$ 条；二是评分筛选器，对池内的 $K$ 条候选按多目标评分排序，保留 top-$k$ 条作为执行输出。因此，实验配置中的``No TTS''与``TTS-8''都只触发一次扩散采样、生成同样的 8 条候选，差别只在于前者把候选集原样送入下游统计，后者多了一步基于评分的排序与 top-$k$ 选择；而 TTS-16 和 TTS-32 则分别对应 2 次和 4 次扩散采样，用于真正扩展候选池规模。
 
@@ -424,30 +678,30 @@ TTS 实验的核心问题不是``是否绝对提升所有指标''，而是``是�
     \label{fig:algo-tts-tradeoff}
 \end{figure}
 
-\section{视觉编码器升级实验}
+\subsection{视觉编码器升级实验}
 
-\subsection{实验目标}
+\paragraph*{实验目标}
 
 视觉编码器升级实验的内容是在统一框架下对候选编码器进行公平训练，目的是在控制变量条件下评估不同编码器的表征潜力。
 
-\subsection{候选编码器结构与对比}
+\paragraph*{候选编码器结构与对比}
 
-本文在 EfficientNet-B0 之外纳入三类视觉骨干作为升级候选。DINOv2-Small\cite{dinov2_2023} 基于 Vision Transformer 架构，将图像切分为固定大小 patch 后送入 12 层 Transformer 编码器，参数量约 22\,M；自监督预训练赋予其较强的跨域泛化性，全局自注意力对远距离方向判断更敏感。ConvNeXt-Tiny\cite{convnext2022} 是借鉴 Transformer 设计原则的现代 CNN，采用更大卷积核、LayerNorm 与更少激活函数，在保留 CNN 局部归纳偏置的同时提升表征能力，参数量约 28\,M。ResNet-50\cite{resnet2016} 作为经典残差 CNN 提供稳定基线，结构成熟、权重广泛可用，参数量约 25\,M。三者与 EfficientNet-B0 的 MBConv（5.3\,M）形成``自监督 ViT、现代 CNN、经典 CNN''的对照，覆盖表征机制与参数量两条对比维度。
+本文在 EfficientNet-B0 之外纳入三类视觉骨干作为升级候选。DINOv2-Small\cite{dinov2_2023} 基于 Vision Transformer 架构，将图像切分为固定大小 patch 后送入 12 层 Transformer 编码器，参数量约 22\,M；自监督预训练赋予其较强的跨域泛化性，全局自注意力对远距离方向判断更敏感。ConvNeXt-Tiny\cite{convnext2022} 是借鉴 Transformer 设计原则的现代 CNN，采用更大卷积核、层归一化（Layer Normalization, LayerNorm）与更少激活函数，在保留 CNN 局部归纳偏置的同时提升表征能力，参数量约 28\,M。ResNet-50\cite{resnet2016} 作为经典残差 CNN 提供稳定基线，结构成熟、权重广泛可用，参数量约 25\,M。三者与 EfficientNet-B0 的 MBConv（5.3\,M）形成``自监督 ViT、现代 CNN、经典 CNN''的对照，覆盖表征机制与参数量两条对比维度。
 
-\subsection{特征维度对齐}
+\paragraph*{特征维度对齐}
 
 四种编码器的原始输出维度并不一致：EfficientNet-B0 输出 1280 维，DINOv2-Small 输出 384 维，ConvNeXt-Tiny 输出 768 维，ResNet-50 输出 2048 维。为保证公平对比，本文在每个编码器输出端附加一个线性投影层，将原始特征统一映射到固定 token 维度 $d$：
 \begin{equation}
 \mathbf{z} = W_{\text{proj}} \cdot \mathbf{f}_{\text{enc}} + \mathbf{b}_{\text{proj}},
 \end{equation}
-其中 $\mathbf{f}_{\text{enc}}$ 为编码器原始输出，$W_{\text{proj}} \in \mathbb{R}^{d \times d_{\text{enc}}}$ 为投影矩阵，与下游模块联合训练。投影后所有编码器在相同信息瓶颈下进入距离预测头与扩散策略头，避免条件空间容量差异干扰对比结果。
+其中 $\mathbf{z}$ 表示投影后的标准 token，$\mathbf{f}_{\text{enc}}$ 为编码器原始输出，$W_{\text{proj}} \in \mathbb{R}^{d \times d_{\text{enc}}}$ 为投影矩阵，$d$ 表示目标 token 维度，$d_{\text{enc}}$ 表示原始编码器输出维度，$\mathbf{b}_{\text{proj}}$ 为偏置向量。投影层与下游模块联合训练；投影后所有编码器在相同信息瓶颈下进入距离预测头与扩散策略头，避免条件空间容量差异干扰对比结果。
 
 
-\subsection{训练配置}
+\paragraph*{训练配置}
 
 在 GoStanford 数据集上对四种编码器分别进行 100 轮训练，batch size为 32，学习率与优化器配置统一。所有 backbone 参数参与微调，以便在相同训练轮数下最大化各编码器的适配空间。
 
-\subsection{实验结果与分析}
+\paragraph*{实验结果与分析}
 
 四种编码器在相同离线 case、相同 DDPM-10 采样设置下的代理指标如表~\ref{tab:encoder-results} 所示。从指标分布看，各编码器在不同维度上表现各有侧重：ResNet-50 在 diversity（0.9824）与 forward progress（7.980）上最高，候选轨迹最分散、前进性最强；EfficientNet-B0 的 smoothness 最低（0.0725），原始基线在轨迹平滑性上仍具有优势；DINOv2-Small 与 ConvNeXt-Tiny 在三项质量指标上处于中段。延迟方面，四种编码器单次前向延迟均在 $34\text{--}37\,\text{ms}$ 区间，差异显著小于 DDIM 步数变化所带来的影响，因此编码器选择主要受表征质量约束而非延迟约束。
 
@@ -476,7 +730,7 @@ TTS 实验的核心问题不是``是否绝对提升所有指标''，而是``是�
     \label{fig:algo-encoder-comparison}
 \end{figure}
 
-\section{联合结论}
+\section{联合消融分析与最终算法配置}
 
 综合本章离线实验，表~\ref{tab:joint-ddim-cfg} 进一步给出了 DDIM 与 CFG 联合配置的前五名结果。从中可以看出，\texttt{ddim2\_w0.0} 在时延、前进性、平滑性和多样性的综合评分中排名第一，说明在不额外开启 CFG 的情况下，DDIM-2 本身已经具备较好的综合表现。综合评分的计算方式为各指标归一化后的加权求和，权重分配反映了部署场景中对低时延和轨迹质量的均衡需求。
 
