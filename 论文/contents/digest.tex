@@ -61,7 +61,7 @@ MuJoCo 闭环表明分层系统能够稳定完成四足导航与探索任务，�
 不会破坏视觉上下文；Orin 阶段一的独立测试验证了真机流水线的基础可用性。
 本文将 NoMaD 从轮式平台的实验框架扩展为面向四足平台的可分析、可仿真、可部署的
 研究链路，并沉淀出一套可复用的推理优化实验协议、闭环系统组织方式以及真机部署
-安全护栏清单，为后续基于扩散策略的足式机器人导航研究提供了参考基础。
+安全护栏清单，为后续基于扩散策略的四足机器人导航研究提供了参考基础。
 
 \end{digest}
 \fi
@@ -92,7 +92,7 @@ full distribution of feasible local trajectories, diffusion-based policies are a
 preserve multi-modality, sample diverse candidates, and integrate naturally with
 test-time selection and guidance mechanisms. However, closed-loop validation of these
 models has so far concentrated on wheeled platforms (LoCoBot, TurtleBot, Jackal),
-while deployment pipelines targeting legged robots remain underexplored. Legged
+while deployment pipelines targeting quadruped robots remain underexplored. Quadruped
 platforms differ substantially from wheeled ones in gait-induced jitter, control-loop
 frequency, body-posture coupling, foot-impact disturbance, and real-time safety
 requirements. These differences pose new challenges for the collaboration between
@@ -235,7 +235,7 @@ analyzable, simulatable, and deployable research pipeline for quadruped platform
 distilling a reusable inference-optimization protocol, a hierarchical closed-loop
 system organization, and a real-robot safety-guard checklist. Together, these
 artefacts provide a practical basis for subsequent research on diffusion-policy-based
-visual navigation for legged robots, and they lower the engineering threshold for
+visual navigation for quadruped robots, and they lower the engineering threshold for
 follow-up work that wishes to validate algorithmic ideas under genuine on-robot
 conditions rather than only on offline benchmarks.
 
