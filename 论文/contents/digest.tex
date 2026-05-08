@@ -1,4 +1,4 @@
-% !TEX root = ../main.tex
+﻿% !TEX root = ../main.tex
 
 % 学士学位论文大摘要
 % 相较于前置摘要，大摘要需要更完整地呈现研究背景、动机、方法、实验与结论。
@@ -25,12 +25,12 @@
 回答三个面向部署的问题：第一，NoMaD 的视觉编码器、距离预测头与扩散策略头在模型结构与推理流程上如何耦合，推理层有哪些优化空间；第二，是否可以在不重新训练模型的前提下，
 通过采样加速、条件引导、测试时搜索与视觉编码器替换等手段显著提升策略可用性；
 第三，这些优化能否整合进面向 Lite3 的分层闭环系统，并完成 MuJoCo 仿真与
-Jetson Orin 真机部署的完整验证。技术路线沿``算法层优化—系统层集成—部署层验证''
-三级递进展开，对应论文第三、四、五章。
+Jetson Orin 真机部署的完整验证。技术路线沿``统一推理模块构建—系统层集成—部署层验证''
+三级递进展开，对应论文第二、三、四章。
 
 \subsection*{主要工作与创新点}
 
-\textbf{算法层}：建立了统一的离线统计实验链路，对 DDIM 推理加速、Classifier-Free
+\textbf{统一推理模块}：建立了统一的离线统计实验链路，对 DDIM 推理加速、Classifier-Free
 Guidance (CFG) 引导增强、Test-Time Scaling (TTS) 推理时搜索与视觉编码器升级进行了
 系统对比。DDIM 实验中 \texttt{ddim\_2} 配置相对 DDPM-10 基线实现约 4.84 倍加速且
 轨迹质量无显著退化；CFG 实验通过 score function 修改分析给出引导尺度选择准则，
@@ -112,15 +112,15 @@ meaningfully improve policy usability for resource-constrained edge deployment; 
 (iii) whether these optimizations can be integrated into a hierarchical closed-loop
 system for Lite3 and validated through Multi-Joint dynamics with Contact (MuJoCo) simulation as well as real-world
 deployment on the Jetson Orin onboard computer. The technical roadmap proceeds through
-algorithm-level optimization, system-level integration, and deployment-level
-validation, corresponding respectively to Chapters 3, 4, and 5 of the thesis. A
+unified-inference-module construction and optimization, system-level integration, and deployment-level
+validation, corresponding respectively to Chapters 2, 3, and 4 of the thesis. A
 deliberate emphasis is placed on bridging the offline-evaluation versus closed-loop
 deployment gap, ensuring that every algorithmic conclusion is re-examined under
 realistic timing, safety, and platform constraints.
 
 \subsection*{Main Contributions}
 
-\textbf{Algorithm layer.} A unified offline statistical pipeline is built to compare
+\textbf{Unified inference module.} A unified offline statistical pipeline is built to compare
 DDIM inference acceleration, CFG enhancement, Test-Time Scaling (TTS) search, and visual encoder upgrades under a single evaluation protocol.
 Concretely, DDIM-2 attains about $4.84\times$ speedup over the Denoising Diffusion Probabilistic Model (DDPM)-10 baseline on the
 GoStanford evaluation set without notable trajectory-quality degradation, with the
@@ -143,15 +143,15 @@ diversity of the chosen encoder.
 
 \textbf{System layer.} A hierarchical closed-loop system---comprising a unified
 inference module, an explicit finite-state machine, a navigation host, a mid-level
-waypoint-to-velocity mapping, and a platform interface---supports both MuJoCo and
+navigation-point-to-velocity mapping, and a platform interface---supports both MuJoCo and
 real-robot backends through one set of high-level code. The state machine
 (\texttt{idle / stand / navigate / explore / recovery / estop / completed / failed})
 is decoupled from the physical platform via a uniform interface, so that switching
 between MuJoCo and Lite3 only changes the backend implementation rather than the
 high-level logic. The navigation host supports both batched JavaScript Object Notation (JSON) plans and interactive
-single commands, allowing capture, topomap building, navigation, and exploration to be
+single commands, allowing capture, topological map building, navigation, and exploration to be
 composed within a single experiment session. Mid-level mapping converts the diffusion
-policy's local waypoints into bounded forward, lateral, and yaw velocity commands,
+policy's local navigation points into bounded forward, lateral, and yaw velocity commands,
 respecting Lite3-specific safety envelopes ($v_x \le 0.4\,\text{m/s}$ in simulation,
 $v_x \le 0.12\,\text{m/s}$ during real-robot deployment). In MuJoCo closed-loop
 experiments, Lite3 successfully completes point navigation, multi-goal navigation, and
@@ -175,11 +175,11 @@ when the policy runs at single-digit hertz. Multi-level safety guards include
 Not a Number/infinity (NaN/Inf) clipping, magnitude limits, fallen-robot detection, and a connection-stale
 threshold of two seconds; any inference anomaly or platform fault is routed to a soft
 emergency stop. Real-robot experiments on multiple indoor scenes with pre-collected
-topomaps record closed-loop frequencies of 2.89\,Hz (DDPM baseline), 6.80\,Hz
+topological maps record closed-loop frequencies of 2.89\,Hz (DDPM baseline), 6.80\,Hz
 (DDIM-2 + CFG=0 + TTS-8), 3.43\,Hz (DDIM-2 + CFG=2 + TTS-8), and 5.90\,Hz
 (DDIM-3 + CFG=0, no TTS), with a 100\% success rate across all four configurations
 under the present conservative speed setting. The frequency ranking is fully
-consistent with the offline analysis in Chapter 3: DDIM step count dominates latency,
+consistent with the offline analysis in Chapter 2: DDIM step count dominates latency,
 CFG approximately halves the achievable rate, and TTS-8's overhead is negligible
 because re-ranking eight already-generated candidates does not require an extra
 diffusion batch.
@@ -202,8 +202,8 @@ quadruped at single-digit hertz while still completing every commissioned trial.
 Crucially, the fact that even the slow 2.89\,Hz baseline achieves 100\% success
 demonstrates that the closed-loop system has substantial robustness margin: the
 conservative 0.12\,m/s speed cap means each cycle's displacement is only about
-4\,cm---far smaller than the topomap node spacing---so high-level latency tolerance is
-absorbed by the topomap sliding window and the 25\,Hz bridge replay rather than
+4\,cm---far smaller than the topological map node spacing---so high-level latency tolerance is
+absorbed by the topological map sliding window and the 25\,Hz bridge replay rather than
 manifesting as catastrophic drift.
 
 \subsection*{Limitations and Future Work}
@@ -217,7 +217,7 @@ all four inference configurations succeed under the current scenario scale, do n
 include large-sample success-rate confidence intervals or formal trajectory-deviation
 distributions; expanding the experiment matrix to outdoor scenes, dynamic obstacles,
 and longer corridors should enhance differentiation between configurations and unlock
-the latency margin that the fastest scheme has reserved. Third, the topomap is still
+the latency margin that the fastest scheme has reserved. Third, the topological map is still
 collected offline by an operator; an online maintenance loop that refreshes nodes when
 the environment changes would improve long-term autonomy. Future work will therefore
 focus on (i) finalizing the on-robot encoder choice with end-to-end real-world

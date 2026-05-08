@@ -1,4 +1,4 @@
-% !TEX root = ../main.tex
+﻿% !TEX root = ../main.tex
 
 \chapter{预备知识}
 
@@ -8,7 +8,7 @@
 
 \subsection{导航任务的基本定义}
 
-机器人导航的目标是在给定观察、任务目标和运动约束的条件下，使机器人从当前状态移动到目标区域。一个完整导航系统通常涵盖环境感知、状态表示、目标表达、局部决策与运动执行五个环节\cite{thrun2005probabilistic,anderson2018evaluation}。在输出形式上，高层导航策略可以输出底层控制量、局部路径点或局部轨迹序列；本文让高层模型输出局部 waypoint 轨迹，再由中层控制器完成执行映射。
+机器人导航的目标是在给定观察、任务目标和运动约束的条件下，使机器人从当前状态移动到目标区域。一个完整导航系统通常涵盖环境感知、状态表示、目标表达、局部决策与运动执行五个环节\cite{thrun2005probabilistic,anderson2018evaluation}。在输出形式上，高层导航策略可以输出底层控制量、局部路径点或局部轨迹序列；本文让高层模型输出局部航点轨迹，再由中层控制器完成执行映射。
 
 如果把高层策略写成函数形式，则有
 \begin{equation}
@@ -16,7 +16,7 @@
 \end{equation}
 其中 $\mathcal{O}_t$ 表示时刻 $t$ 的图像观察或观察序列，$g$ 表示任务目标，$\mathbf{A}_t$ 表示未来短时间内的局部轨迹。该表示天然适合与不同平台解耦，也是本文能够将高层视觉导航从轮式框架迁移到 Lite3 四足平台的重要原因。
 
-观察空间方面，本文统一使用 RGB 图像作为输入，并保留最近 $K+1$ 帧上下文 $\mathcal{O}_t = \{I_{t-K}, \ldots, I_t\}$。每个 waypoint $\mathbf{a}_i = (\Delta x_i, \Delta y_i)$ 表示相对于机器人当前位姿的二维增量位移（$x$ 前向、$y$ 左侧），策略输出因此不依赖全局定位。执行上采用闭环模式：每个高层周期生成长度 $H=8$ 的 waypoint 序列，固定取第 $k=2$ 个 waypoint 作为本次控制周期的局部目标位移，由中层 PD 控制器映射为单条 \texttt{Twist} 速度指令；下一周期再基于最新相机帧重新生成。这种``规划长 8 步、每周期只执行其中一个超前点''的策略与模型预测控制（MPC）一脉相承，扩散策略相当于把 MPC 的优化求解替换为条件扩散采样。
+观察空间方面，本文统一使用 RGB 图像作为输入，并保留最近 $K+1$ 帧上下文 $\mathcal{O}_t = \{I_{t-K}, \ldots, I_t\}$。每个航点$\mathbf{a}_i = (\Delta x_i, \Delta y_i)$ 表示相对于机器人当前位姿的二维增量位移（$x$ 前向、$y$ 左侧），策略输出因此不依赖全局定位。执行上采用闭环模式：每个高层周期生成长度 $H=8$ 的航点序列，固定取第 $k=2$ 个航点作为本次控制周期的局部目标位移，由中层 PD 控制器映射为单条 \texttt{Twist} 速度指令；下一周期再基于最新相机帧重新生成。这种``规划长 8 步、每周期只执行其中一个超前点''的策略与模型预测控制（MPC）一脉相承，扩散策略相当于把 MPC 的优化求解替换为条件扩散采样。
 
 \subsection{视觉导航与目标导航}
 
@@ -29,9 +29,9 @@
 \end{itemize}
 本文研究 image-goal 场景：相较于绝对坐标，图像目标更符合真实应用——用户更容易给出``去这个画面对应的位置''，而非统一坐标系下的精确终点；相较 object-goal 与 language-goal，图像目标无需语义理解模块、表达歧义更低，能在无 GPS 与无预建地图的场景中直接工作。
 
-\subsection{拓扑导航与 topomap}
+\subsection{拓扑导航与拓扑地图}
 
-为了降低对精确几何地图的依赖，拓扑导航只保留若干代表性视觉节点及其连通关系\cite{savinov2018sptm,chaplot2020nts,shah2021ving}。本文系统中 topomap 不是部署时由编码器在线生成的图结构，而是人工沿目标路径预先采集的一段\textbf{有序}视觉节点序列，文件名按 \texttt{0.png, 1.png, \ldots} 自然排序，节点编号同时编码``沿路径前进的方向''，因此 topomap 在使用上更接近一条按空间顺序排好的导航队列。
+为了降低对精确几何地图的依赖，拓扑导航只保留若干代表性视觉节点及其连通关系\cite{savinov2018sptm,chaplot2020nts,shah2021ving}。本文系统中拓扑地图不是部署时由编码器在线生成的图结构，而是人工沿目标路径预先采集的一段\textbf{有序}视觉节点序列，文件名按 \texttt{0.png, 1.png, \ldots} 自然排序，节点编号同时编码``沿路径前进的方向''，因此拓扑地图在使用上更接近一条按空间顺序排好的导航队列。
 
 设拓扑节点图像沿路径排列为 $\mathcal{G}=(I_g^{(0)}, \ldots, I_g^{(M-1)})$，导航任务给定起点附近索引 $0$ 与目标索引 $g\le M-1$。系统维护一个状态化的``当前定位''指针 $c_t$，距离预测头只在以 $c_t$ 为中心、半径 $r=4$ 的局部窗口
 \begin{equation}
@@ -41,13 +41,13 @@
 \begin{equation}
 c_{t+1} = \mathrm{clip}\bigl(\arg\min_{j\in\mathcal{W}_t} \hat d_j,\; c_t-1,\; c_t+\Delta_{\max}\bigr),
 \end{equation}
-其中 clip 操作确保定位指针每周期至多前进 $\Delta_{\max}=3$ 个节点、至多回退 1 个节点，从而强制定位整体沿 topomap 单向推进。
+其中 clip 操作确保定位指针每周期至多前进 $\Delta_{\max}=3$ 个节点、至多回退 1 个节点，从而强制定位整体沿拓扑地图单向推进。
 
 
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=0.9\linewidth]{prelim-nav-pipeline-placeholder.png}
-    \caption{导航任务输入输出与 topomap 关系示意图}
+    \caption{导航任务输入输出与拓扑地图关系示意图}
     \label{fig:prelim-nav-pipeline-placeholder}
 \end{figure}
 
@@ -72,7 +72,7 @@ q(x_t \mid x_0) = \mathcal{N}\!\left(\sqrt{\bar{\alpha}_t}\, x_0,\; (1 - \bar{\a
 \end{equation}
 这意味着可以直接从 $x_0$ 一步采样得到任意时刻的加噪样本 $x_t = \sqrt{\bar{\alpha}_t}\, x_0 + \sqrt{1 - \bar{\alpha}_t}\, \epsilon$，其中 $\epsilon \sim \mathcal{N}(0, \mathbf{I})$。这一闭合形式是训练过程高效进行的基础——训练时无需依次模拟整个前向链，只需随机采样时间步 $t$ 并直接计算 $x_t$ 即可。
 
-本工作中显式将训练扩散步数设为 $T = 10$，这远低于通用图像扩散的 $T = 1000$ 量级，原因是本工作的扩散对象不是高维像素而是 16 维 waypoint 轨迹，低维分布对去噪步数的需求大幅降低，这一配置在轨迹生成质量与训练稳定性之间取得了良好的平衡。
+本工作中显式将训练扩散步数设为 $T = 10$，这远低于通用图像扩散的 $T = 1000$ 量级，原因是本工作的扩散对象不是高维像素而是 16 维航点轨迹，低维分布对去噪步数的需求大幅降低，这一配置在轨迹生成质量与训练稳定性之间取得了良好的平衡。
 
 从变分推断的角度来看，扩散模型的训练目标实际上是对数据对数似然的变分下界（Variational Lower Bound, VLB）的优化。具体而言，对数似然 $\log p_\theta(x_0)$ 的 VLB 可以分解为
 \begin{equation}
@@ -80,7 +80,7 @@ q(x_t \mid x_0) = \mathcal{N}\!\left(\sqrt{\bar{\alpha}_t}\, x_0,\; (1 - \bar{\a
 \end{equation}
 其中 $\mathcal{L}_{\text{VLB}}$ 可进一步分解为逐步 KL 散度之和。Ho 等人\cite{ddpm2020}在实践中发现，直接使用简化的噪声预测损失 $\mathcal{L}_{\text{diff}}$ 训练效果更好，尽管它与严格的 VLB 目标并不完全等价。
 
-在轨迹生成的具体应用中，$x_0$ 不再是图像像素，而是轨迹 waypoint 序列 $\mathbf{A} = [\mathbf{a}_1, \ldots, \mathbf{a}_H] \in \mathbb{R}^{H \times 2}$。相应地，扩散过程在轨迹空间中进行：前向过程逐步向轨迹添加噪声，反向过程从纯噪声逐步恢复出合理轨迹。由于轨迹空间的维度远低于图像空间，扩散模型在轨迹生成中的收敛速度和采样效率都显著优于图像生成，这也是扩散策略能够在实时控制场景中应用的重要原因。
+在轨迹生成的具体应用中，$x_0$ 不再是图像像素，而是轨迹航点序列 $\mathbf{A} = [\mathbf{a}_1, \ldots, \mathbf{a}_H] \in \mathbb{R}^{H \times 2}$。相应地，扩散过程在轨迹空间中进行：前向过程逐步向轨迹添加噪声，反向过程从纯噪声逐步恢复出合理轨迹。由于轨迹空间的维度远低于图像空间，扩散模型在轨迹生成中的收敛速度和采样效率都显著优于图像生成，这也是扩散策略能够在实时控制场景中应用的重要原因。
 
 这种建模方式在导航领域具有以下关键优势：
 \begin{enumerate}
@@ -148,7 +148,7 @@ CFG 之所以能在推理时实现无分类器引导，关键在于训练阶段�
 再通过线性组合实现引导，无需额外训练分类器网络。
 
 
-在本文中，CFG 的作用是增强轨迹对目标条件的牵引能力，即让生成的局部 waypoint 更明确地朝向目标图像或目标节点图像对应的方向。
+在本文中，CFG 的作用是增强轨迹对目标条件的牵引能力，即让生成的局部航点更明确地朝向目标图像或目标节点图像对应的方向。
 
 本文中 CFG 的推理过程可概括如下：
 \begin{enumerate}
@@ -161,20 +161,20 @@ CFG 之所以能在推理时实现无分类器引导，关键在于训练阶段�
 
 \subsection{扩散策略与 Test-Time Scaling}
 
-扩散策略将扩散模型从图像生成推广到动作序列或轨迹序列生成\cite{diffuser2022,diffusionpolicy2023}。在具身智能与机器人控制领域，Diffuser 和 Diffusion Policy 证明了扩散建模能够有效处理多步决策、长时序动作和多模态行为分布，因此被视为扩散模型在具身控制中的代表性应用。
+扩散策略将扩散模型从图像生成推广到动作序列或轨迹序列生成\cite{diffuser2022,chi2025diffusion}。在具身智能与机器人控制领域，Diffuser 和 Diffusion Policy 证明了扩散建模能够有效处理多步决策、长时序动作和多模态行为分布，因此被视为扩散模型在具身控制中的代表性应用。
 
-具体而言，Diffuser\cite{diffuser2022} 将整个轨迹（包括状态和动作序列）作为扩散对象，在推理时通过引导函数注入奖励信息来生成高回报轨迹。Diffusion Policy\cite{diffusionpolicy2023} 则只对动作序列进行扩散，将状态观察作为条件信息，更适合视觉观察驱动的控制任务。NoMaD 的扩散策略头采用了类似 Diffusion Policy 的设计——仅对 waypoint 轨迹进行扩散，视觉特征作为条件信息注入。这种设计使得扩散过程仅需在低维轨迹空间中进行，显著降低了计算开销。
+具体而言，Diffuser\cite{diffuser2022} 将整个轨迹（包括状态和动作序列）作为扩散对象，在推理时通过引导函数注入奖励信息来生成高回报轨迹。Diffusion Policy\cite{chi2025diffusion} 则只对动作序列进行扩散，将状态观察作为条件信息，更适合视觉观察驱动的控制任务。NoMaD 的扩散策略头采用了类似 Diffusion Policy 的设计——仅对航点轨迹进行扩散，视觉特征作为条件信息注入。这种设计使得扩散过程仅需在低维轨迹空间中进行，显著降低了计算开销。
 
 在此基础上，近年来出现了测试时扩展（Test-Time Scaling, TTS）的思路\cite{ttsdiffusion2025,ttssearch2025}。其核心思想不是修改训练过程，而是在推理阶段使用额外计算预算生成多条候选轨迹，再通过打分函数进行选择。若生成 $N$ 条候选轨迹 $\{\mathbf{A}^{(i)}\}_{i=1}^N$，评分函数为 $s(\cdot)$，则最优轨迹可表示为
 \begin{equation}
 \mathbf{A}^{\ast} = \arg\max_{i\in\{1,\ldots,N\}} s\!\left(\mathbf{A}^{(i)} \mid \mathcal{O}_t, I_g\right).
 \end{equation}
 
-评分函数的设计是 TTS 方法的核心。常见的评分维度包括：（1）目标一致性评分，衡量候选轨迹终点与目标方向的对齐程度，可以利用距离预测头对轨迹终点的距离估计作为代理指标；（2）轨迹平滑性评分，衡量相邻 waypoint 之间的方向变化和速度变化是否连续，过大的方向突变通常意味着不可执行或执行风险较高的轨迹；（3）前向进展评分，衡量轨迹整体是否朝目标方向前进，避免选择在原地打转或后退的候选。在实际实现中，这些评分维度通常以加权和的形式组合：
+评分函数的设计是 TTS 方法的核心。常见的评分维度包括：（1）目标一致性评分，衡量候选轨迹终点与目标方向的对齐程度，可以利用距离预测头对轨迹终点的距离估计作为代理指标；（2）轨迹平滑性评分，衡量相邻航点之间的方向变化和速度变化是否连续，过大的方向突变通常意味着不可执行或执行风险较高的轨迹；（3）前向进展评分，衡量轨迹整体是否朝目标方向前进，避免选择在原地打转或后退的候选。在实际实现中，这些评分维度通常以加权和的形式组合：
 \begin{equation}
 s(\mathbf{A}^{(i)}) = \lambda_{\text{goal}} \cdot s_{\text{goal}}(\mathbf{A}^{(i)}) + \lambda_{\text{smooth}} \cdot s_{\text{smooth}}(\mathbf{A}^{(i)}) + \lambda_{\text{prog}} \cdot s_{\text{prog}}(\mathbf{A}^{(i)}),
 \end{equation}
-其中 $\lambda_{\text{goal}}$、$\lambda_{\text{smooth}}$ 和 $\lambda_{\text{prog}}$ 为各维度的权重系数。具体地，平滑性评分可以定义为相邻 waypoint 方向变化角的负值之和：
+其中 $\lambda_{\text{goal}}$、$\lambda_{\text{smooth}}$ 和 $\lambda_{\text{prog}}$ 为各维度的权重系数。具体地，平滑性评分可以定义为相邻航点方向变化角的负值之和：
 \begin{equation}
 s_{\text{smooth}}(\mathbf{A}) = -\sum_{i=2}^{H-1} \left|\angle(\mathbf{a}_{i+1} - \mathbf{a}_i) - \angle(\mathbf{a}_i - \mathbf{a}_{i-1})\right|,
 \end{equation}
@@ -211,7 +211,7 @@ Transformer 在视觉建模中的广泛应用，使得扩散模型与视觉编�
 \subsection{NoMaD 的基本结构}
 
 NoMaD 由视觉编码器、距离预测头和扩散策略头三部分构成\cite{nomad2023}。视觉编码器负责把历史观察与目标图像编码为统一条件特征；距离预测头估计当前观察与目标之间的相对距离
-（以离散时间步数为单位，表示从当前位置到达目标大约需要多少个导航步骤，而非物理距离）；扩散策略头则在该条件特征上生成未来局部 waypoint 轨迹。若记局部轨迹为
+（以离散时间步数为单位，表示从当前位置到达目标大约需要多少个导航步骤，而非物理距离）；扩散策略头则在该条件特征上生成未来局部航点轨迹。若记局部轨迹为
 \begin{equation}
 \mathbf{A} = [\mathbf{a}_1,\mathbf{a}_2,\ldots,\mathbf{a}_H], \qquad \mathbf{a}_i=(\Delta x_i,\Delta y_i),
 \end{equation}

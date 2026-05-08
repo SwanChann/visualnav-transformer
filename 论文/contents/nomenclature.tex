@@ -4,7 +4,7 @@
 \label{chap:symb}
 
 \begin{longtable}{rl}
-  NoMaD           & Goal Masked Diffusion Policies for Navigation and Exploration \\
+  NoMaD           & Navigation with Goal Masked Diffusion \\
   DDPM            & Denoising Diffusion Probabilistic Model \\
   DDIM            & Denoising Diffusion Implicit Model \\
   CFG             & Classifier-Free Guidance \\
@@ -17,13 +17,13 @@
   MuJoCo          & Multi-Joint dynamics with Contact \\
   SLAM            & Simultaneous Localization and Mapping \\
   PD              & Proportional-Derivative (Controller) \\
-  topomap         & Topological Map（拓扑地图） \\
-  waypoint        & 局部路径点 \\
+  拓扑地图        & Topological Map \\
+  航点            & 局部路径点 \\
   $\mathcal{O}_t$ & 时刻 $t$ 的历史视觉观察序列 \\
   $I_g$           & 目标图像或拓扑节点图像 \\
-  $\mathbf{A}_t$  & 未来局部 waypoint 轨迹 \\
-  $\mathbf{a}_i$  & 第 $i$ 个 waypoint，$(\Delta x_i, \Delta y_i)$ \\
-  $H$             & 轨迹预测 horizon（waypoint 数量） \\
+  $\mathbf{A}_t$  & 未来局部航点轨迹 \\
+  $\mathbf{a}_i$  & 第 $i$ 个航点，$(\Delta x_i, \Delta y_i)$ \\
+  $H$             & 轨迹预测 horizon（航点数量） \\
   $\beta_t$       & 扩散前向过程第 $t$ 步噪声调度系数 \\
   $\bar\alpha_t$  & 累计噪声调度系数 \\
   $\epsilon$      & 真实高斯噪声 \\
