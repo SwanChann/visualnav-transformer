@@ -164,8 +164,8 @@ def main():
     axes[2].plot(0, 0, "r*", markersize=15)
     axes[2].legend(fontsize=7)
     axes[2].set_title("Mean Trajectory Comparison")
-    axes[2].set_xlabel("y")
-    axes[2].set_ylabel("x")
+    axes[2].set_xlabel("y lateral (m)")
+    axes[2].set_ylabel("x forward (m)")
     axes[2].set_aspect("equal")
     axes[2].grid(True, alpha=0.3)
 
