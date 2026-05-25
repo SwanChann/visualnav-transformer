@@ -1,6 +1,9 @@
 results/nomad_mujoco/*
 results/deployment/*
 
+毕设冲刺/ppt/
+毕设冲刺/myppt/
+
 train/logs/*
 train/datasets/*
 train/vint_train/data/data_splits/*
