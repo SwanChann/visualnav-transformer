@@ -1,0 +1,48 @@
+[
+  {
+    "canvas_px": [
+      1920,
+      1080
+    ],
+    "safe_box_px": [
+      76,
+      58,
+      1844,
+      1012
+    ],
+    "rule": "所有文本、图表、视频占位框均位于 safe_box_px 内。"
+  },
+  {
+    "slide": 12,
+    "placeholder": "真实走廊导航演示视频",
+    "box_px": [
+      1110,
+      168,
+      680,
+      420
+    ],
+    "video": "毕设冲刺/video/ddim2cfg0tts8/videos/19700101_084701_lite3_real_interactive_navigate/navigation_record.mp4"
+  },
+  {
+    "slide": 13,
+    "placeholder": "室外斜坡演示视频",
+    "box_px": [
+      165,
+      700,
+      710,
+      225
+    ],
+    "video": "毕设冲刺/video/二号楼楼下斜坡1/videos/20260426_154600_lite3_real_interactive_navigate/navigation_record.mp4"
+  },
+  {
+    "slide": 13,
+    "placeholder": "草地失败案例视频",
+    "box_px": [
+      1015,
+      700,
+      710,
+      225
+    ],
+    "video": "毕设冲刺/video/电草，失败/videos/20260426_161031_lite3_real_interactive_navigate/navigation_record.mp4"
+  }
+]

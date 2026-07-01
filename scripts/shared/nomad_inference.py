@@ -3,6 +3,16 @@
 
 from __future__ import annotations
 
+# Allow direct execution from any scripts/<category>/ path.
+import sys
+from pathlib import Path
+
+SCRIPTS_ROOT = Path(__file__).resolve()
+while SCRIPTS_ROOT.name != "scripts" and SCRIPTS_ROOT.parent != SCRIPTS_ROOT:
+    SCRIPTS_ROOT = SCRIPTS_ROOT.parent
+if str(SCRIPTS_ROOT) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_ROOT))
+
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Mapping
@@ -12,7 +22,7 @@ import torch
 import yaml
 from PIL import Image as PILImage
 
-from project_paths import add_repo_paths, repo_path
+from tooling.project_paths import add_repo_paths, repo_path
 
 add_repo_paths()
 
@@ -165,7 +175,7 @@ class NoMaDInferenceModule:
                 dist_pred_net=DenseNetwork(embedding_dim=self.encoding_size),
             )
         elif vision_encoder_name == "nomad_vint_dinov2":
-            from nomad_vint_dinov2 import NoMaD_ViNT_DINOv2
+            from models.nomad_vint_dinov2 import NoMaD_ViNT_DINOv2
 
             vision_encoder = NoMaD_ViNT_DINOv2(
                 context_size=self.context_size,
@@ -187,7 +197,7 @@ class NoMaDInferenceModule:
                 dist_pred_net=DenseNetwork(embedding_dim=self.encoding_size),
             )
         elif vision_encoder_name == "nomad_vint_backbone_suite":
-            from nomad_vint_backbone_suite import build_backbone_nomad_model
+            from models.nomad_vint_backbone_suite import build_backbone_nomad_model
 
             backbone_name = str(self.config.get("encoder_backbone", "dinov2_small"))
             model = build_backbone_nomad_model(

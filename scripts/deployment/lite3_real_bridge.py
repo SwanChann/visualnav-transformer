@@ -15,6 +15,16 @@
 
 from __future__ import annotations
 
+# Allow direct execution from any scripts/<category>/ path.
+import sys
+from pathlib import Path
+
+SCRIPTS_ROOT = Path(__file__).resolve()
+while SCRIPTS_ROOT.name != "scripts" and SCRIPTS_ROOT.parent != SCRIPTS_ROOT:
+    SCRIPTS_ROOT = SCRIPTS_ROOT.parent
+if str(SCRIPTS_ROOT) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_ROOT))
+
 import json
 import sys
 import threading
@@ -30,11 +40,17 @@ from PIL import Image
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 SCRIPTS_ROOT = REPO_ROOT / "scripts"
 SIM_ROOT = SCRIPTS_ROOT / "simulation"
-LITE3_CTRL_DIR = REPO_ROOT / "lite3_host_control"
-for candidate in (LITE3_CTRL_DIR, SCRIPTS_ROOT, SIM_ROOT):
+for candidate in (SCRIPTS_ROOT, SIM_ROOT):
     candidate_str = str(candidate)
     if candidate_str not in sys.path:
         sys.path.insert(0, candidate_str)
+
+from tooling.project_paths import LITE3_HOST_CONTROL_ROOT
+
+LITE3_CTRL_DIR = LITE3_HOST_CONTROL_ROOT
+ctrl_dir_str = str(LITE3_CTRL_DIR)
+if ctrl_dir_str not in sys.path:
+    sys.path.insert(0, ctrl_dir_str)
 
 from lite3_controller import Lite3Controller, Twist
 

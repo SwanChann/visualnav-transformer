@@ -20,6 +20,8 @@ train/gnm_dataset/*
 *.mp4
 *.gif
 
+node_modules/
+
 deployment/model_weights/*
 deployment/topomaps/*
 

@@ -8,6 +8,16 @@
 
 from __future__ import annotations
 
+# Allow direct execution from any scripts/<category>/ path.
+import sys
+from pathlib import Path
+
+SCRIPTS_ROOT = Path(__file__).resolve()
+while SCRIPTS_ROOT.name != "scripts" and SCRIPTS_ROOT.parent != SCRIPTS_ROOT:
+    SCRIPTS_ROOT = SCRIPTS_ROOT.parent
+if str(SCRIPTS_ROOT) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_ROOT))
+
 import argparse
 import json
 import select
@@ -27,7 +37,7 @@ for candidate in (SCRIPTS_ROOT, SIM_ROOT):
         sys.path.insert(0, candidate_str)
 
 from nomad_mujoco_lite3_state_machine import build_parser as build_state_machine_parser
-from project_paths import repo_path
+from tooling.project_paths import repo_path
 from lite3_system.topomap import validate_task_topomap_args
 from lite3_system.session import NavigationSession
 

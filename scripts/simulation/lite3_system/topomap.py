@@ -1,5 +1,15 @@
 from __future__ import annotations
 
+# Allow direct execution from any scripts/<category>/ path.
+import sys
+from pathlib import Path
+
+SCRIPTS_ROOT = Path(__file__).resolve()
+while SCRIPTS_ROOT.name != "scripts" and SCRIPTS_ROOT.parent != SCRIPTS_ROOT:
+    SCRIPTS_ROOT = SCRIPTS_ROOT.parent
+if str(SCRIPTS_ROOT) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_ROOT))
+
 from dataclasses import dataclass
 import json
 from pathlib import Path
@@ -8,7 +18,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from lite3_system.legacy_bridge import load_legacy
-from project_paths import repo_path
+from tooling.project_paths import repo_path
 
 if TYPE_CHECKING:
     from lite3_system.session import NavigationSession
@@ -191,7 +201,7 @@ def resolve_navigation_topomap_dir(args, expected_domain: str, legacy=None) -> P
         if not default_dir.is_dir():
             raise FileNotFoundError(
                 f"MuJoCo topomap directory not found: {default_dir}. "
-                f"Run `python scripts/nomad_mujoco_lite3_nav.py --mode generate-topomap --map {args.map}` first."
+                f"Run `python scripts/simulation/nomad_mujoco_lite3_nav.py --mode generate-topomap --map {args.map}` first."
             )
         return validate_topomap_dir_for_domain(default_dir, expected_domain, legacy)
     raise ValueError("Real backend requires an explicit real-world --topomap-dir; dataset fallback is disabled.")

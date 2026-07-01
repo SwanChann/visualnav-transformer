@@ -2,15 +2,14 @@
 
 ## Canonical Paths
 
-The `scripts/` directory now has categorized entrypoints.  
-Root-level scripts are still kept as legacy-compatible entrypoints, but new work and docs should prefer the categorized paths below.
+The `scripts/` directory now keeps one canonical location for each script.
+Root-level Python implementations were moved into the categorized paths below.
 
 ### `scripts/analysis/`
 
 - `check_dataset.py`
 - `offline_inference.py`
 - `realtime_inference.py`
-- `result_collector.py`
 - `thesis_result_summary.py`
 
 ### `scripts/experiments/`
@@ -24,6 +23,9 @@ Root-level scripts are still kept as legacy-compatible entrypoints, but new work
 - `tts_stat_experiment.py`
 - `gait_shake_robustness.py`
 - `encoder_comparison_experiment.py`
+- `encoder_joint_ablation_experiment.py`
+- `joint_ddim_cfg_experiment.py`
+- `mujoco_encoder_benchmark.py`
 
 ### `scripts/models/`
 
@@ -59,6 +61,11 @@ Root-level scripts are still kept as legacy-compatible entrypoints, but new work
 - `path_audit.py`
 - `project_paths.py`
 
+### `scripts/tooling/data/`
+
+- `check_gostanford.py`: GoStanford dataset integrity check.
+- `fix_go_stanford_dtype.py`: GoStanford dataset repair utility that rewrites `traj_data.pkl` after creating `.backup` files.
+
 ### `scripts/simulation/`
 
 - `lite3_sim.py`
@@ -71,15 +78,18 @@ Root-level scripts are still kept as legacy-compatible entrypoints, but new work
 - `nomad_real_deployment_checklist.py`
 - `nomad_navigation_host.py`
 
+### `scripts/legacy/`
+
+- `quick_check.py`: one-off hard-coded GoStanford trajectory smoke test kept for historical debugging context.
+- `result_collector.py`: legacy alias for `scripts/analysis/thesis_result_summary.py`.
+
 ## Lite3 MuJoCo Structure
 
-There are now two Lite3 MuJoCo paths:
+There are two Lite3 MuJoCo implementations:
 
 1. Legacy monolithic implementation:
-   `scripts/nomad_mujoco_lite3_nav.py`
-2. Categorized legacy-compatible entrypoint:
    `scripts/simulation/nomad_mujoco_lite3_nav.py`
-3. New modular state-machine implementation:
+2. New modular state-machine implementation:
    `scripts/simulation/nomad_mujoco_lite3_state_machine.py`
 
 The new modular system splits the stack into:

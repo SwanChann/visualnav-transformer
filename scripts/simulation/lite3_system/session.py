@@ -1,5 +1,15 @@
 from __future__ import annotations
 
+# Allow direct execution from any scripts/<category>/ path.
+import sys
+from pathlib import Path
+
+SCRIPTS_ROOT = Path(__file__).resolve()
+while SCRIPTS_ROOT.name != "scripts" and SCRIPTS_ROOT.parent != SCRIPTS_ROOT:
+    SCRIPTS_ROOT = SCRIPTS_ROOT.parent
+if str(SCRIPTS_ROOT) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_ROOT))
+
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -7,7 +17,7 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
-from project_paths import repo_path
+from tooling.project_paths import repo_path
 
 
 @dataclass

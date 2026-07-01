@@ -21,7 +21,7 @@
 | DDIM 统计实验 | `scripts/experiments/ddim_stat_experiment.py` | `results/day2/20260410_143136_ddim_stat_experiment/ddim_overall_summary.csv` | 6 配置 × 24 cases × 8 runs，含 CI95 | 4.x 正式结果 |
 | CFG 快速验证 | `scripts/experiments/cfg_experiment.py` | `results/day3/results.txt` | 不同 `w` 的快速效果对比 | 4.x 快速验证 |
 | CFG 统计实验 | `scripts/experiments/cfg_stat_experiment.py` | `results/day3/20260410_143225_cfg_stat_experiment/cfg_overall_summary.csv` | 6 引导强度 × 24 cases × 8 runs | 4.x 正式结果 |
-| DDIM × CFG 联合优化 | `scripts/joint_ddim_cfg_experiment.py` | `results/day4/20260410_143709_joint_ddim_cfg_experiment/overall_summary.csv` | 综合最优 `ddim2_w0.0` | 4.x 部署配置 |
+| DDIM × CFG 联合优化 | `scripts/experiments/joint_ddim_cfg_experiment.py` | `results/day4/20260410_143709_joint_ddim_cfg_experiment/overall_summary.csv` | 综合最优 `ddim2_w0.0` | 4.x 部署配置 |
 | 编码器对比 | `scripts/experiments/encoder_comparison_experiment.py` | `results/day4/20260410_143729_encoder_comparison_experiment/encoder_overall_summary.csv` | `dinov2_small` 优于 `efficientnet_b0` | 4.x 编码器升级 |
 
 ### 当前推荐配置
