@@ -1,0 +1,71 @@
+{
+  "schema_version": "0.1.0",
+  "run_id": "example_iid_seed0",
+  "status": "completed",
+  "track": "iid",
+  "created_at": "2026-07-10T00:00:00+08:00",
+  "git": {
+    "commit": "0000000000000000000000000000000000000000",
+    "dirty": false,
+    "diff_sha256": null
+  },
+  "data": {
+    "registry_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "manifest_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "split_id": "go_stanford_grouped_seed0",
+    "split_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "train_datasets": ["go_stanford"],
+    "eval_dataset": "go_stanford",
+    "heldout_dataset": null,
+    "corruption": null
+  },
+  "model": {
+    "model_id": "example_only_not_a_result",
+    "family": "nomad",
+    "encoder": "efficientnet_b0",
+    "head": "ddim",
+    "parameter_count": 10000000,
+    "trainable_parameter_count": 10000000,
+    "input_resolution": [96, 96],
+    "context_size": 5,
+    "observation_frames_including_current": 6,
+    "action_history_length": 0,
+    "encoder_weight_sharing": false,
+    "encoder_frozen": false,
+    "action_horizon": 8
+  },
+  "training": {
+    "seed": 0,
+    "sampler": "single",
+    "optimizer_steps": 100,
+    "examples_seen_total": 3200,
+    "examples_seen_by_dataset": {"go_stanford": 3200}
+  },
+  "inference": {
+    "device": "example_device",
+    "batch_size": 1,
+    "precision": "fp32",
+    "nfe": 2,
+    "candidate_count": 1,
+    "latency_scope": "sampler_per_call",
+    "warmup_calls": 10
+  },
+  "evaluation": {
+    "unit": "trajectory",
+    "sample_count": 10,
+    "metrics": {
+      "action_ade_m": 0.0,
+      "action_fde_m": 0.0,
+      "progress_error_m": 0.0,
+      "latency_mean_ms": 0.0,
+      "latency_p95_ms": 0.0
+    },
+    "stabilizer_mode": null
+  },
+  "artifacts": {
+    "raw_results": "EXAMPLE_ONLY/no_real_results.json",
+    "config": "EXAMPLE_ONLY/config.yaml",
+    "checkpoint": "EXAMPLE_ONLY/model.pth"
+  },
+  "failure_reason": null
+}

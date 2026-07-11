@@ -1,0 +1,401 @@
+{
+  "success_distance_threshold": 0.6,
+  "source_count": 9,
+  "record_count": 228,
+  "config_group_count": 84,
+  "sources": [
+    {
+      "source_experiment": "20260414_003556_encoder_benchmark",
+      "raw_path": "results/benchmark/20260414_003556_encoder_benchmark/raw_results.json",
+      "records": 12,
+      "all_success": false
+    },
+    {
+      "source_experiment": "20260414_005304_encoder_benchmark",
+      "raw_path": "results/benchmark/20260414_005304_encoder_benchmark/raw_results.json",
+      "records": 36,
+      "all_success": false
+    },
+    {
+      "source_experiment": "20260421_seeded_mujoco_cfg_medium_ddim3",
+      "raw_path": "results/benchmark/20260421_seeded_mujoco_cfg_medium_ddim3/raw_results.json",
+      "records": 12,
+      "all_success": true
+    },
+    {
+      "source_experiment": "20260421_seeded_mujoco_ddim10_medium_hard",
+      "raw_path": "results/benchmark/20260421_seeded_mujoco_ddim10_medium_hard/raw_results.json",
+      "records": 6,
+      "all_success": true
+    },
+    {
+      "source_experiment": "20260421_seeded_mujoco_ddim2_medium_hard",
+      "raw_path": "results/benchmark/20260421_seeded_mujoco_ddim2_medium_hard/raw_results.json",
+      "records": 6,
+      "all_success": true
+    },
+    {
+      "source_experiment": "20260421_seeded_mujoco_ddim3_medium_hard",
+      "raw_path": "results/benchmark/20260421_seeded_mujoco_ddim3_medium_hard/raw_results.json",
+      "records": 6,
+      "all_success": true
+    },
+    {
+      "source_experiment": "20260421_seeded_mujoco_ddim5_medium_hard",
+      "raw_path": "results/benchmark/20260421_seeded_mujoco_ddim5_medium_hard/raw_results.json",
+      "records": 6,
+      "all_success": true
+    },
+    {
+      "source_experiment": "20260421_seeded_mujoco_encoder_benchmark",
+      "raw_path": "results/benchmark/20260421_seeded_mujoco_encoder_benchmark/raw_results.json",
+      "records": 36,
+      "all_success": true
+    },
+    {
+      "source_experiment": "ddim_cfg_encoder_ablation",
+      "raw_path": "results/benchmark/ddim_cfg_encoder_ablation/raw_results.json",
+      "records": 108,
+      "all_success": false
+    }
+  ],
+  "missing_optional_field_counts": {
+    "seed": 228,
+    "latency_ms": 228,
+    "stuck": 228,
+    "fall": 228,
+    "stabilizer_mode": 228
+  },
+  "success_final_distance_inconsistency_count": 27,
+  "all_success_source_count": 6,
+  "duplicate_config_across_source_count": 14,
+  "duplicate_configs_across_sources": [
+    {
+      "config": [
+        "efficientnet_b0",
+        "easy",
+        "ddim",
+        2,
+        0.0
+      ],
+      "sources": [
+        "20260414_003556_encoder_benchmark",
+        "20260414_005304_encoder_benchmark",
+        "ddim_cfg_encoder_ablation"
+      ]
+    },
+    {
+      "config": [
+        "efficientnet_b0",
+        "medium",
+        "ddim",
+        2,
+        0.0
+      ],
+      "sources": [
+        "20260414_003556_encoder_benchmark",
+        "20260414_005304_encoder_benchmark",
+        "20260421_seeded_mujoco_ddim2_medium_hard",
+        "ddim_cfg_encoder_ablation"
+      ]
+    },
+    {
+      "config": [
+        "efficientnet_b0",
+        "hard",
+        "ddim",
+        2,
+        0.0
+      ],
+      "sources": [
+        "20260414_003556_encoder_benchmark",
+        "20260414_005304_encoder_benchmark",
+        "20260421_seeded_mujoco_ddim2_medium_hard",
+        "ddim_cfg_encoder_ablation"
+      ]
+    },
+    {
+      "config": [
+        "dinov2_small",
+        "easy",
+        "ddim",
+        2,
+        0.0
+      ],
+      "sources": [
+        "20260414_003556_encoder_benchmark",
+        "20260414_005304_encoder_benchmark"
+      ]
+    },
+    {
+      "config": [
+        "dinov2_small",
+        "medium",
+        "ddim",
+        2,
+        0.0
+      ],
+      "sources": [
+        "20260414_003556_encoder_benchmark",
+        "20260414_005304_encoder_benchmark"
+      ]
+    },
+    {
+      "config": [
+        "dinov2_small",
+        "hard",
+        "ddim",
+        2,
+        0.0
+      ],
+      "sources": [
+        "20260414_003556_encoder_benchmark",
+        "20260414_005304_encoder_benchmark"
+      ]
+    },
+    {
+      "config": [
+        "resnet50",
+        "easy",
+        "ddim",
+        2,
+        0.0
+      ],
+      "sources": [
+        "20260414_003556_encoder_benchmark",
+        "20260414_005304_encoder_benchmark"
+      ]
+    },
+    {
+      "config": [
+        "resnet50",
+        "medium",
+        "ddim",
+        2,
+        0.0
+      ],
+      "sources": [
+        "20260414_003556_encoder_benchmark",
+        "20260414_005304_encoder_benchmark"
+      ]
+    },
+    {
+      "config": [
+        "resnet50",
+        "hard",
+        "ddim",
+        2,
+        0.0
+      ],
+      "sources": [
+        "20260414_003556_encoder_benchmark",
+        "20260414_005304_encoder_benchmark"
+      ]
+    },
+    {
+      "config": [
+        "convnext_tiny",
+        "easy",
+        "ddim",
+        2,
+        0.0
+      ],
+      "sources": [
+        "20260414_003556_encoder_benchmark",
+        "20260414_005304_encoder_benchmark",
+        "ddim_cfg_encoder_ablation"
+      ]
+    },
+    {
+      "config": [
+        "convnext_tiny",
+        "medium",
+        "ddim",
+        2,
+        0.0
+      ],
+      "sources": [
+        "20260414_003556_encoder_benchmark",
+        "20260414_005304_encoder_benchmark",
+        "ddim_cfg_encoder_ablation"
+      ]
+    },
+    {
+      "config": [
+        "convnext_tiny",
+        "hard",
+        "ddim",
+        2,
+        0.0
+      ],
+      "sources": [
+        "20260414_003556_encoder_benchmark",
+        "20260414_005304_encoder_benchmark",
+        "ddim_cfg_encoder_ablation"
+      ]
+    },
+    {
+      "config": [
+        "efficientnet_b0",
+        "medium",
+        "ddim",
+        3,
+        0.0
+      ],
+      "sources": [
+        "20260421_seeded_mujoco_cfg_medium_ddim3",
+        "20260421_seeded_mujoco_ddim3_medium_hard",
+        "20260421_seeded_mujoco_encoder_benchmark"
+      ]
+    },
+    {
+      "config": [
+        "efficientnet_b0",
+        "hard",
+        "ddim",
+        3,
+        0.0
+      ],
+      "sources": [
+        "20260421_seeded_mujoco_ddim3_medium_hard",
+        "20260421_seeded_mujoco_encoder_benchmark"
+      ]
+    }
+  ],
+  "repeated_trajectory_signature_count": 12,
+  "repeated_trajectory_signatures": [
+    {
+      "signature": [
+        "20260421_seeded_mujoco_cfg_medium_ddim3",
+        "medium",
+        0,
+        68,
+        6.321,
+        0.487455
+      ],
+      "distinct_configs": 4
+    },
+    {
+      "signature": [
+        "20260421_seeded_mujoco_cfg_medium_ddim3",
+        "medium",
+        1,
+        68,
+        6.321,
+        0.487455
+      ],
+      "distinct_configs": 4
+    },
+    {
+      "signature": [
+        "20260421_seeded_mujoco_cfg_medium_ddim3",
+        "medium",
+        2,
+        68,
+        6.321,
+        0.487455
+      ],
+      "distinct_configs": 4
+    },
+    {
+      "signature": [
+        "20260421_seeded_mujoco_encoder_benchmark",
+        "easy",
+        0,
+        75,
+        5.458,
+        0.469674
+      ],
+      "distinct_configs": 4
+    },
+    {
+      "signature": [
+        "20260421_seeded_mujoco_encoder_benchmark",
+        "easy",
+        1,
+        76,
+        5.495,
+        0.443825
+      ],
+      "distinct_configs": 4
+    },
+    {
+      "signature": [
+        "20260421_seeded_mujoco_encoder_benchmark",
+        "easy",
+        2,
+        76,
+        5.495,
+        0.443825
+      ],
+      "distinct_configs": 4
+    },
+    {
+      "signature": [
+        "20260421_seeded_mujoco_encoder_benchmark",
+        "medium",
+        0,
+        68,
+        6.321,
+        0.487455
+      ],
+      "distinct_configs": 4
+    },
+    {
+      "signature": [
+        "20260421_seeded_mujoco_encoder_benchmark",
+        "medium",
+        1,
+        68,
+        6.321,
+        0.487455
+      ],
+      "distinct_configs": 4
+    },
+    {
+      "signature": [
+        "20260421_seeded_mujoco_encoder_benchmark",
+        "medium",
+        2,
+        68,
+        6.321,
+        0.487455
+      ],
+      "distinct_configs": 4
+    },
+    {
+      "signature": [
+        "20260421_seeded_mujoco_encoder_benchmark",
+        "hard",
+        0,
+        110,
+        8.442,
+        0.474835
+      ],
+      "distinct_configs": 4
+    },
+    {
+      "signature": [
+        "20260421_seeded_mujoco_encoder_benchmark",
+        "hard",
+        1,
+        140,
+        9.591,
+        0.487959
+      ],
+      "distinct_configs": 4
+    },
+    {
+      "signature": [
+        "20260421_seeded_mujoco_encoder_benchmark",
+        "hard",
+        2,
+        140,
+        9.604,
+        0.484355
+      ],
+      "distinct_configs": 4
+    }
+  ],
+  "trajectory_coordinates_available": false
+}

@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.visualnav/benchmark/result_schema_v0.1.json",
+  "title": "Visual Navigation Benchmark Result v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "run_id", "status", "track", "created_at", "git",
+    "data", "model", "training", "inference", "evaluation", "artifacts"
+  ],
+  "properties": {
+    "schema_version": {"const": "0.1.0"},
+    "run_id": {"type": "string", "minLength": 1},
+    "status": {"enum": ["completed", "failed", "aborted"]},
+    "track": {"enum": ["iid", "mixed", "lodo", "corruption", "closed_loop"]},
+    "created_at": {"type": "string"},
+    "git": {
+      "type": "object",
+      "required": ["commit", "dirty", "diff_sha256"],
+      "properties": {
+        "commit": {"type": "string"},
+        "dirty": {"type": "boolean"},
+        "diff_sha256": {"type": ["string", "null"]}
+      }
+    },
+    "data": {
+      "type": "object",
+      "required": ["registry_sha256", "manifest_sha256", "split_id", "split_sha256", "train_datasets", "eval_dataset", "heldout_dataset"],
+      "properties": {
+        "registry_sha256": {"type": "string"},
+        "manifest_sha256": {"type": "string"},
+        "split_id": {"type": "string"},
+        "split_sha256": {"type": "string"},
+        "train_datasets": {"type": "array", "items": {"type": "string"}},
+        "eval_dataset": {"type": "string"},
+        "heldout_dataset": {"type": ["string", "null"]},
+        "corruption": {"type": ["object", "null"]}
+      }
+    },
+    "model": {
+      "type": "object",
+      "required": ["model_id", "family", "encoder", "head", "parameter_count", "trainable_parameter_count", "input_resolution", "context_size", "observation_frames_including_current", "action_history_length", "encoder_weight_sharing", "encoder_frozen", "action_horizon"],
+      "properties": {
+        "model_id": {"type": "string"},
+        "family": {"type": "string"},
+        "encoder": {"type": "string"},
+        "head": {"enum": ["deterministic", "ddpm", "ddim", "flow", "rectified_flow"]},
+        "parameter_count": {"type": "integer", "minimum": 1},
+        "trainable_parameter_count": {"type": "integer", "minimum": 1},
+        "input_resolution": {"type": "array", "prefixItems": [{"type": "integer"}, {"type": "integer"}]},
+        "context_size": {"type": "integer", "minimum": 1},
+        "observation_frames_including_current": {"type": "integer", "minimum": 2},
+        "action_history_length": {"type": "integer", "minimum": 0},
+        "encoder_weight_sharing": {"type": "boolean"},
+        "encoder_frozen": {"type": "boolean"},
+        "action_horizon": {"type": "integer", "minimum": 1}
+      }
+    },
+    "training": {
+      "type": "object",
+      "required": ["seed", "sampler", "optimizer_steps", "examples_seen_total", "examples_seen_by_dataset"],
+      "properties": {
+        "seed": {"type": "integer"},
+        "sampler": {"enum": ["single", "proportional", "balanced", "temperature", "not_applicable"]},
+        "optimizer_steps": {"type": "integer", "minimum": 0},
+        "examples_seen_total": {"type": "integer", "minimum": 0},
+        "examples_seen_by_dataset": {"type": "object"}
+      }
+    },
+    "inference": {
+      "type": "object",
+      "required": ["device", "batch_size", "precision", "nfe", "candidate_count", "latency_scope", "warmup_calls"],
+      "properties": {
+        "device": {"type": "string"},
+        "batch_size": {"type": "integer", "minimum": 1},
+        "precision": {"type": "string"},
+        "nfe": {"type": "integer", "minimum": 1},
+        "candidate_count": {"type": "integer", "minimum": 1},
+        "latency_scope": {"enum": ["model_forward_per_call", "sampler_per_call", "full_loop_per_call", "case_level_mean"]},
+        "warmup_calls": {"type": "integer", "minimum": 0}
+      }
+    },
+    "evaluation": {
+      "type": "object",
+      "required": ["unit", "sample_count", "metrics", "stabilizer_mode"],
+      "properties": {
+        "unit": {"enum": ["trajectory", "episode"]},
+        "sample_count": {"type": "integer", "minimum": 1},
+        "metrics": {"type": "object"},
+        "stabilizer_mode": {"type": ["string", "null"]}
+      }
+    },
+    "artifacts": {
+      "type": "object",
+      "required": ["raw_results", "config", "checkpoint"],
+      "properties": {
+        "raw_results": {"type": ["string", "null"]},
+        "config": {"type": "string"},
+        "checkpoint": {"type": ["string", "null"]}
+      }
+    },
+    "failure_reason": {"type": ["string", "null"]}
+  }
+}

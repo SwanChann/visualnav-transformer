@@ -1,0 +1,62 @@
+{
+  "contract_version": "0.1.0",
+  "status": "design_only_not_trained",
+  "input": {
+    "image_height": 96,
+    "image_width": 96,
+    "context_size": 5,
+    "observation_frames_including_current": 6,
+    "action_history_length": 4,
+    "action_history_dim": 3,
+    "action_horizon": 8,
+    "waypoint_dim": 2,
+    "required_metadata": ["dt_s", "waypoint_spacing_m", "dataset_id", "trajectory_id"]
+  },
+  "encoder": {
+    "name": "efficientnet_b0_shared",
+    "pretrained": true,
+    "shared_obs_goal_weights": true,
+    "output_dim": 256
+  },
+  "fusion": {
+    "type": "transformer_encoder",
+    "d_model": 256,
+    "layers": 4,
+    "heads": 4,
+    "ffn_dim": 1024,
+    "dropout": 0.1,
+    "dataset_id_as_input": false
+  },
+  "heads": {
+    "deterministic": {"enabled_as_required_baseline": true, "loss": "smooth_l1_meter"},
+    "rectified_flow": {
+      "enabled": true,
+      "state_shape": [8, 2],
+      "training_target": "x1_minus_x0",
+      "allowed_nfe": [1, 2, 4, 8],
+      "default_nfe": 2,
+      "default_candidate_count": 1
+    },
+    "progress": {"enabled": true, "unit": "meter"},
+    "confidence": {"enabled": false, "requires_calibration_target": true}
+  },
+  "budget": {
+    "max_trainable_parameters": 20000000,
+    "parameter_comparison_tolerance_fraction": 0.1,
+    "report_macs": true,
+    "report_latency_scope": true
+  },
+  "training": {
+    "minimum_training_seeds": 3,
+    "primary_sampler": "balanced",
+    "loss_aggregation": "dataset_macro",
+    "action_space": "meter_radian",
+    "mixed_precision": "external_environment_decision"
+  },
+  "blocked_until": [
+    "three_processed_datasets",
+    "manifest_audit_pass",
+    "multidataset_nomad_baseline_ready",
+    "same_encoder_deterministic_baseline_ready"
+  ]
+}

@@ -3,7 +3,7 @@
 更新日期：2026-07-07
 项目位置：`f:\codespace\visualnav-transformer`
 
-本文件夹已经重构为 RA-L 投稿冲刺的最小作战包。旧的阶段性笔记、重复路线图和过强 claim 文档已经合并删除，现在只保留一个入口和三个核心文档。
+本文件夹已经重构为 RA-L 投稿冲刺的最小作战包。旧的阶段性笔记、重复路线图和过强 claim 文档已经合并删除，现在只保留一个入口和四个核心文档。
 
 ## 当前主线
 
@@ -13,11 +13,20 @@
 
 > 不再把本科毕设包装成新 foundation model 或跨形态 zero-shot 论文，而是把已有 NoMaD-style diffusion 视觉导航系统在 Lite3 上的部署、推理时间-质量权衡、MuJoCo 闭环和冻结真机证据整理成一篇 RA-L 实证论文。
 
+## 当前可投性判断
+
+> 黄灯可投，不建议立刻换成全新工作。
+
+这篇稿子的机会来自真实机器人系统、离线 latency-quality Pareto、MuJoCo 闭环和冻结真机证据链；风险来自 novelty 偏系统实证、真机统计少、MuJoCo stabilizer 边界和前沿方法已经在 critic / guidance / self-imitation / world model 上走得更远。
+
+因此当前策略是：不新增真机、不大规模重训、不把 ranker / distillation / navigation brain 塞进本篇主贡献；优先把已有离线与仿真结果整理成可审稿的 Fig. 2、Table II、Table III。
+
 ## 文件索引
 
 - [01_贡献点与前沿对照.md](01_贡献点与前沿对照.md)：逐点解释本文每个 contribution，以及 GNM、ViNT、NoMaD、NavDP、SIDP、X-Nav、Fisher Guidance 等相关工作已经做到什么程度。
 - [02_RA-L论文结构设计.md](02_RA-L论文结构设计.md)：设计论文题目、摘要、贡献、章节、图表、Related Work、Method、Experiments 和 limitation。
 - [03_实验与写作任务清单.md](03_实验与写作任务清单.md)：布置接下来具体要做的离线实验、MuJoCo 汇总、冻结真机整理、图表制作和英文写作任务。
+- [04_RA-L可投性评估与离线补强.md](04_RA-L可投性评估与离线补强.md)：明确当前是否能投 RA-L、哪些证据门槛必须满足、离线实验如何补强、哪些新方向不应塞进本篇。
 
 ## 硬约束
 
@@ -42,4 +51,4 @@
 
 ## 下一步
 
-按照 [03_实验与写作任务清单.md](03_实验与写作任务清单.md) 执行：先做 evidence matrix，再做 offline Pareto，然后整理 MuJoCo 和真机，最后写英文正文。
+按照 [03_实验与写作任务清单.md](03_实验与写作任务清单.md) 和 [04_RA-L可投性评估与离线补强.md](04_RA-L可投性评估与离线补强.md) 执行：先做 evidence matrix，再做 offline Pareto 和 budget modes，然后整理 MuJoCo 与真机，最后写英文正文。
