@@ -1,0 +1,247 @@
+{
+  "schema_version": "0.1",
+  "protocol_id": "ral_mujoco_controlled_v0.1",
+  "status": "frozen_before_full_matrix",
+  "frozen_at_utc": "2026-07-11T09:30:00Z",
+  "primary_question": "At a fixed frozen NoMaD checkpoint and candidate count K=8, do low-NFE DDIM, classifier-free guidance, or ranked test-time selection change closed-loop navigation success and efficiency relative to DDPM-10?",
+  "boundaries": {
+    "allowed": [
+      "frozen-checkpoint inference",
+      "MuJoCo simulation",
+      "read-only analysis"
+    ],
+    "forbidden": [
+      "training",
+      "fine-tuning",
+      "backpropagation",
+      "optimizer steps",
+      "real-robot execution"
+    ]
+  },
+  "immutable_inputs": {
+    "git_commit": "463ac70129c6afec71fa84e3eba457d436781642",
+    "policy_checkpoint": {
+      "path": "deployment/model_weights/nomad/nomad.pth",
+      "sha256": "66edf3902382b29e795e64dc6c8dda98932061297b1e55fb0e529332f8540c79"
+    },
+    "policy_config": {
+      "path": "train/config/nomad.yaml",
+      "sha256": "d6cc0c7a466a2671a55409fb7f656f5aaef9649b4d53733a5de773c11adc4c8b"
+    },
+    "lite3_mjcf": {
+      "path": "third_party/lite3/sdk_deploy/src/Lite3_sdk_deploy/Lite3_description/lite3_mjcf/mjcf/Lite3.xml",
+      "sha256": "3632cb09785ca796d28b2568ef22d5c451c14c06eb539aeed28b229b80ba1006"
+    },
+    "locomotion_policy": {
+      "path": "third_party/lite3/sdk_deploy/src/Lite3_sdk_deploy/policy/policy.onnx",
+      "sha256": "b169648b9dbdc1849d1c38e89e6fe212c94a7591cb1cbd4054123b8458f26c20"
+    },
+    "scene_definition": {
+      "path": "scripts/simulation/nomad_mujoco_lite3_nav.py",
+      "sha256": "9d9137e4d47b8763d740ede2646d5dff2f30dac8c36295472ff3729b88b30e73"
+    },
+    "external_diffusion_policy_commit": "5ba07ac6661db573af695b419a7947ecb704690f"
+  },
+  "runtime": {
+    "conda_environment": "nomad_train",
+    "device": "cuda:0",
+    "precision": "float32",
+    "renderer": "egl",
+    "simulator": "mujoco-3.2.3",
+    "onnx_provider": "CPUExecutionProvider",
+    "network_logging": false
+  },
+  "scenes": [
+    {
+      "id": "easy",
+      "spawn_xy_m": [0.0, 0.0],
+      "goal_xy_m": [5.0, 0.0],
+      "topomap_path": "topomaps/easy",
+      "topomap_tree_sha256": "c713ed397e66c6370832dbef56a066ba8c4259209fdb03499c64543cab15a2ad"
+    },
+    {
+      "id": "medium",
+      "spawn_xy_m": [0.0, 0.0],
+      "goal_xy_m": [7.0, 0.0],
+      "topomap_path": "topomaps/medium",
+      "topomap_tree_sha256": "d6ff798ea180b91f8fb9088f8d0ff42ece34354e0991a11ef970d5b35a82be30"
+    },
+    {
+      "id": "hard",
+      "spawn_xy_m": [0.0, 0.0],
+      "goal_xy_m": [8.0, 0.0],
+      "topomap_path": "topomaps/hard",
+      "topomap_tree_sha256": "706945fe67b2011524932ab7350e2813108fbed5ca10a1e567fdb6dffea7ec49"
+    }
+  ],
+  "randomization": {
+    "diffusion_seeds": [11, 23, 47],
+    "goal_seeds": [0],
+    "goal_seed_note": "The frozen topomap endpoint is used, so goal_seed is recorded but does not vary the goal.",
+    "pairing": "Every configuration and stabilizer stratum uses the identical scene/goal/seed keys."
+  },
+  "configurations": [
+    {
+      "id": "ddpm10_cfg0_standard_k8",
+      "scheduler": "ddpm",
+      "diffusion_steps": 10,
+      "cfg_weight": 0.0,
+      "tts_enabled": false,
+      "candidate_k": 8,
+      "selection": "mean_of_8"
+    },
+    {
+      "id": "ddim2_cfg0_standard_k8",
+      "scheduler": "ddim",
+      "diffusion_steps": 2,
+      "cfg_weight": 0.0,
+      "tts_enabled": false,
+      "candidate_k": 8,
+      "selection": "mean_of_8"
+    },
+    {
+      "id": "ddim3_cfg0_standard_k8",
+      "scheduler": "ddim",
+      "diffusion_steps": 3,
+      "cfg_weight": 0.0,
+      "tts_enabled": false,
+      "candidate_k": 8,
+      "selection": "mean_of_8"
+    },
+    {
+      "id": "ddim2_cfg0_tts8",
+      "scheduler": "ddim",
+      "diffusion_steps": 2,
+      "cfg_weight": 0.0,
+      "tts_enabled": true,
+      "candidate_k": 8,
+      "tts_budget": 8,
+      "tts_topk": 1,
+      "tts_verifier": "heuristic",
+      "selection": "rank_8_keep_1"
+    },
+    {
+      "id": "ddim2_cfg2_tts8",
+      "scheduler": "ddim",
+      "diffusion_steps": 2,
+      "cfg_weight": 2.0,
+      "tts_enabled": true,
+      "candidate_k": 8,
+      "tts_budget": 8,
+      "tts_topk": 1,
+      "tts_verifier": "heuristic",
+      "selection": "rank_8_keep_1"
+    }
+  ],
+  "navigation_contract": {
+    "mode": "navigate",
+    "goal_source": "topomap",
+    "image_resize_mode": "stretch",
+    "image_size_px": [96, 96],
+    "context_frames": 4,
+    "action_horizon": 8,
+    "waypoint_index": 2,
+    "topomap_radius": 4,
+    "topomap_close_threshold": 3.0,
+    "nomad_frequency_hz": 4.0,
+    "physics_timestep_s": 0.001,
+    "locomotion_policy_timestep_s": 0.02,
+    "controller": {
+      "type": "pd_waypoint_bridge",
+      "yaw_sign": 1.0,
+      "linear_scale": 1.0,
+      "yaw_scale": 1.0,
+      "pd_max_v": null,
+      "pd_max_w": null,
+      "bridge_max_v_mps": 0.4,
+      "bridge_max_w_radps": 0.8
+    },
+    "success": {
+      "definition": "Robot planar position enters the frozen goal radius before timeout and without a terminal fall.",
+      "radius_m": 0.5,
+      "strict_comparison": "distance < radius"
+    },
+    "timeout": {
+      "max_steps": 240,
+      "simulated_navigation_seconds": 60.0,
+      "wall_clock_limit": null
+    },
+    "stuck_detector": {
+      "body_speed_threshold_mps": 0.05,
+      "consecutive_nomad_cycles": 3
+    }
+  },
+  "stabilizer_strata": [
+    {
+      "id": "policy_only_off",
+      "mujoco_route_stabilizer": false
+    },
+    {
+      "id": "system_stabilizer_on",
+      "mujoco_route_stabilizer": true
+    }
+  ],
+  "failure_taxonomy": {
+    "collision": "At least one robot-to-wall or robot-to-obstacle contact; floor and robot self-contacts are excluded.",
+    "fall": "The simulator platform fall detector triggers after its built-in grace period.",
+    "stuck": "The frozen stuck detector triggers at least once; recovery does not erase the event.",
+    "timeout": "max_steps is reached without success.",
+    "intervention": "Any keyboard, estop, external exit, or manual state intervention occurs.",
+    "crash": "An uncaught exception, process signal, or nonzero exit occurs; a failed record remains in the denominator.",
+    "infrastructure_invalid": "A pre-run immutable-input/schema/device check fails before simulation starts. It is retained but excluded from scientific metrics and rerun only after the infrastructure fault is fixed."
+  },
+  "latency": {
+    "warmup_calls": 3,
+    "scopes": [
+      "sampler_per_call",
+      "full_loop_per_call"
+    ],
+    "statistics": [
+      "mean",
+      "p50",
+      "p95",
+      "p99"
+    ],
+    "cuda_synchronization": "torch.cuda.synchronize immediately before and after timed sampler calls",
+    "unit": "ms"
+  },
+  "exclusion_and_retry_rules": {
+    "outcome_exclusions": "None. Successes, navigation failures, falls, collisions, stuck episodes, timeouts, and crashes remain in the planned-trial denominator.",
+    "infrastructure_exclusions": "Only infrastructure_invalid trials are excluded from scientific estimates; reason and original record are retained.",
+    "retry": "Never overwrite. Resume creates a new attempt linked to the same trial key; the first scientifically valid completed attempt is primary, and every attempt remains auditable.",
+    "scene_gate": "Before configuration comparison, baseline-only or method-blind calibration may reject universally saturated, impossible, or mechanically broken scenes using the predeclared U08 criteria. No per-method tuning is allowed."
+  },
+  "planned_matrix": {
+    "configuration_count": 5,
+    "scene_count_before_gate": 3,
+    "diffusion_seed_count": 3,
+    "goal_seed_count": 1,
+    "stabilizer_stratum_count": 2,
+    "planned_trial_count_before_gate": 90,
+    "statistical_unit": "one closed-loop episode identified by scene, fixed goal, diffusion seed, configuration, and stabilizer stratum"
+  },
+  "planned_analysis": {
+    "primary_outcome": "success",
+    "secondary_outcomes": [
+      "spl",
+      "final_distance_m",
+      "path_length_m",
+      "collision",
+      "fall",
+      "stuck",
+      "timeout",
+      "recovery_count",
+      "sampler_latency_ms",
+      "full_loop_latency_ms"
+    ],
+    "pairing_key": [
+      "scene",
+      "goal_seed",
+      "diffusion_seed",
+      "stabilizer_stratum"
+    ],
+    "uncertainty": "Episode bootstrap clustered and paired by scene/goal_seed/diffusion_seed; with three seeds, results are descriptive if power is inadequate.",
+    "stabilizer_rule": "Analyze off and on separately; never pool strata.",
+    "historical_separation": "Historical results/research or results/benchmark MuJoCo records must not enter the controlled aggregate."
+  }
+}

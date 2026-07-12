@@ -1,0 +1,11 @@
+{
+  "run_id": "u09-v03-repeat-audit-20260711",
+  "protocol_sha256": "102bf5192a404f8585153aecf4d5c8885d8bc6940e5105e5f19b02f6e40b4c1b",
+  "trial_keys": [
+    "ddpm10_cfg0_standard_k8__medium__s23__g0__policy_only_off",
+    "ddim2_cfg0_standard_k8__medium__s23__g0__policy_only_off",
+    "ddim3_cfg0_standard_k8__medium__s23__g0__policy_only_off",
+    "ddim2_cfg0_tts8__medium__s23__g0__policy_only_off",
+    "ddim2_cfg2_tts8__medium__s23__g0__policy_only_off"
+  ]
+}

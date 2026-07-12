@@ -5,6 +5,7 @@ from __future__ import annotations
 
 # Allow direct execution from any scripts/<category>/ path.
 import sys
+import time
 from pathlib import Path
 
 SCRIPTS_ROOT = Path(__file__).resolve()
@@ -138,6 +139,8 @@ class NoMaDInferenceModule:
                 f"Choose one of {sorted(VALID_IMAGE_RESIZE_MODES)}."
             )
         self.last_tts_summary: dict[str, float | int | str] | None = None
+        self.last_all_candidates: np.ndarray | None = None
+        self.sampler_timings_ms: list[float] = []
         self.model = self._build_model()
 
     def _resolve_checkpoint(self, explicit_path: str | None) -> Path:
@@ -427,6 +430,7 @@ class NoMaDInferenceModule:
             generated += current_batch
 
         candidates = np.concatenate(candidate_batches, axis=0)
+        self.last_all_candidates = candidates.copy()
         scores = self.score_action_candidates(candidates, verifier=verifier)
         ranking = np.argsort(scores)[::-1]
         keep = ranking[: min(selected_topk, len(ranking))]
@@ -446,17 +450,27 @@ class NoMaDInferenceModule:
         num_samples: int | None = None,
     ) -> np.ndarray:
         """Run DDPM/DDIM sampling with optional CFG and optional TTS selection."""
-        if self.tts_enabled:
-            return self.sample_actions_with_tts(
+        if self.device.type == "cuda":
+            torch.cuda.synchronize(self.device)
+        started = time.perf_counter()
+        try:
+            if self.tts_enabled:
+                return self.sample_actions_with_tts(
+                    condition=condition,
+                    uncond_condition=uncond_condition,
+                    budget=self.tts_budget,
+                    num_samples=num_samples,
+                    topk=self.tts_topk,
+                    verifier=self.tts_verifier,
+                )
+            samples = self._sample_actions_once(
                 condition=condition,
                 uncond_condition=uncond_condition,
-                budget=self.tts_budget,
                 num_samples=num_samples,
-                topk=self.tts_topk,
-                verifier=self.tts_verifier,
             )
-        return self._sample_actions_once(
-            condition=condition,
-            uncond_condition=uncond_condition,
-            num_samples=num_samples,
-        )
+            self.last_all_candidates = samples.copy()
+            return samples
+        finally:
+            if self.device.type == "cuda":
+                torch.cuda.synchronize(self.device)
+            self.sampler_timings_ms.append((time.perf_counter() - started) * 1000.0)

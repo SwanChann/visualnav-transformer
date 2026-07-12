@@ -1,0 +1,16 @@
+{
+  "schema_version": "0.1.0",
+  "record_kind": "batch_manifest",
+  "run_id": "u07-smoke-20260711",
+  "created_at_utc": "2026-07-11T09:26:39Z",
+  "protocol_sha256": "0dffb341642027af89a51bf81df0053e6682647e062e41a7db0e75a4ef68e62f",
+  "planned_trial_count": 1,
+  "completed": 1,
+  "failed": 0,
+  "crashed": 0,
+  "infrastructure_invalid": 0,
+  "missing_trial_keys": [],
+  "trial_records": [
+    "results/research/ral_mujoco_controlled/u07-smoke-20260711/trials/ddim2_cfg0_standard_k8__easy__s11__g0__policy_only_off__a01.json"
+  ]
+}

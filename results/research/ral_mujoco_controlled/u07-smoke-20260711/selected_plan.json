@@ -1,0 +1,7 @@
+{
+  "run_id": "u07-smoke-20260711",
+  "protocol_sha256": "0dffb341642027af89a51bf81df0053e6682647e062e41a7db0e75a4ef68e62f",
+  "trial_keys": [
+    "ddim2_cfg0_standard_k8__easy__s11__g0__policy_only_off"
+  ]
+}

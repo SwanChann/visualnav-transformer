@@ -30,6 +30,7 @@ from lite3_system.states import (
     WalkState,
 )
 from lite3_system.topomap import MissionQueue, build_mission_queue
+from research.policy_backend.runtime import NavigationPolicyBackend
 
 
 class Lite3System:
@@ -40,6 +41,7 @@ class Lite3System:
         result_prefix: str = "lite3_state_machine",
         close_platform_on_finalize: bool = True,
         session: NavigationSession | None = None,
+        high_level_backend: NavigationPolicyBackend | None = None,
     ) -> None:
         self.args = args
         self.legacy = load_legacy()
@@ -57,7 +59,7 @@ class Lite3System:
         self.logs_dir.mkdir(parents=True, exist_ok=True)
         self.timing_csv_path = self.logs_dir / "timing_profile.csv"
         self.timing_text_path = self.logs_dir / "timing_profile.txt"
-        self.high_level = Lite3HighLevelNoMaD(
+        self.high_level = high_level_backend if high_level_backend is not None else Lite3HighLevelNoMaD(
             scheduler_kind=args.scheduler,
             ddim_steps=args.ddim_steps,
             cfg_weight=getattr(args, "cfg_weight", 0.0),
@@ -69,6 +71,7 @@ class Lite3System:
             policy_checkpoint=getattr(args, "policy_checkpoint", None),
             device=getattr(args, "policy_device", None),
             image_resize_mode=getattr(args, "image_resize_mode", "stretch"),
+            action_scale_m=getattr(args, "policy_action_scale_m", 1.0),
             waypoint_index=args.waypoint,
             radius=args.radius,
             close_threshold=args.close_threshold,
@@ -82,7 +85,7 @@ class Lite3System:
         )
         self.context = ContextBuffer(
             max_frames=self.high_level.context_size + 1,
-            transform_fn=self.high_level.inference.pil_to_tensor,
+            transform_fn=self.high_level.preprocess_frame,
         )
         self.stuck_detector = self.legacy.StuckDetector()
         self.missions: MissionQueue | None = build_mission_queue(args, self.platform, self.session)
@@ -96,6 +99,9 @@ class Lite3System:
         self.recovery_count_total = 0
         self.resume_state = "navigate" if args.mode in {"navigate", "mission"} else "explore"
         self.goal_reached = False
+        self.collision_detected = False
+        self.fall_detected = False
+        self.stuck_detected = False
         self.video_dir = None
         self.video_path = None
         self._video_writer = None
@@ -174,6 +180,7 @@ class Lite3System:
     def record_step(self, position, command: MotionCommand) -> None:
         self.trajectory.append(np.asarray(position, dtype=float).copy())
         self.velocity_log.append((command.linear_x, command.yaw_rate))
+        self.collision_detected = self.collision_detected or self.platform.has_navigation_collision()
 
     def safe_stop(self) -> None:
         self.platform.emergency_stop()
@@ -510,6 +517,7 @@ class Lite3System:
             return "idle"
 
         if self.platform.is_fallen():
+            self.fall_detected = True
             self.keyboard_vx = self.keyboard_vy = self.keyboard_wz = 0.0
             self.platform.stop_motion()
             print("[Keyboard] Platform reported fallen; motion stopped, staying in keyboard mode until ESC.")
@@ -722,8 +730,7 @@ class Lite3System:
         if not bool(getattr(self.args, "profile_timing", False)):
             return
         interval = max(1, int(getattr(self.args, "profile_interval", 10)))
-        if self.tick % interval != 0:
-            return
+        should_print = self.tick % interval == 0
         timing_text = " ".join(f"{name}={value * 1000.0:.1f}ms" for name, value in timings.items())
         fps_parts = []
         infer_time = float(timings.get("infer", 0.0))
@@ -740,7 +747,8 @@ class Lite3System:
         camera_status = self.platform.camera_status()
         suffix = f" | {camera_status}" if camera_status else ""
         line = f"[Timing] {label} tick={self.tick} {timing_text}{fps_text}{suffix}"
-        print(line)
+        if should_print:
+            print(line)
         self._write_timing_profile(label, timings, infer_fps, loop_fps, camera_status, line)
 
     def _write_timing_profile(
@@ -833,6 +841,7 @@ class Lite3System:
             self.platform.stop_motion()
             return "completed"
         if self.platform.is_fallen():
+            self.fall_detected = True
             print(
                 f"[System] Failure: platform reported fallen "
                 f"(tick={self.tick}, height={self.platform.get_height():.3f})"
@@ -848,6 +857,7 @@ class Lite3System:
     def _handle_stuck(self, actual_velocity: float, command: MotionCommand) -> str | None:
         self.stuck_detector.update(actual_velocity, command.linear_x)
         if self.stuck_detector.is_stuck():
+            self.stuck_detected = True
             self.recovery_count_total += 1
             return "recovery"
         return None
@@ -1126,14 +1136,15 @@ class Lite3System:
         self._close_video_writer()
         if self.video_path is not None:
             print(f"[Recorder] Video saved to: {self.video_path.resolve()}")
-        mode_name = f"{self.result_prefix}_{self.args.mode}"
-        self.legacy._save_results(
-            self.trajectory,
-            self.velocity_log,
-            mode_name,
-            self.args,
-            reached_goal=self.goal_reached if self.args.mode in {"navigate", "mission"} else None,
-        )
+        if not bool(getattr(self.args, "suppress_legacy_results", False)):
+            mode_name = f"{self.result_prefix}_{self.args.mode}"
+            self.legacy._save_results(
+                self.trajectory,
+                self.velocity_log,
+                mode_name,
+                self.args,
+                reached_goal=self.goal_reached if self.args.mode in {"navigate", "mission"} else None,
+            )
         if self.close_platform_on_finalize:
             self.platform.close()
 
@@ -1160,6 +1171,7 @@ class Lite3System:
             # 检测到 is_fallen 都立刻切 failed，避免 stand/idle 等状态
             # 遗漏摔倒判定。
             if current_name not in _safeguarded_states and self.platform.is_fallen():
+                self.fall_detected = True
                 print(
                     f"[System] Global safety trip: platform reported fallen in state={current_name}, "
                     f"tick={self.tick}, height={self.platform.get_height():.3f}"

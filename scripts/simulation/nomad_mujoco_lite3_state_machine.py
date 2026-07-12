@@ -140,6 +140,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="Optional policy device override such as cuda, cuda:0, or cpu.",
     )
     parser.add_argument(
+        "--policy-action-scale-m",
+        type=float,
+        default=1.0,
+        help="Convert native NoMaD action units to target-platform meters before waypoint control.",
+    )
+    parser.add_argument(
         "--image-resize-mode",
         choices=["stretch", "center_crop", "letterbox"],
         default="stretch",

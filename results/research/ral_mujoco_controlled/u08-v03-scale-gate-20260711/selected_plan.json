@@ -1,0 +1,24 @@
+{
+  "run_id": "u08-v03-scale-gate-20260711",
+  "protocol_sha256": "8978b80b99dc038f0b8504c09cc5ea2340cb2284348f44704490e3ebec3484e1",
+  "trial_keys": [
+    "ddpm10_cfg0_standard_k8__easy__s11__g0__policy_only_off",
+    "ddpm10_cfg0_standard_k8__easy__s11__g0__system_stabilizer_on",
+    "ddpm10_cfg0_standard_k8__easy__s23__g0__policy_only_off",
+    "ddpm10_cfg0_standard_k8__easy__s23__g0__system_stabilizer_on",
+    "ddpm10_cfg0_standard_k8__easy__s47__g0__policy_only_off",
+    "ddpm10_cfg0_standard_k8__easy__s47__g0__system_stabilizer_on",
+    "ddpm10_cfg0_standard_k8__medium__s11__g0__policy_only_off",
+    "ddpm10_cfg0_standard_k8__medium__s11__g0__system_stabilizer_on",
+    "ddpm10_cfg0_standard_k8__medium__s23__g0__policy_only_off",
+    "ddpm10_cfg0_standard_k8__medium__s23__g0__system_stabilizer_on",
+    "ddpm10_cfg0_standard_k8__medium__s47__g0__policy_only_off",
+    "ddpm10_cfg0_standard_k8__medium__s47__g0__system_stabilizer_on",
+    "ddpm10_cfg0_standard_k8__hard__s11__g0__policy_only_off",
+    "ddpm10_cfg0_standard_k8__hard__s11__g0__system_stabilizer_on",
+    "ddpm10_cfg0_standard_k8__hard__s23__g0__policy_only_off",
+    "ddpm10_cfg0_standard_k8__hard__s23__g0__system_stabilizer_on",
+    "ddpm10_cfg0_standard_k8__hard__s47__g0__policy_only_off",
+    "ddpm10_cfg0_standard_k8__hard__s47__g0__system_stabilizer_on"
+  ]
+}

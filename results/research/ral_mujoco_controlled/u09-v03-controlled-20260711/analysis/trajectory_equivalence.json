@@ -1,0 +1,180 @@
+{
+  "policy_only_off": {
+    "all_methods_trajectory_equivalent": false,
+    "groups": [
+      {
+        "configuration_count": 5,
+        "diffusion_seed": 11,
+        "goal_seed": 0,
+        "hashes": {
+          "ddim2_cfg0_standard_k8": "80283e2279603eb99eed44de17ce835a90ab330135b99938ad35d1e33bfc91b8",
+          "ddim2_cfg0_tts8": "2be7c5d3671d64468c845a3073fb2a75e766acdbc9159a9b0acedff8b13b79f5",
+          "ddim2_cfg2_tts8": "1cebadf44ed00233e5a77c75e5cf5b00ba6cb93e0bf06c7e806f7e1fbce3afd2",
+          "ddim3_cfg0_standard_k8": "fa784fdbd77b7e8ae04612cf16f8c86f79d5a2682738113f12804337088fc8ce",
+          "ddpm10_cfg0_standard_k8": "37267bb9f21eff08f85c788f3f29356cbf9e73178db984d1ab637181074ac805"
+        },
+        "scene_id": "easy",
+        "unique_trajectory_count": 5
+      },
+      {
+        "configuration_count": 5,
+        "diffusion_seed": 23,
+        "goal_seed": 0,
+        "hashes": {
+          "ddim2_cfg0_standard_k8": "a4325f1f82af63deb773daf08b646915e3a44fe6ddd16b65d5240a638878712f",
+          "ddim2_cfg0_tts8": "faa20cb49f3b7374ce7dbb1a00c35dd7635c0fc944d8561a709d0e339e1319a6",
+          "ddim2_cfg2_tts8": "49b142791a719b7cc59d11751a9de9138c75a90fa38a18a8355bafd6a3450a4b",
+          "ddim3_cfg0_standard_k8": "d41b98ae579727c93c187664f66e76a48f2a63ba9c33bcabbfef1d8183c53d99",
+          "ddpm10_cfg0_standard_k8": "c125e202181123cc9fa551d17f1729b0674e276cc30e2c94904c232dff652510"
+        },
+        "scene_id": "easy",
+        "unique_trajectory_count": 5
+      },
+      {
+        "configuration_count": 5,
+        "diffusion_seed": 47,
+        "goal_seed": 0,
+        "hashes": {
+          "ddim2_cfg0_standard_k8": "70020f760a44a8d6810f26dc7b3672e1095b1d9f395326dfbd6dc0ac8bc863e8",
+          "ddim2_cfg0_tts8": "ef4914ce7e2426b0be84d201fba37c9f80f3fe1d4ae5c363277825cf4a549ad4",
+          "ddim2_cfg2_tts8": "0d70e06407cdb4ad415b43901fa48e1d5434658b631d0048f56f5b5a78acac13",
+          "ddim3_cfg0_standard_k8": "ddb52035179f34d4c217f51e7944f96c272745ea9aa25f6d77fe4c13354c85b5",
+          "ddpm10_cfg0_standard_k8": "afd970ca28d5e7964d65fb863a3197260d9282804a17a5658cfcccb35e856009"
+        },
+        "scene_id": "easy",
+        "unique_trajectory_count": 5
+      },
+      {
+        "configuration_count": 5,
+        "diffusion_seed": 11,
+        "goal_seed": 0,
+        "hashes": {
+          "ddim2_cfg0_standard_k8": "c15d2f8bf810acbc8f1425fd9760dbd7a34bed61c9fe9304d9aa115a7db4c287",
+          "ddim2_cfg0_tts8": "371ba5e327125d17b2ee9292215128513d711dec09d9c38e76252f093c64300f",
+          "ddim2_cfg2_tts8": "e09421c514747abc2a6f24d5e54b89bc28a269f19ce365148cdedbbf17d559a2",
+          "ddim3_cfg0_standard_k8": "0ad6aaccbcbc422af9322bb14f04a6b1c57b81d2e93466f40613b84599000ea1",
+          "ddpm10_cfg0_standard_k8": "a4195f4d2f4cdd0d5384a623380d85eddfc4c6a04d42b4667273c80cf3c2c0f0"
+        },
+        "scene_id": "medium",
+        "unique_trajectory_count": 5
+      },
+      {
+        "configuration_count": 5,
+        "diffusion_seed": 23,
+        "goal_seed": 0,
+        "hashes": {
+          "ddim2_cfg0_standard_k8": "d81598c97555fd411e91eecee0751339a3ff021aaa4f744e3ca9d139c1304e39",
+          "ddim2_cfg0_tts8": "44716ccf538f000aa6cbb2cae818561d079cf688e06000c464b4dabf942e49e6",
+          "ddim2_cfg2_tts8": "a57debb190a698ec83aee6ea2b69003e95355fc75b54bf18b61fa75c989d5a1f",
+          "ddim3_cfg0_standard_k8": "9e54f1e05a8ec2b2a1dc77721b86d04c3092ab250b475f97755069bd86155e9f",
+          "ddpm10_cfg0_standard_k8": "dd5d0b70a0b1f03035b5d72ed07300d4fd40a2bd7b21ff7a4ce63482f918851f"
+        },
+        "scene_id": "medium",
+        "unique_trajectory_count": 5
+      },
+      {
+        "configuration_count": 5,
+        "diffusion_seed": 47,
+        "goal_seed": 0,
+        "hashes": {
+          "ddim2_cfg0_standard_k8": "fd9b15e0bc6ee57278c9645893050a57e4e473feef17f75542266d353a0ee6d3",
+          "ddim2_cfg0_tts8": "472e457e043026206be925641c766ad97ef946538da3a2cc19192474d9a4f018",
+          "ddim2_cfg2_tts8": "06a410dc1ec79a17d8ea18c61c604e0e4b4ada807f60cb26c152f6045cc679e3",
+          "ddim3_cfg0_standard_k8": "458a92eaf12e522193181d4bda35516893ae9f3b2d9d562fb2cc27990eae4a99",
+          "ddpm10_cfg0_standard_k8": "9f42b71c36ddb158463b2ec6060424c88d5b5a4eff17d89c1e3ff0900033d445"
+        },
+        "scene_id": "medium",
+        "unique_trajectory_count": 5
+      }
+    ]
+  },
+  "system_stabilizer_on": {
+    "all_methods_trajectory_equivalent": true,
+    "groups": [
+      {
+        "configuration_count": 5,
+        "diffusion_seed": 11,
+        "goal_seed": 0,
+        "hashes": {
+          "ddim2_cfg0_standard_k8": "e65062007b5798360e7ed44fb7174512d69083646ac2311198bea0c01e87f574",
+          "ddim2_cfg0_tts8": "e65062007b5798360e7ed44fb7174512d69083646ac2311198bea0c01e87f574",
+          "ddim2_cfg2_tts8": "e65062007b5798360e7ed44fb7174512d69083646ac2311198bea0c01e87f574",
+          "ddim3_cfg0_standard_k8": "e65062007b5798360e7ed44fb7174512d69083646ac2311198bea0c01e87f574",
+          "ddpm10_cfg0_standard_k8": "e65062007b5798360e7ed44fb7174512d69083646ac2311198bea0c01e87f574"
+        },
+        "scene_id": "easy",
+        "unique_trajectory_count": 1
+      },
+      {
+        "configuration_count": 5,
+        "diffusion_seed": 23,
+        "goal_seed": 0,
+        "hashes": {
+          "ddim2_cfg0_standard_k8": "4250d1f8b318e4ca0bf6994f20b8356421ba6b55ca12fa90d11916bd39656c8f",
+          "ddim2_cfg0_tts8": "4250d1f8b318e4ca0bf6994f20b8356421ba6b55ca12fa90d11916bd39656c8f",
+          "ddim2_cfg2_tts8": "4250d1f8b318e4ca0bf6994f20b8356421ba6b55ca12fa90d11916bd39656c8f",
+          "ddim3_cfg0_standard_k8": "4250d1f8b318e4ca0bf6994f20b8356421ba6b55ca12fa90d11916bd39656c8f",
+          "ddpm10_cfg0_standard_k8": "4250d1f8b318e4ca0bf6994f20b8356421ba6b55ca12fa90d11916bd39656c8f"
+        },
+        "scene_id": "easy",
+        "unique_trajectory_count": 1
+      },
+      {
+        "configuration_count": 5,
+        "diffusion_seed": 47,
+        "goal_seed": 0,
+        "hashes": {
+          "ddim2_cfg0_standard_k8": "e65062007b5798360e7ed44fb7174512d69083646ac2311198bea0c01e87f574",
+          "ddim2_cfg0_tts8": "e65062007b5798360e7ed44fb7174512d69083646ac2311198bea0c01e87f574",
+          "ddim2_cfg2_tts8": "e65062007b5798360e7ed44fb7174512d69083646ac2311198bea0c01e87f574",
+          "ddim3_cfg0_standard_k8": "e65062007b5798360e7ed44fb7174512d69083646ac2311198bea0c01e87f574",
+          "ddpm10_cfg0_standard_k8": "e65062007b5798360e7ed44fb7174512d69083646ac2311198bea0c01e87f574"
+        },
+        "scene_id": "easy",
+        "unique_trajectory_count": 1
+      },
+      {
+        "configuration_count": 5,
+        "diffusion_seed": 11,
+        "goal_seed": 0,
+        "hashes": {
+          "ddim2_cfg0_standard_k8": "d6c95584dea7fdce62670cea47d9c77d037d8de71250d69d03c6f301d4510928",
+          "ddim2_cfg0_tts8": "d6c95584dea7fdce62670cea47d9c77d037d8de71250d69d03c6f301d4510928",
+          "ddim2_cfg2_tts8": "d6c95584dea7fdce62670cea47d9c77d037d8de71250d69d03c6f301d4510928",
+          "ddim3_cfg0_standard_k8": "d6c95584dea7fdce62670cea47d9c77d037d8de71250d69d03c6f301d4510928",
+          "ddpm10_cfg0_standard_k8": "d6c95584dea7fdce62670cea47d9c77d037d8de71250d69d03c6f301d4510928"
+        },
+        "scene_id": "medium",
+        "unique_trajectory_count": 1
+      },
+      {
+        "configuration_count": 5,
+        "diffusion_seed": 23,
+        "goal_seed": 0,
+        "hashes": {
+          "ddim2_cfg0_standard_k8": "d6c95584dea7fdce62670cea47d9c77d037d8de71250d69d03c6f301d4510928",
+          "ddim2_cfg0_tts8": "d6c95584dea7fdce62670cea47d9c77d037d8de71250d69d03c6f301d4510928",
+          "ddim2_cfg2_tts8": "d6c95584dea7fdce62670cea47d9c77d037d8de71250d69d03c6f301d4510928",
+          "ddim3_cfg0_standard_k8": "d6c95584dea7fdce62670cea47d9c77d037d8de71250d69d03c6f301d4510928",
+          "ddpm10_cfg0_standard_k8": "d6c95584dea7fdce62670cea47d9c77d037d8de71250d69d03c6f301d4510928"
+        },
+        "scene_id": "medium",
+        "unique_trajectory_count": 1
+      },
+      {
+        "configuration_count": 5,
+        "diffusion_seed": 47,
+        "goal_seed": 0,
+        "hashes": {
+          "ddim2_cfg0_standard_k8": "d6c95584dea7fdce62670cea47d9c77d037d8de71250d69d03c6f301d4510928",
+          "ddim2_cfg0_tts8": "d6c95584dea7fdce62670cea47d9c77d037d8de71250d69d03c6f301d4510928",
+          "ddim2_cfg2_tts8": "d6c95584dea7fdce62670cea47d9c77d037d8de71250d69d03c6f301d4510928",
+          "ddim3_cfg0_standard_k8": "d6c95584dea7fdce62670cea47d9c77d037d8de71250d69d03c6f301d4510928",
+          "ddpm10_cfg0_standard_k8": "d6c95584dea7fdce62670cea47d9c77d037d8de71250d69d03c6f301d4510928"
+        },
+        "scene_id": "medium",
+        "unique_trajectory_count": 1
+      }
+    ]
+  }
+}

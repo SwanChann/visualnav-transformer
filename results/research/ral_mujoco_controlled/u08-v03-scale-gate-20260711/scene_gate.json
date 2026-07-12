@@ -1,0 +1,29 @@
+{
+  "schema_version": "0.3",
+  "run_id": "u08-v03-scale-gate-20260711",
+  "created_at_utc": "2026-07-11T14:37:49Z",
+  "calibration_protocol_sha256": "8978b80b99dc038f0b8504c09cc5ea2340cb2284348f44704490e3ebec3484e1",
+  "policy_action_scale_m": 0.1,
+  "scale_derivation": "Lite3 bridge_max_v_mps 0.4 / NoMaD frequency 4 Hz",
+  "method_blind": true,
+  "posthoc_method_tuning_performed": false,
+  "success_criterion": "system.goal_reached with physical planar distance < 0.5 m before the tick-62 terminal check and no fall",
+  "outcomes": {
+    "easy": {
+      "policy_only_off": {"success_by_seed": {"11": true, "23": true, "47": true}, "success_n": 3, "trial_n": 3},
+      "system_stabilizer_on": {"success_by_seed": {"11": false, "23": false, "47": false}, "success_n": 0, "trial_n": 3}
+    },
+    "medium": {
+      "policy_only_off": {"success_by_seed": {"11": false, "23": true, "47": false}, "success_n": 1, "trial_n": 3},
+      "system_stabilizer_on": {"success_by_seed": {"11": false, "23": false, "47": false}, "success_n": 0, "trial_n": 3}
+    },
+    "hard": {
+      "policy_only_off": {"success_by_seed": {"11": false, "23": false, "47": false}, "success_n": 0, "trial_n": 3},
+      "system_stabilizer_on": {"success_by_seed": {"11": false, "23": false, "47": false}, "success_n": 0, "trial_n": 3}
+    }
+  },
+  "retained_scenes": ["easy", "medium"],
+  "rejected_scenes": ["hard"],
+  "decision": "retain scenes with at least one policy-only DDPM-10 success; reject universally unsuccessful hard",
+  "u09_v03_authorization": "Five configurations may be evaluated only on easy and medium with the frozen v0.3 protocol."
+}

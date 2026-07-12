@@ -1,0 +1,49 @@
+{
+  "record_kind": "descriptive_posthoc_falsification_only",
+  "cheap_id": "ddim2_cfg0_standard_k8",
+  "fallback_id": "ddim2_cfg0_tts8",
+  "routing_signal": "cheap candidate_diversity_m",
+  "threshold_policy": "all predeclared empirical quantiles reported; none selected",
+  "rows": [
+    {
+      "quantile": 0.0,
+      "threshold_m": 0.028749214618805675,
+      "fallback_cases": 14,
+      "case_n": 15,
+      "action_ade_m_mean": 0.11803072907518132,
+      "sampler_latency_ms_mean": 9.533055733239356
+    },
+    {
+      "quantile": 0.25,
+      "threshold_m": 0.04253050642440151,
+      "fallback_cases": 11,
+      "case_n": 15,
+      "action_ade_m_mean": 0.11639880524641087,
+      "sampler_latency_ms_mean": 9.576256333336156
+    },
+    {
+      "quantile": 0.5,
+      "threshold_m": 0.056026359766696184,
+      "fallback_cases": 7,
+      "case_n": 15,
+      "action_ade_m_mean": 0.1201507431581656,
+      "sampler_latency_ms_mean": 9.735633866512217
+    },
+    {
+      "quantile": 0.75,
+      "threshold_m": 0.10411680445493396,
+      "fallback_cases": 4,
+      "case_n": 15,
+      "action_ade_m_mean": 0.11146839883390035,
+      "sampler_latency_ms_mean": 9.717498599881461
+    },
+    {
+      "quantile": 1.0,
+      "threshold_m": 0.2173399147617998,
+      "fallback_cases": 0,
+      "case_n": 15,
+      "action_ade_m_mean": 0.10177494773901373,
+      "sampler_latency_ms_mean": 9.66077626629461
+    }
+  ]
+}

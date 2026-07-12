@@ -44,6 +44,17 @@ class ExplorationResult:
     sampled_actions: np.ndarray
 
 
+def scale_policy_actions(samples: np.ndarray, action_scale_m: float) -> np.ndarray:
+    """Convert native NoMaD action units to target-platform metric waypoints."""
+    scale = float(action_scale_m)
+    if not np.isfinite(scale) or scale <= 0:
+        raise ValueError("action_scale_m must be finite and positive")
+    values = np.asarray(samples, dtype=float)
+    if values.ndim != 3 or values.shape[-1] != 2 or not np.isfinite(values).all():
+        raise ValueError(f"Expected finite policy samples [N,T,2], got {values.shape}")
+    return values * scale
+
+
 class NavigationPlatformBase:
     """Abstract platform interface for simulation and real deployment."""
 
@@ -82,6 +93,9 @@ class NavigationPlatformBase:
 
     def is_fallen(self) -> bool:
         raise NotImplementedError
+
+    def has_navigation_collision(self) -> bool:
+        return False
 
     def viewer_alive(self) -> bool:
         raise NotImplementedError
@@ -132,6 +146,7 @@ class Lite3HighLevelNoMaD:
         policy_checkpoint: str | None = None,
         device: str | None = None,
         image_resize_mode: str = "stretch",
+        action_scale_m: float = 1.0,
     ) -> None:
         self.legacy = load_legacy()
         self.inference = NoMaDInferenceModule(
@@ -154,6 +169,16 @@ class Lite3HighLevelNoMaD:
         self.waypoint_index = waypoint_index
         self.radius = radius
         self.close_threshold = close_threshold
+        self.action_scale_m = float(action_scale_m)
+        scale_policy_actions(np.zeros((1, 1, 2)), self.action_scale_m)
+
+    def preprocess_frame(self, frame):
+        """Expose preprocessing through the backend boundary, not its inference internals."""
+        return self.inference.pil_to_tensor(frame)
+
+    def close(self) -> None:
+        """Release backend resources; the current eager NoMaD backend owns none."""
+        return None
 
     def _build_obs_tensor(self, frame_buffer: Deque[torch.Tensor]) -> torch.Tensor:
         return self.inference.build_obs_tensor(frame_buffer).to(self.device)
@@ -173,7 +198,7 @@ class Lite3HighLevelNoMaD:
         fake_goal = torch.randn((1, 3, image_height, image_width), device=self.device)
         obs_cond = self.inference.encode_condition(obs_tensor, fake_goal, goal_mask_value=1)
 
-        sampled_actions = self._sample_actions(obs_cond)
+        sampled_actions = scale_policy_actions(self._sample_actions(obs_cond), self.action_scale_m)
         mean_action = sampled_actions.mean(axis=0)
         chosen_waypoint = mean_action[min(self.waypoint_index, self.inference.len_traj_pred - 1)]
         return ExplorationResult(chosen_waypoint=chosen_waypoint, sampled_actions=sampled_actions)
@@ -223,7 +248,7 @@ class Lite3HighLevelNoMaD:
                 goal_mask_value=1,
             )
 
-        sampled_actions = self._sample_actions(obs_cond, uncond=uncond_cond)
+        sampled_actions = scale_policy_actions(self._sample_actions(obs_cond, uncond=uncond_cond), self.action_scale_m)
         mean_action = sampled_actions.mean(axis=0)
         chosen_waypoint = mean_action[min(self.waypoint_index, self.inference.len_traj_pred - 1)]
         return NavigationResult(
@@ -336,6 +361,17 @@ class Lite3LowLevelPlatform(NavigationPlatformBase):
 
     def is_fallen(self) -> bool:
         return self.env.is_fallen()
+
+    def has_navigation_collision(self) -> bool:
+        mujoco = self.legacy.mujoco
+        scene_prefixes = ("wall_", "obstacle")
+        for contact_index in range(int(self.env.data.ncon)):
+            contact = self.env.data.contact[contact_index]
+            geom1 = mujoco.mj_id2name(self.env.model, mujoco.mjtObj.mjOBJ_GEOM, int(contact.geom1)) or ""
+            geom2 = mujoco.mj_id2name(self.env.model, mujoco.mjtObj.mjOBJ_GEOM, int(contact.geom2)) or ""
+            if geom1.startswith(scene_prefixes) != geom2.startswith(scene_prefixes):
+                return True
+        return False
 
     def viewer_alive(self) -> bool:
         return self.env.viewer_alive()

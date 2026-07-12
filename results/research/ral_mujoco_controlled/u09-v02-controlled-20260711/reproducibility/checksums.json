@@ -1,0 +1,613 @@
+{
+  "created_at_utc": "2026-07-11T13:18:57Z",
+  "file_count": 120,
+  "files": [
+    {
+      "path": "\u540e\u7eed\u7814\u7a76\u5185\u5bb9/benchmark/ral_mujoco_protocol_v0.2.json",
+      "sha256": "4df19bb8d1d15d6969c1df52c2b2f339e5f489dc3bb6db140fe3586fdd9497d6",
+      "size_bytes": 1335
+    },
+    {
+      "path": "\u540e\u7eed\u7814\u7a76\u5185\u5bb9/benchmark/ral_mujoco_protocol_v0.1.json",
+      "sha256": "0dffb341642027af89a51bf81df0053e6682647e062e41a7db0e75a4ef68e62f",
+      "size_bytes": 8667
+    },
+    {
+      "path": "\u540e\u7eed\u7814\u7a76\u5185\u5bb9/benchmark/ral_mujoco_calibration_v0.2.json",
+      "sha256": "3c2eec1b286879a06601c240035491dbb5adf19bb8c3a518775e9a0ef5aa75f3",
+      "size_bytes": 1638
+    },
+    {
+      "path": "\u540e\u7eed\u7814\u7a76\u5185\u5bb9/benchmark/ral_mujoco_trial_schema_v0.1.json",
+      "sha256": "b92d67cdfa6415e17a754429eb3c15c3629a58079502ce236be298756017467f",
+      "size_bytes": 9176
+    },
+    {
+      "path": "scripts/experiments/ral_mujoco_controlled.py",
+      "sha256": "8e8b2f4ff74358fd2066a4c5d970ae6625b6e0edba7e3a8c2c650d4961a48ba8",
+      "size_bytes": 22720
+    },
+    {
+      "path": "scripts/analysis/validate_ral_mujoco_trial.py",
+      "sha256": "1911591777ba521bd9d8ff9d9282740429d48ba6f990e95a09e4b3e79ee1ff21",
+      "size_bytes": 10272
+    },
+    {
+      "path": "scripts/analysis/ral_controlled_results.py",
+      "sha256": "ee899be2b7b9d2da87e676be7981f31eebed7715f868b00758fd6f76ce059d76",
+      "size_bytes": 21366
+    },
+    {
+      "path": "scripts/analysis/ral_controlled_figures.py",
+      "sha256": "38fe6cc8f6b91a5e147df318346946e81ed4b779c1323259b4c46f9dac5f8702",
+      "size_bytes": 6981
+    },
+    {
+      "path": "results/research/ubuntu_environment/pip_freeze.txt",
+      "sha256": "f036f9fddbb9a27abfd456bf769575609f8b59c8ceb3c0097584a49215d54eaa",
+      "size_bytes": 4690
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/REPRODUCE.md",
+      "sha256": "2ab061c1585267f9b113c70bf436cbc82f7f7a90192cc5024bb7bcfb5eaf517e",
+      "size_bytes": 2976
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/batch_manifest.json",
+      "sha256": "a3e9cb80de88582811fd798193d74a03b0eeb5d775b41d12901c282669a1decc",
+      "size_bytes": 9221
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/selected_plan.json",
+      "sha256": "48e0144e01b31feb81f91a3697ff2eb750d51b528f57ba3fe445d2fa64b4692c",
+      "size_bytes": 3931
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/trials/ddim2_cfg0_standard_k8__easy__s11__g0__policy_only_off__a01.json",
+      "sha256": "43c7958a4d6f9f742516e4dd1ee5008e89a31f29faf25d5159aa07cbc03a2ba7",
+      "size_bytes": 10307
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/trials/ddim2_cfg0_standard_k8__easy__s11__g0__system_stabilizer_on__a01.json",
+      "sha256": "f72614662b006214b54c32b40ab8cef22121a62e57b232911b0a6b89f2a7cb94",
+      "size_bytes": 12573
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/trials/ddim2_cfg0_standard_k8__easy__s23__g0__policy_only_off__a01.json",
+      "sha256": "98becc77fbfae07cf09c7c299678a776e72d85d783bfb1de6d0a6ffe135c6593",
+      "size_bytes": 10280
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/trials/ddim2_cfg0_standard_k8__easy__s23__g0__system_stabilizer_on__a01.json",
+      "sha256": "152762f97a73b734f9256373cfa7906ec9c2afdb1ba6308a1ae71f94b2fce2a9",
+      "size_bytes": 12586
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/trials/ddim2_cfg0_standard_k8__easy__s47__g0__policy_only_off__a01.json",
+      "sha256": "6e6a14fe2aa6e889e938d6afaed851c05ec534b8eea181531b09de089ec0d3fb",
+      "size_bytes": 10163
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/trials/ddim2_cfg0_standard_k8__easy__s47__g0__system_stabilizer_on__a01.json",
+      "sha256": "f418b53660fa2f2c42edef80956e4a60c017bd40992a4ec090af8eeed0240863",
+      "size_bytes": 12575
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/trials/ddim2_cfg0_standard_k8__medium__s11__g0__policy_only_off__a01.json",
+      "sha256": "5bd0b5cb681ff44c1f82d37ecf91eee8961f13704c2916c30ca2fef35ee74d6b",
+      "size_bytes": 12981
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/trials/ddim2_cfg0_standard_k8__medium__s11__g0__system_stabilizer_on__a01.json",
+      "sha256": "3aeac61ebdaaa3ff82adf6512e8708e882bc5a6559a4b19623beb673dcd3d361",
+      "size_bytes": 13202
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/trials/ddim2_cfg0_standard_k8__medium__s23__g0__policy_only_off__a01.json",
+      "sha256": "7ba6b122ca979ef9fe24eb6210abce485163a77c6253df5913df70112925c694",
+      "size_bytes": 12976
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/trials/ddim2_cfg0_standard_k8__medium__s23__g0__system_stabilizer_on__a01.json",
+      "sha256": "a4b7ffa66e886706b4440f00279c05ff7c4576c59dd1a4b68dee978552ca43ca",
+      "size_bytes": 13211
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/trials/ddim2_cfg0_standard_k8__medium__s47__g0__policy_only_off__a01.json",
+      "sha256": "1097c64945d48655c6f0f738b675bd27d09dde644675bcde958bd851cf6c4d16",
+      "size_bytes": 12463
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/trials/ddim2_cfg0_standard_k8__medium__s47__g0__system_stabilizer_on__a01.json",
+      "sha256": "d4a3a13990cf1b607ed64eded8df1a4a4b62e1517ea57fb33ee43f730de57efc",
+      "size_bytes": 13196
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/trials/ddim2_cfg0_tts8__easy__s11__g0__policy_only_off__a01.json",
+      "sha256": "5c24bd1fcb57ba4fa438c606b346255838f1255fe5f4796979d1a3b500948c0c",
+      "size_bytes": 10147
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/trials/ddim2_cfg0_tts8__easy__s11__g0__system_stabilizer_on__a01.json",
+      "sha256": "9af1db26b0e752e918d60358651d46682251bcc3357ee53ba4cb06b2f045d3b3",
+      "size_bytes": 12563
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/trials/ddim2_cfg0_tts8__easy__s23__g0__policy_only_off__a01.json",
+      "sha256": "305299811b82a9c344a387bf78e2419191f743f4e380b57dc5805bf2cae9012a",
+      "size_bytes": 10135
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/trials/ddim2_cfg0_tts8__easy__s23__g0__system_stabilizer_on__a01.json",
+      "sha256": "f794f368395bb41150c7296e198e52f568486f222e67f815a34ae816f483019d",
+      "size_bytes": 12566
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/trials/ddim2_cfg0_tts8__easy__s47__g0__policy_only_off__a01.json",
+      "sha256": "4dbbd69d0e74b104cb96b231fb7f205e5fc5929ca87e1e0e2919f30ecff7ae7e",
+      "size_bytes": 10116
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/trials/ddim2_cfg0_tts8__easy__s47__g0__system_stabilizer_on__a01.json",
+      "sha256": "2c7b8c25317ef0ec7f3258b2214da2963e5b21771e1a3cbcc02ccc1f62c810b0",
+      "size_bytes": 12547
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/trials/ddim2_cfg0_tts8__medium__s11__g0__policy_only_off__a01.json",
+      "sha256": "96d4868124a09015c331558f34ec948098cf211464760fe2ca7e3668f5fedc94",
+      "size_bytes": 13094
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/trials/ddim2_cfg0_tts8__medium__s11__g0__system_stabilizer_on__a01.json",
+      "sha256": "59de9681afc2caf1e2db0e77b9c92adb90626da84b67efb808c07384e26ea70f",
+      "size_bytes": 13196
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/trials/ddim2_cfg0_tts8__medium__s23__g0__policy_only_off__a01.json",
+      "sha256": "be96e68fa0016440aab311faeca6118772e1625709f4029aa73f9858576500bb",
+      "size_bytes": 12793
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/trials/ddim2_cfg0_tts8__medium__s23__g0__system_stabilizer_on__a01.json",
+      "sha256": "5bfff29faf224fd1a41279c3843c5c1ec14a198ed66062b7cb2206044d574561",
+      "size_bytes": 13164
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/trials/ddim2_cfg0_tts8__medium__s47__g0__policy_only_off__a01.json",
+      "sha256": "758a7c0d729ef0be70180cb34e96eb5a625728dd8d3d94e7197ad95e40b3db66",
+      "size_bytes": 12928
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/trials/ddim2_cfg0_tts8__medium__s47__g0__system_stabilizer_on__a01.json",
+      "sha256": "b2259421518125695f00c5d124851ba05398219a93adca618f8dfb0ae6f7d5d7",
+      "size_bytes": 13181
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/trials/ddim2_cfg2_tts8__easy__s11__g0__policy_only_off__a01.json",
+      "sha256": "012feaf7ede318a3c006506d736eec7cb9dbbb2cb4f87a3091a5818f5a828703",
+      "size_bytes": 10014
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/trials/ddim2_cfg2_tts8__easy__s11__g0__system_stabilizer_on__a01.json",
+      "sha256": "cbdf1642518e3a890a4600f706f7bc9aa7734e38e9e551c8f680fc5a8468a2b9",
+      "size_bytes": 12556
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/trials/ddim2_cfg2_tts8__easy__s23__g0__policy_only_off__a01.json",
+      "sha256": "b5b852d11ea1758058d919047a40983f504f76ff21b68f9f15e909d7ab8f8c27",
+      "size_bytes": 10007
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/trials/ddim2_cfg2_tts8__easy__s23__g0__system_stabilizer_on__a01.json",
+      "sha256": "1c7bf9fd3eb8b0964965e8b5848b2988240231a18e2afac869b7a1c7250f176a",
+      "size_bytes": 12556
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/trials/ddim2_cfg2_tts8__easy__s47__g0__policy_only_off__a01.json",
+      "sha256": "f3be8ee4dbe3dd7ae28bb95ccf7a3c9285f17c9ca4347ba86598fc2f27beb863",
+      "size_bytes": 10157
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/trials/ddim2_cfg2_tts8__easy__s47__g0__system_stabilizer_on__a01.json",
+      "sha256": "ad699edbab0658032146ea0dfabc2a838f6feb056d63fbb96717a15b55d9cd44",
+      "size_bytes": 12561
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/trials/ddim2_cfg2_tts8__medium__s11__g0__policy_only_off__a01.json",
+      "sha256": "075eb9a9ff52a508e613d2eabab7f998a824748dadb5670e478b91798bc6ea02",
+      "size_bytes": 12826
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/trials/ddim2_cfg2_tts8__medium__s11__g0__system_stabilizer_on__a01.json",
+      "sha256": "cf143f030c9090b014ddbd407b9fa75b03f0cf1e081d20a39511f7a0f25ea77b",
+      "size_bytes": 13178
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/trials/ddim2_cfg2_tts8__medium__s23__g0__policy_only_off__a01.json",
+      "sha256": "23e6002a4bc3d21f63b2ee1200168add9e2818309b6425807bb6849b0820cb9a",
+      "size_bytes": 12828
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/trials/ddim2_cfg2_tts8__medium__s23__g0__system_stabilizer_on__a01.json",
+      "sha256": "36ce29516dc14406acdbd59cfbfddbcaeeda8b434b90d14467886eee3183df64",
+      "size_bytes": 13175
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/trials/ddim2_cfg2_tts8__medium__s47__g0__policy_only_off__a01.json",
+      "sha256": "45b8ea9b264bf8e110d4ea055f71f56a7cfe9acaf1f311edcda8fe066a4fe8b8",
+      "size_bytes": 12819
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/trials/ddim2_cfg2_tts8__medium__s47__g0__system_stabilizer_on__a01.json",
+      "sha256": "ff58b5ad67804d003b4925d333a2a02ed91827c77f93fc04cf5db6257f893432",
+      "size_bytes": 13164
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/trials/ddim3_cfg0_standard_k8__easy__s11__g0__policy_only_off__a01.json",
+      "sha256": "5bc1af984e69298b0d6bb5be569488cd942d87c2d6ea212aaac5853f4676861a",
+      "size_bytes": 10170
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/trials/ddim3_cfg0_standard_k8__easy__s11__g0__system_stabilizer_on__a01.json",
+      "sha256": "f536feb752238721632f3920da3b7d9fdf8299195ed7cb7f458fc6ba132878b0",
+      "size_bytes": 12619
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/trials/ddim3_cfg0_standard_k8__easy__s23__g0__policy_only_off__a01.json",
+      "sha256": "170192962e1627d002760dd30b0b7d08fa22bf1f545f484b594549fdec40ecb7",
+      "size_bytes": 10914
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/trials/ddim3_cfg0_standard_k8__easy__s23__g0__system_stabilizer_on__a01.json",
+      "sha256": "796b11270a0ba97f39a761bbf620dae8871b5c8ad2eecff2c35bf1d044425b09",
+      "size_bytes": 12603
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/trials/ddim3_cfg0_standard_k8__easy__s47__g0__policy_only_off__a01.json",
+      "sha256": "59a3dd0204a62454fa11bfe90ea2375a8f647778ad7c4c0febc3382a675d6dc7",
+      "size_bytes": 10316
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/trials/ddim3_cfg0_standard_k8__easy__s47__g0__system_stabilizer_on__a01.json",
+      "sha256": "b703c8ead966d6b1a8a4174a92c76b75adb9f76405130f9c76b1dc6e8fc996e6",
+      "size_bytes": 12606
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/trials/ddim3_cfg0_standard_k8__medium__s11__g0__policy_only_off__a01.json",
+      "sha256": "071b0378e8f6e0e2c82191df3f80394baef1d0e87b1a0f6b14844bae2a0c2bce",
+      "size_bytes": 12849
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/trials/ddim3_cfg0_standard_k8__medium__s11__g0__system_stabilizer_on__a01.json",
+      "sha256": "f013d559e5382f3979bd67ef3bac0506b6530d9155dcbaf52c028720e3ee0055",
+      "size_bytes": 13236
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/trials/ddim3_cfg0_standard_k8__medium__s23__g0__policy_only_off__a01.json",
+      "sha256": "7cbccd0f9a0c08ec25112465cf60ffdcd395a24257bcc6377c9e11b3b3aa94fe",
+      "size_bytes": 12980
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/trials/ddim3_cfg0_standard_k8__medium__s23__g0__system_stabilizer_on__a01.json",
+      "sha256": "5f4bcc97b85efc41fc4aae28eb711158c43fa5e8d013da05cb2ce929c1c5582a",
+      "size_bytes": 13236
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/trials/ddim3_cfg0_standard_k8__medium__s47__g0__policy_only_off__a01.json",
+      "sha256": "16aca40bbca9738d512875ddbbb055779a1721c3101c604c0c9be564cd24a9bc",
+      "size_bytes": 12440
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/trials/ddim3_cfg0_standard_k8__medium__s47__g0__system_stabilizer_on__a01.json",
+      "sha256": "f59fb7f0fbf6ac710e5a2e5312e116d5f603a2c17c25b313f17c0c9309c1ed53",
+      "size_bytes": 13236
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/trials/ddpm10_cfg0_standard_k8__easy__s11__g0__policy_only_off__a01.json",
+      "sha256": "eb4f78c01ae8ccb13146dc4a014b4de1bc806cf28918e71cd3e1af773575f8ba",
+      "size_bytes": 10285
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/trials/ddpm10_cfg0_standard_k8__easy__s11__g0__system_stabilizer_on__a01.json",
+      "sha256": "388a47a0e0c534414842f52f29b784ac58732cbc02ee7858901cece7fbd51467",
+      "size_bytes": 12577
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/trials/ddpm10_cfg0_standard_k8__easy__s23__g0__policy_only_off__a01.json",
+      "sha256": "a7848ad6bf132851e0a945b300b3769d4462b6eeb59465c65f9aa42bb73a1003",
+      "size_bytes": 10605
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/trials/ddpm10_cfg0_standard_k8__easy__s23__g0__system_stabilizer_on__a01.json",
+      "sha256": "b7da5455eac436a2c991da701ebced4ef4364bd096915ce132e00f9b39c2b399",
+      "size_bytes": 12569
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/trials/ddpm10_cfg0_standard_k8__easy__s47__g0__policy_only_off__a01.json",
+      "sha256": "feb9ff2f500770e77c8cac943e592cfa8bd20140da5500a2a0c9837ea3521eb8",
+      "size_bytes": 10280
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/trials/ddpm10_cfg0_standard_k8__easy__s47__g0__system_stabilizer_on__a01.json",
+      "sha256": "8e8fb5fbbf294bfa0e0a6f7c47aa41304fcfeb721551f26c7f2527272bb949d1",
+      "size_bytes": 12569
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/trials/ddpm10_cfg0_standard_k8__medium__s11__g0__policy_only_off__a01.json",
+      "sha256": "43de82c7dc9b3bc0bc1d11c691c9d31334934ffa39bfc2f70f02ac34d7ba28de",
+      "size_bytes": 13096
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/trials/ddpm10_cfg0_standard_k8__medium__s11__g0__system_stabilizer_on__a01.json",
+      "sha256": "3411cce2f34be83f67e6edbe6cf0dcbca7dca8a35fbf19741b42a9b5232406bf",
+      "size_bytes": 13178
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/trials/ddpm10_cfg0_standard_k8__medium__s23__g0__policy_only_off__a01.json",
+      "sha256": "70e1728770135494866aa5f27abb2481003beadbab243c2cc6c094451b768bae",
+      "size_bytes": 13086
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/trials/ddpm10_cfg0_standard_k8__medium__s23__g0__system_stabilizer_on__a01.json",
+      "sha256": "3832802373832145cee941834eb45114025f4f0f7af4307b71339a1af4ae984b",
+      "size_bytes": 13188
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/trials/ddpm10_cfg0_standard_k8__medium__s47__g0__policy_only_off__a01.json",
+      "sha256": "3fe68bcd555b7ba339b08aee699c2bc080f392c85835af9913ee5f48da1e76a1",
+      "size_bytes": 12411
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/trials/ddpm10_cfg0_standard_k8__medium__s47__g0__system_stabilizer_on__a01.json",
+      "sha256": "7ac7fbc93c783cc67b803a505c3c3f1d39c6c3c28d393160ca187568f3c25613",
+      "size_bytes": 13191
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/analysis/audit.json",
+      "sha256": "d2b246c4bb95b06acdf6bed56eeca5c769177c0e872e52f1b8c849fd419a263f",
+      "size_bytes": 622
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/analysis/controlled_episodes.csv",
+      "sha256": "f752789a1f6c0defab70ff44a28f82e3565d79fd2d6a2ac237a58878c0866f3e",
+      "size_bytes": 42309
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/analysis/offline_closed_loop_correlation.json",
+      "sha256": "a9d3cc17642e308c4c686374be1f7dc74aef78ba601387673d8fb3c1b7ba706c",
+      "size_bytes": 1388
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/analysis/paired_effects_vs_ddpm10.json",
+      "sha256": "3867690e52287ed388d63265381ac83de17162e87030b28a2131c0c823505cab",
+      "size_bytes": 15661
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/analysis/provenance_map.json",
+      "sha256": "fdae89f6db84514bbec422b5441ace1dd6417932ed8526b56de4910b00eca28d",
+      "size_bytes": 12231
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/analysis/robustness_sensitivity.csv",
+      "sha256": "6d7f51bb582eb3110e877f07113b8f672a30a5954398f7160eb89b15bafb831c",
+      "size_bytes": 9232
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/analysis/summary_by_config_stratum.json",
+      "sha256": "8f61074f631d61e826381b453af62a3ddef4c9580acfa7aeb49a33164bf96d30",
+      "size_bytes": 10710
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-controlled-20260711/analysis/trajectory_equivalence.json",
+      "sha256": "4f4e02cbf9674775d6a14a021cd4b9cc670341aeb774e719bcbb2859c3877b8b",
+      "size_bytes": 8697
+    },
+    {
+      "path": "\u6295\u7a3f\u51b2\u523a/workspace/controlled_results/fig_controlled_latency_spl.pdf",
+      "sha256": "22c10770a30306483bd2331d423759f9c8f445a3086d96dd64bf4d97b43a9b5b",
+      "size_bytes": 19942
+    },
+    {
+      "path": "\u6295\u7a3f\u51b2\u523a/workspace/controlled_results/fig_controlled_success.pdf",
+      "sha256": "87e0003d08bb482daf99633871f64e37794276205823f35b57fc67655365cd98",
+      "size_bytes": 17726
+    },
+    {
+      "path": "\u6295\u7a3f\u51b2\u523a/workspace/controlled_results/fig_controlled_trajectories.pdf",
+      "sha256": "38bca08e7240205505337a7bd2424ff643b76188a4bee00cb7ba4a8319dc40c8",
+      "size_bytes": 21290
+    },
+    {
+      "path": "\u6295\u7a3f\u51b2\u523a/workspace/controlled_results/table_iii.csv",
+      "sha256": "91b7ec161042e5468de016fd2b9778a97f9707744d9c3b47f96f477930a036e3",
+      "size_bytes": 2578
+    },
+    {
+      "path": "\u6295\u7a3f\u51b2\u523a/workspace/controlled_results/table_iii.md",
+      "sha256": "edd488a66fcd8abfde91931e823d34d2798c35b412bf038bc2ed39eadff1b36e",
+      "size_bytes": 1138
+    },
+    {
+      "path": "\u6295\u7a3f\u51b2\u523a/workspace/paper_package/01_title_abstract_contributions.md",
+      "sha256": "dfb2ec8264a1cfb60b617adb335cd1c2db6f66cff83e929d22c751e335c704c7",
+      "size_bytes": 3585
+    },
+    {
+      "path": "\u6295\u7a3f\u51b2\u523a/workspace/paper_package/02_method_results_skeleton.md",
+      "sha256": "5f15ce99bd20d3a116b8123a07a0229ab6e2449c34b4fe866b67a75c1f0d6586",
+      "size_bytes": 4074
+    },
+    {
+      "path": "\u6295\u7a3f\u51b2\u523a/workspace/paper_package/03_figures_tables_captions.md",
+      "sha256": "95a7575162824cb885d00e1b4d129139e6573dc99010810850ba1f92f6962192",
+      "size_bytes": 2792
+    },
+    {
+      "path": "\u6295\u7a3f\u51b2\u523a/workspace/paper_package/04_evidence_inclusion_rules.md",
+      "sha256": "ba6b4f0f5225813cd90f511a3b0b23f208f52b6cd2ac9e0a4790170b92508eaf",
+      "size_bytes": 1597
+    },
+    {
+      "path": "\u6295\u7a3f\u51b2\u523a/workspace/paper_package/05_reviewer_checklist.md",
+      "sha256": "07f03e6ac7accfefd517f11d500134f063ae53e29487bfa6f9212623e2287f8b",
+      "size_bytes": 2127
+    },
+    {
+      "path": "\u6295\u7a3f\u51b2\u523a/workspace/paper_package/claim_evidence_matrix.csv",
+      "sha256": "31076c1dc5cb2408cc5225d52ba0699ba3fb3a9dc52aadbc5471a3ac06a95726",
+      "size_bytes": 1493
+    },
+    {
+      "path": "\u6295\u7a3f\u51b2\u523a/workspace/paper_package/claim_evidence_matrix.md",
+      "sha256": "695daed090a30aeccf686f9456cedfbc46f93d04bcdecb15c4f58dc8ec0dc758",
+      "size_bytes": 1130
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-repeat-audit-20260711/batch_manifest.json",
+      "sha256": "894de59a928e44d8341fb85336ed4210fd7dee2e04f32cb5c483bdd7fadc6244",
+      "size_bytes": 1143
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-repeat-audit-20260711/repeat_audit.md",
+      "sha256": "0c3a9574123442fd0c3290c33de7ac4aad5a5cf5183bee01053ab1be14fd4626",
+      "size_bytes": 1164
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-repeat-audit-20260711/runtime/ddim2_cfg0_standard_k8__medium__s23__g0__policy_only_off__a01/goal_views/medium.png",
+      "sha256": "dc9b526c23267f8c2f7d155cf17fcd6bdb7b556be8be85372252ca7069f05bc1",
+      "size_bytes": 10055
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-repeat-audit-20260711/runtime/ddim2_cfg0_standard_k8__medium__s23__g0__policy_only_off__a01/logs/timing_profile.csv",
+      "sha256": "58b7bd9233e65c9083fc19b79a2425bbd3baa82a81d6d74628ccf9900c6e4f1d",
+      "size_bytes": 11361
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-repeat-audit-20260711/runtime/ddim2_cfg0_standard_k8__medium__s23__g0__policy_only_off__a01/logs/timing_profile.txt",
+      "sha256": "fbf4b95dfc1cc4f48004bf490dd3a206e48706f45622396a89f4a8a02d50eb48",
+      "size_bytes": 8315
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-repeat-audit-20260711/runtime/ddim2_cfg0_tts8__medium__s23__g0__policy_only_off__a01/goal_views/medium.png",
+      "sha256": "dc9b526c23267f8c2f7d155cf17fcd6bdb7b556be8be85372252ca7069f05bc1",
+      "size_bytes": 10055
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-repeat-audit-20260711/runtime/ddim2_cfg0_tts8__medium__s23__g0__policy_only_off__a01/logs/timing_profile.csv",
+      "sha256": "c92d549a927b960282e5901cc7832a0cc27f2a8f806efb10b294ea81e395ec3b",
+      "size_bytes": 11337
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-repeat-audit-20260711/runtime/ddim2_cfg0_tts8__medium__s23__g0__policy_only_off__a01/logs/timing_profile.txt",
+      "sha256": "7437ecd3043915fdd732f1c4f8d1d0622e2c92c5e8753baf63c429d79f9de75b",
+      "size_bytes": 8315
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-repeat-audit-20260711/runtime/ddim2_cfg2_tts8__medium__s23__g0__policy_only_off__a01/goal_views/medium.png",
+      "sha256": "dc9b526c23267f8c2f7d155cf17fcd6bdb7b556be8be85372252ca7069f05bc1",
+      "size_bytes": 10055
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-repeat-audit-20260711/runtime/ddim2_cfg2_tts8__medium__s23__g0__policy_only_off__a01/logs/timing_profile.csv",
+      "sha256": "78cacaac33f6b60195bbdbfc33a7d53561c581617bf7a01fa9bbb1a15f2268c7",
+      "size_bytes": 11155
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-repeat-audit-20260711/runtime/ddim2_cfg2_tts8__medium__s23__g0__policy_only_off__a01/logs/timing_profile.txt",
+      "sha256": "9000697faf9ca5aa194e99672c2e8a0de0cb8a9dfc769f02fa6a5216baccae9a",
+      "size_bytes": 8175
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-repeat-audit-20260711/runtime/ddim3_cfg0_standard_k8__medium__s23__g0__policy_only_off__a01/goal_views/medium.png",
+      "sha256": "dc9b526c23267f8c2f7d155cf17fcd6bdb7b556be8be85372252ca7069f05bc1",
+      "size_bytes": 10055
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-repeat-audit-20260711/runtime/ddim3_cfg0_standard_k8__medium__s23__g0__policy_only_off__a01/logs/timing_profile.csv",
+      "sha256": "a90ea9494fd33848b4ea47f1f82c0ba19262352e81ebe5b2daee24872087dea0",
+      "size_bytes": 9651
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-repeat-audit-20260711/runtime/ddim3_cfg0_standard_k8__medium__s23__g0__policy_only_off__a01/logs/timing_profile.txt",
+      "sha256": "3177ea796093c7794b77b8d586966cd618551477219b5ab98e08817e0652caaa",
+      "size_bytes": 7064
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-repeat-audit-20260711/runtime/ddpm10_cfg0_standard_k8__medium__s23__g0__policy_only_off__a01/goal_views/medium.png",
+      "sha256": "dc9b526c23267f8c2f7d155cf17fcd6bdb7b556be8be85372252ca7069f05bc1",
+      "size_bytes": 10055
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-repeat-audit-20260711/runtime/ddpm10_cfg0_standard_k8__medium__s23__g0__policy_only_off__a01/logs/timing_profile.csv",
+      "sha256": "9e0113824ce367577b1285ad9b5c6475e4d428227c3f729ea27ac9f267f5ed5d",
+      "size_bytes": 11698
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-repeat-audit-20260711/runtime/ddpm10_cfg0_standard_k8__medium__s23__g0__policy_only_off__a01/logs/timing_profile.txt",
+      "sha256": "af2a93cac0897b8fc22b7fabe61ace1e5b3090a4fea7aeb2e8851109c86b1598",
+      "size_bytes": 8593
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-repeat-audit-20260711/selected_plan.json",
+      "sha256": "2c2b03976d16515e12242ac4524ea9d03da0a68960f42ac835e957249f83ff08",
+      "size_bytes": 466
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-repeat-audit-20260711/trials/ddim2_cfg0_standard_k8__medium__s23__g0__policy_only_off__a01.json",
+      "sha256": "6fb9a1a345cc5e4520dd2b4cbfc5f64eb6d728fb7f7063611116afddc564a7ce",
+      "size_bytes": 12833
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-repeat-audit-20260711/trials/ddim2_cfg0_tts8__medium__s23__g0__policy_only_off__a01.json",
+      "sha256": "811a154c813a9429de0cc879cacb34eaa4e1976745e657e2623023db82bd89fe",
+      "size_bytes": 12779
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-repeat-audit-20260711/trials/ddim2_cfg2_tts8__medium__s23__g0__policy_only_off__a01.json",
+      "sha256": "2eea522d621b2470c4c0ef83db0389bb30ded9ab669df83176d125a97cf335d6",
+      "size_bytes": 12677
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-repeat-audit-20260711/trials/ddim3_cfg0_standard_k8__medium__s23__g0__policy_only_off__a01.json",
+      "sha256": "82227ea3e04679649b5c764ea73d73037b51d4957546383a2e609993e89bae20",
+      "size_bytes": 12603
+    },
+    {
+      "path": "results/research/ral_mujoco_controlled/u09-v02-repeat-audit-20260711/trials/ddpm10_cfg0_standard_k8__medium__s23__g0__policy_only_off__a01.json",
+      "sha256": "ec46df051429c942d1368a4130a53cab7351aa76f9d164ad33df5d285862537e",
+      "size_bytes": 13084
+    },
+    {
+      "path": "results/research/ral_offline_independent/u10-independent-20260711-v2/case_records.csv",
+      "sha256": "f033a872bb3642ef4f8e0473bb8675b2b8dd09a56bd85229b95b0d4ab499e938",
+      "size_bytes": 15840
+    },
+    {
+      "path": "results/research/ral_offline_independent/u10-independent-20260711-v2/case_records.json",
+      "sha256": "b01ffa4653c934170870578fcca459fcb0efe60edcb41ff1a6ac29f0bf855dd9",
+      "size_bytes": 44275
+    },
+    {
+      "path": "results/research/ral_offline_independent/u10-independent-20260711-v2/evaluation_report.md",
+      "sha256": "da55f7929b67470c91077e96dc4f61f18882e08ae834470e26def445244e5b8d",
+      "size_bytes": 2724
+    },
+    {
+      "path": "results/research/ral_offline_independent/u10-independent-20260711-v2/frozen_cases.json",
+      "sha256": "3ba49b9259d12c5e1bfa8f1a0210ce1a5da13647654f916fafd369b0e357df22",
+      "size_bytes": 4268
+    },
+    {
+      "path": "results/research/ral_offline_independent/u10-independent-20260711-v2/summary.json",
+      "sha256": "4e59c45c1cdda7fcdba02c57f910db3211b3bfceeb32c267decbf8d198a5adf9",
+      "size_bytes": 8311
+    }
+  ],
+  "missing_files": [],
+  "passed": true,
+  "protocol_sha256": "4df19bb8d1d15d6969c1df52c2b2f339e5f489dc3bb6db140fe3586fdd9497d6",
+  "raw_trial_count": 60,
+  "run_id": "u09-v02-controlled-20260711",
+  "schema_version": "0.1.0",
+  "secret_scan_findings": []
+}

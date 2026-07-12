@@ -1,0 +1,422 @@
+[
+  {
+    "collision_rate": 0.0,
+    "config_id": "ddpm10_cfg0_standard_k8",
+    "crash_n": 0,
+    "fall_rate": 0.0,
+    "final_distance_bootstrap_95": [
+      0.45784603763292964,
+      1.4771133758305062
+    ],
+    "final_distance_m_mean": 0.8172402992163178,
+    "full_loop_p95_ms_mean": 99.86142276681373,
+    "infrastructure_invalid_n": 0,
+    "intervention_rate": 0.0,
+    "loop_hz_mean_mean": 11.668073790062857,
+    "path_efficiency_bootstrap_95": [
+      0.9761142862989076,
+      1.0
+    ],
+    "path_efficiency_mean": 0.9916790939808394,
+    "planned_n": 6,
+    "sampler_p95_ms_mean": 46.05123270087764,
+    "scientific_n": 6,
+    "spl_bootstrap_95": [
+      0.15888426282570076,
+      0.8333333333333334
+    ],
+    "spl_mean": 0.4922175961590341,
+    "stabilizer_mode": "policy_only_off",
+    "stuck_rate": 0.16666666666666666,
+    "success_bootstrap_95": [
+      0.16666666666666666,
+      0.8333333333333334
+    ],
+    "success_clopper_pearson_95": [
+      0.11811724875702521,
+      0.8818827512429748
+    ],
+    "success_n": 3,
+    "success_rate": 0.5,
+    "timeout_rate": 0.5,
+    "trajectory_equivalent_across_methods": false
+  },
+  {
+    "collision_rate": 0.0,
+    "config_id": "ddim2_cfg0_standard_k8",
+    "crash_n": 0,
+    "fall_rate": 0.0,
+    "final_distance_bootstrap_95": [
+      0.43082138124085034,
+      2.0497006690728585
+    ],
+    "final_distance_m_mean": 0.976591697547002,
+    "full_loop_p95_ms_mean": 57.85475856749448,
+    "infrastructure_invalid_n": 0,
+    "intervention_rate": 0.0,
+    "loop_hz_mean_mean": 18.89648193783181,
+    "path_efficiency_bootstrap_95": [
+      1.0,
+      1.0
+    ],
+    "path_efficiency_mean": 1.0,
+    "planned_n": 6,
+    "sampler_p95_ms_mean": 12.36074704981244,
+    "scientific_n": 6,
+    "spl_bootstrap_95": [
+      0.5,
+      1.0
+    ],
+    "spl_mean": 0.8333333333333334,
+    "stabilizer_mode": "policy_only_off",
+    "stuck_rate": 0.16666666666666666,
+    "success_bootstrap_95": [
+      0.5,
+      1.0
+    ],
+    "success_clopper_pearson_95": [
+      0.35876542100232517,
+      0.9957892554855106
+    ],
+    "success_n": 5,
+    "success_rate": 0.8333333333333334,
+    "timeout_rate": 0.16666666666666666,
+    "trajectory_equivalent_across_methods": false
+  },
+  {
+    "collision_rate": 0.0,
+    "config_id": "ddim3_cfg0_standard_k8",
+    "crash_n": 0,
+    "fall_rate": 0.0,
+    "final_distance_bootstrap_95": [
+      0.4574585013741354,
+      1.8496262842128302
+    ],
+    "final_distance_m_mean": 0.9300604049644058,
+    "full_loop_p95_ms_mean": 61.89698110850562,
+    "infrastructure_invalid_n": 0,
+    "intervention_rate": 0.0,
+    "loop_hz_mean_mean": 17.34759055603809,
+    "path_efficiency_bootstrap_95": [
+      0.9586362014294263,
+      1.0
+    ],
+    "path_efficiency_mean": 0.9862120671431421,
+    "planned_n": 6,
+    "sampler_p95_ms_mean": 16.08656514114652,
+    "scientific_n": 6,
+    "spl_bootstrap_95": [
+      0.4862120671431421,
+      1.0
+    ],
+    "spl_mean": 0.8195454004764754,
+    "stabilizer_mode": "policy_only_off",
+    "stuck_rate": 0.16666666666666666,
+    "success_bootstrap_95": [
+      0.5,
+      1.0
+    ],
+    "success_clopper_pearson_95": [
+      0.35876542100232517,
+      0.9957892554855106
+    ],
+    "success_n": 5,
+    "success_rate": 0.8333333333333334,
+    "timeout_rate": 0.16666666666666666,
+    "trajectory_equivalent_across_methods": false
+  },
+  {
+    "collision_rate": 0.0,
+    "config_id": "ddim2_cfg0_tts8",
+    "crash_n": 0,
+    "fall_rate": 0.0,
+    "final_distance_bootstrap_95": [
+      0.45723002001254237,
+      0.482710820488185
+    ],
+    "final_distance_m_mean": 0.4700773889378968,
+    "full_loop_p95_ms_mean": 58.83187723299367,
+    "infrastructure_invalid_n": 0,
+    "intervention_rate": 0.0,
+    "loop_hz_mean_mean": 18.416882041153713,
+    "path_efficiency_bootstrap_95": [
+      0.9968344388400973,
+      1.0
+    ],
+    "path_efficiency_mean": 0.9989448129466991,
+    "planned_n": 6,
+    "sampler_p95_ms_mean": 12.275914099882357,
+    "scientific_n": 6,
+    "spl_bootstrap_95": [
+      0.5,
+      1.0
+    ],
+    "spl_mean": 0.8333333333333334,
+    "stabilizer_mode": "policy_only_off",
+    "stuck_rate": 0.0,
+    "success_bootstrap_95": [
+      0.5,
+      1.0
+    ],
+    "success_clopper_pearson_95": [
+      0.35876542100232517,
+      0.9957892554855106
+    ],
+    "success_n": 5,
+    "success_rate": 0.8333333333333334,
+    "timeout_rate": 0.16666666666666666,
+    "trajectory_equivalent_across_methods": false
+  },
+  {
+    "collision_rate": 0.0,
+    "config_id": "ddim2_cfg2_tts8",
+    "crash_n": 0,
+    "fall_rate": 0.0,
+    "final_distance_bootstrap_95": [
+      0.4314089675691742,
+      0.480502330039192
+    ],
+    "final_distance_m_mean": 0.46078332001617067,
+    "full_loop_p95_ms_mean": 82.8921092159059,
+    "infrastructure_invalid_n": 0,
+    "intervention_rate": 0.0,
+    "loop_hz_mean_mean": 12.971652158164632,
+    "path_efficiency_bootstrap_95": [
+      1.0,
+      1.0
+    ],
+    "path_efficiency_mean": 1.0,
+    "planned_n": 6,
+    "sampler_p95_ms_mean": 20.903750366111733,
+    "scientific_n": 6,
+    "spl_bootstrap_95": [
+      1.0,
+      1.0
+    ],
+    "spl_mean": 1.0,
+    "stabilizer_mode": "policy_only_off",
+    "stuck_rate": 0.0,
+    "success_bootstrap_95": [
+      1.0,
+      1.0
+    ],
+    "success_clopper_pearson_95": [
+      0.5407418735600995,
+      1.0
+    ],
+    "success_n": 6,
+    "success_rate": 1.0,
+    "timeout_rate": 0.0,
+    "trajectory_equivalent_across_methods": false
+  },
+  {
+    "collision_rate": 0.0,
+    "config_id": "ddpm10_cfg0_standard_k8",
+    "crash_n": 0,
+    "fall_rate": 0.0,
+    "final_distance_bootstrap_95": [
+      1.0985739134347428,
+      1.144496757755819
+    ],
+    "final_distance_m_mean": 1.1214025374491026,
+    "full_loop_p95_ms_mean": 91.69762904948583,
+    "infrastructure_invalid_n": 0,
+    "intervention_rate": 0.0,
+    "loop_hz_mean_mean": 11.611651128118881,
+    "path_efficiency_bootstrap_95": [
+      0.9622102361878474,
+      0.9926977785598335
+    ],
+    "path_efficiency_mean": 0.9775818730349725,
+    "planned_n": 6,
+    "sampler_p95_ms_mean": 47.8238140493886,
+    "scientific_n": 6,
+    "spl_bootstrap_95": [
+      0.0,
+      0.0
+    ],
+    "spl_mean": 0.0,
+    "stabilizer_mode": "system_stabilizer_on",
+    "stuck_rate": 0.5,
+    "success_bootstrap_95": [
+      0.0,
+      0.0
+    ],
+    "success_clopper_pearson_95": [
+      0.0,
+      0.4592581264399005
+    ],
+    "success_n": 0,
+    "success_rate": 0.0,
+    "timeout_rate": 1.0,
+    "trajectory_equivalent_across_methods": true
+  },
+  {
+    "collision_rate": 0.0,
+    "config_id": "ddim2_cfg0_standard_k8",
+    "crash_n": 0,
+    "fall_rate": 0.0,
+    "final_distance_bootstrap_95": [
+      1.0985739134347428,
+      1.144496757755819
+    ],
+    "final_distance_m_mean": 1.1214025374491026,
+    "full_loop_p95_ms_mean": 57.48433003360939,
+    "infrastructure_invalid_n": 0,
+    "intervention_rate": 0.0,
+    "loop_hz_mean_mean": 18.780491051063024,
+    "path_efficiency_bootstrap_95": [
+      0.9622102361878474,
+      0.9926977785598335
+    ],
+    "path_efficiency_mean": 0.9775818730349725,
+    "planned_n": 6,
+    "sampler_p95_ms_mean": 12.044734750634234,
+    "scientific_n": 6,
+    "spl_bootstrap_95": [
+      0.0,
+      0.0
+    ],
+    "spl_mean": 0.0,
+    "stabilizer_mode": "system_stabilizer_on",
+    "stuck_rate": 0.5,
+    "success_bootstrap_95": [
+      0.0,
+      0.0
+    ],
+    "success_clopper_pearson_95": [
+      0.0,
+      0.4592581264399005
+    ],
+    "success_n": 0,
+    "success_rate": 0.0,
+    "timeout_rate": 1.0,
+    "trajectory_equivalent_across_methods": true
+  },
+  {
+    "collision_rate": 0.0,
+    "config_id": "ddim3_cfg0_standard_k8",
+    "crash_n": 0,
+    "fall_rate": 0.0,
+    "final_distance_bootstrap_95": [
+      1.0985739134347428,
+      1.144231161463462
+    ],
+    "final_distance_m_mean": 1.1214025374491026,
+    "full_loop_p95_ms_mean": 62.19331055017392,
+    "infrastructure_invalid_n": 0,
+    "intervention_rate": 0.0,
+    "loop_hz_mean_mean": 17.132885225076052,
+    "path_efficiency_bootstrap_95": [
+      0.9622102361878474,
+      0.9926977785598335
+    ],
+    "path_efficiency_mean": 0.9775818730349725,
+    "planned_n": 6,
+    "sampler_p95_ms_mean": 16.405730150533298,
+    "scientific_n": 6,
+    "spl_bootstrap_95": [
+      0.0,
+      0.0
+    ],
+    "spl_mean": 0.0,
+    "stabilizer_mode": "system_stabilizer_on",
+    "stuck_rate": 0.5,
+    "success_bootstrap_95": [
+      0.0,
+      0.0
+    ],
+    "success_clopper_pearson_95": [
+      0.0,
+      0.4592581264399005
+    ],
+    "success_n": 0,
+    "success_rate": 0.0,
+    "timeout_rate": 1.0,
+    "trajectory_equivalent_across_methods": true
+  },
+  {
+    "collision_rate": 0.0,
+    "config_id": "ddim2_cfg0_tts8",
+    "crash_n": 0,
+    "fall_rate": 0.0,
+    "final_distance_bootstrap_95": [
+      1.0985739134347428,
+      1.144496757755819
+    ],
+    "final_distance_m_mean": 1.1214025374491026,
+    "full_loop_p95_ms_mean": 58.92516255044029,
+    "infrastructure_invalid_n": 0,
+    "intervention_rate": 0.0,
+    "loop_hz_mean_mean": 18.45339937488532,
+    "path_efficiency_bootstrap_95": [
+      0.9622102361878474,
+      0.9926977785598335
+    ],
+    "path_efficiency_mean": 0.9775818730349725,
+    "planned_n": 6,
+    "sampler_p95_ms_mean": 12.638792041434499,
+    "scientific_n": 6,
+    "spl_bootstrap_95": [
+      0.0,
+      0.0
+    ],
+    "spl_mean": 0.0,
+    "stabilizer_mode": "system_stabilizer_on",
+    "stuck_rate": 0.5,
+    "success_bootstrap_95": [
+      0.0,
+      0.0
+    ],
+    "success_clopper_pearson_95": [
+      0.0,
+      0.4592581264399005
+    ],
+    "success_n": 0,
+    "success_rate": 0.0,
+    "timeout_rate": 1.0,
+    "trajectory_equivalent_across_methods": true
+  },
+  {
+    "collision_rate": 0.0,
+    "config_id": "ddim2_cfg2_tts8",
+    "crash_n": 0,
+    "fall_rate": 0.0,
+    "final_distance_bootstrap_95": [
+      1.0985739134347428,
+      1.144496757755819
+    ],
+    "final_distance_m_mean": 1.1214025374491026,
+    "full_loop_p95_ms_mean": 82.16955795044971,
+    "infrastructure_invalid_n": 0,
+    "intervention_rate": 0.0,
+    "loop_hz_mean_mean": 13.035338203429149,
+    "path_efficiency_bootstrap_95": [
+      0.9622102361878474,
+      0.9926977785598335
+    ],
+    "path_efficiency_mean": 0.9775818730349725,
+    "planned_n": 6,
+    "sampler_p95_ms_mean": 20.04218294165791,
+    "scientific_n": 6,
+    "spl_bootstrap_95": [
+      0.0,
+      0.0
+    ],
+    "spl_mean": 0.0,
+    "stabilizer_mode": "system_stabilizer_on",
+    "stuck_rate": 0.5,
+    "success_bootstrap_95": [
+      0.0,
+      0.0
+    ],
+    "success_clopper_pearson_95": [
+      0.0,
+      0.4592581264399005
+    ],
+    "success_n": 0,
+    "success_rate": 0.0,
+    "timeout_rate": 1.0,
+    "trajectory_equivalent_across_methods": true
+  }
+]

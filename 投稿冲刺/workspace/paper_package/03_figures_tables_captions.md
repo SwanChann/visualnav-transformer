@@ -30,11 +30,19 @@ validation.
 
 ## Fig. 3 / Table III — MuJoCo
 
-**Blocked for quantitative paper claims.** Existing summary is an audit appendix,
-not a main result. Do not plot a fabricated path: historical records contain no
-trajectories. A future Table III must report configuration, map, seed count, success,
-SPL/path efficiency, collision/fall/stuck, latency, and stabilizer version from a
-clean rerun.
+Use `../controlled_results/table_iii.csv`, `fig_controlled_success.pdf`,
+`fig_controlled_latency_spl.pdf`, and `fig_controlled_trajectories.pdf`.
+
+**Caption draft.** Controlled MuJoCo results for a frozen NoMaD checkpoint across
+easy/medium scenes, diffusion seeds 11/23/47 and a 15.5 s budget. Each configuration
+uses K=8. Error bars are exact 95% binomial intervals over six descriptive episodes;
+three seeds do not support significance claims. Policy-only and route-stabilized
+systems are faceted and never pooled. The route-stabilized stratum is 0/6 for every
+configuration, while policy-only success ranges from 4/6 to 6/6. Trajectories are
+drawn only from stored episode coordinates. Full-loop and sampler latency retain
+separate scopes.
+An exact-key repeat changed one of five medium-scene outcomes, so the table is a
+frozen descriptive realization rather than a deterministic method ranking.
 
 ## Fig. 4 / Table IV — real robot
 

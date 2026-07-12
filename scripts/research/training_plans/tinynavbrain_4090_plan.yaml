@@ -1,0 +1,58 @@
+schema_version: 1
+plan_id: tinynavbrain-scale-adaptive-v1
+status: planned_no_training_executed
+hardware: {gpu: NVIDIA RTX 4090, vram_gib: 24, gpu_count: 1}
+model:
+  family: tinynavbrain
+  encoder: efficientnet_b0_shared
+  image_size: [96, 96]
+  context_frames: 4
+  action_history_steps: 4
+  action_horizon: 8
+  action_units: meters
+  d_model: 256
+  fusion_layers: 4
+  fusion_heads: 4
+  deterministic_head: true
+  residual_flow_head: true
+  allowed_nfe: [1, 2, 4]
+  physical_tokens: [metric_waypoint_spacing_m, observation_dt_s, embodiment_id]
+  max_trainable_parameters: 20000000
+data:
+  currently_materialized: [go_stanford]
+  required_before_cross_dataset_claim: 3
+  manifest_sha256: REQUIRED_AT_EXECUTION
+  split_sha256: REQUIRED_AT_EXECUTION
+  split_unit: trajectory
+  leakage_tolerance: 0
+training:
+  precision: amp_fp16
+  optimizer: adamw
+  gradient_accumulation: true
+  ema: true
+  checkpoint_rng_state: true
+  checkpoint_sampler_state: true
+  checkpoint_keep_last: 3
+  seeds: [0, 1, 2]
+phases:
+  - {id: static, optimizer_steps: 0, batch_size: 1, data_fraction: 0.0, gate: config_and_contract_valid}
+  - {id: smoke, optimizer_steps: 200, batch_size: 8, data_fraction: 0.05, gate: finite_loss_reload_and_meter_scale}
+  - {id: baseline, optimizer_steps: 50000, batch_size: 64, data_fraction: 1.0, gate: three_seed_nomad_and_deterministic_baselines_complete}
+  - {id: ablation, optimizer_steps: 100000, batch_size: 64, data_fraction: 1.0, gate: factor_isolation_complete}
+factors:
+  head: [deterministic, residual_flow]
+  scale_token: [false, true]
+  action_history: [false, true]
+  nfe: [1, 2, 4]
+  sampler: [proportional, balanced]
+evaluation:
+  offline_tracks: [iid, corruption]
+  conditional_tracks: [mixed, lodo]
+  closed_loop_min_seeds: 20
+  primary_metrics: [action_ade_m, action_fde_m, success_rate, spl, collision_rate, latency_p95_ms]
+  falsification:
+    - residual_flow_must_beat_deterministic_at_equal_compute
+    - scale_token_gain_must_exceed_seed_variation_on_shifted_tracks
+    - offline_gain_must_transfer_to_closed_loop
+claims:
+  forbidden_until_evidence: [cross_dataset_generalization, real_robot_success, state_of_the_art, training_feasibility_measured_on_4090]

@@ -29,13 +29,32 @@ submission. Distinguish policy inference latency from the full control loop.
 - p50/p90/p95 are across case-level mean latencies, not individual calls.
 - TTS/verifier overlap is disclosed as a circularity threat.
 
-## IV. Existing closed-loop evidence
+## IV. Controlled closed-loop evidence
 
-The 228 historical MuJoCo records may document integration coverage only. They may
-not serve as the main controlled comparison: all lack explicit seed, latency,
-stuck, fall, and stabilizer provenance; 27 records conflict between stored success
-and final-distance fields; several result signatures repeat across configurations.
-Table III remains blocked until a clean rerun with frozen seeds and provenance.
+Protocol v0.3 freezes five K=8 configurations, target-meter action scale 0.1,
+easy/medium scenes, seeds 11/23/47,
+a strict 0.5 m success radius, a 62-cycle (15.5 s) time budget, and separate
+policy-only/system-stabilizer strata. The 60 planned episodes reconcile exactly to
+25 successes and 35 failures, with no crash, infrastructure invalidity or missing
+trial. Historical MuJoCo records are excluded from this aggregate.
+
+Policy-only success is DDPM-10 4/6, DDIM-2 5/6, DDIM-3 5/6, DDIM-2/TTS-8 5/6 and
+DDIM-2/CFG-2/TTS-8 6/6. Report Clopper-Pearson intervals and paired cluster
+bootstrap as descriptive because only three seeds are available. The
+system-stabilizer stratum is 0/6 for every configuration and has a 0.50 stuck rate,
+so it must not be pooled with policy-only results. Corrected U10 v5 offline ADE
+(GO Stanford scale 0.12 m loaded from the frozen training data config) versus policy-only
+success has rho=-0.67 (exact permutation p=0.30), which is negative evidence against
+using offline error as a deployment ranking.
+
+An exact-key v0.3 medium/seed-23 repeat preserved all five binary outcomes but showed
+up to 0.444 m common-prefix trajectory deviation. Treat seeds as stochastic
+replications, report this audit beside Table III, and do not claim a stable ordering
+from the primary 60 episodes.
+
+The 228 historical MuJoCo records remain audit-only because they lack explicit
+seed, latency, stuck, fall and stabilizer provenance and contain 27 semantic
+conflicts.
 
 ## V. Existing real-robot evidence
 
@@ -56,8 +75,8 @@ profiling, missing provenance, single dataset, and absent statistical robot tria
 
 ## VII. Required new evidence
 
-1. Re-run a compact non-saturated MuJoCo matrix with >=3 frozen seeds, raw seed and
-   stabilizer fields, latency, success, final distance, collision/fall/stuck reason.
+1. Expand controlled simulation to more scenes/seeds if inferential claims are
+   required; the present 3-seed matrix remains descriptive.
 2. Pre-register real trial goals, success radius, timeout, intervention and failure
    taxonomy; then run repeated trials for at least baseline/fast/balanced modes.
 3. Measure full-loop sustained timing and deadline misses on the named deployment

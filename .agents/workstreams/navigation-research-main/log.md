@@ -57,3 +57,35 @@
 - 新消费环境允许离线与 MuJoCo 仿真实验，禁止训练和真机；首要任务改为完整 provenance 的受控闭环矩阵和独立离线指标。
 - 包中记录 Windows -> Ubuntu 路径重建、环境/import/headless renderer 预检、checkpoint/manifest SHA-256、stabilizer 分层、非饱和场景门、输出隔离和 Table III 验收条件。
 - 明确迁移风险：`.agents/`、`results/research/`、`scripts/research/`、`后续研究内容/`、`投稿冲刺/workspace/` 等关键成果未被当前 HEAD 跟踪；只 clone `0f1284a` 会丢失，必须转移完整 dirty worktree。
+
+## 2026-07-11 — Ubuntu U00–U10 execution
+
+- 在独立 worktree `/home/swanchan/visualnav-transformer-worktrees/agent-ubuntu-sim-handoff`、分支 `agent/ubuntu-sim-handoff`、HEAD `463ac70` 执行；主 worktree `main@0f1284a` 保持用户原有 dirty 状态且未触碰。未提交、推送、拉取或切分支。
+- U00–U04：完成 Ubuntu 20.04 / RTX 3050 Ti / CUDA 12.1 / EGL / `nomad_train` 环境审计；从主 worktree 恢复并核验 checkpoint SHA `66edf390...`；解释 grouped manifest CRLF/LF 哈希；analysis/data/benchmark/model 测试与历史离线/MuJoCo 数值复现通过。
+- 火山协作：两个 `glm-5.2` read-only producer 完成环境与 runner gap 审计；第三个 critic 因 provider reasoning-event 噪声持续超过 10 分钟被主控中止，没有伪造 final review。主控独立完成测试与真实 smoke。
+- 冻结 U05 protocol v0.1，SHA-256 `0dffb341642027af89a51bf81df0053e6682647e062e41a7db0e75a4ef68e62f`；配置固定 K=8、5 methods、3 scenes、3 seeds、stabilizer off/on，共 90 planned keys。
+- U06 实现严格 trial/batch schema、语义 validator、原子/断点 runner、source-diff provenance、collision/fall/stuck/timeout latch、CUDA sampler timing 和 full-loop timing。修复 `legacy_bridge.py` 的 Linux 路径错误，受控 runner 不再向 legacy 历史结果目录写新摘要。
+- U07：stand smoke 通过；DDIM2/easy/seed11/stabilizer-off 在 43 loops 成功，final distance 0.4572 m；完全重复的 42 点轨迹最大差 0.0 m；四类失败合成触发通过。
+- U08：DDPM10 baseline-only 校准 18 episodes，全部 JSON 有效。easy/medium/hard 在两个 stabilizer strata 均为 3/3 成功；三场景全部 success 饱和，且 stabilizer-on 在 easy/hard 均触发 3/3 stuck。按预声明 gate 全部拒绝，U09 禁止启动。
+- U10：agent worktree 缺 dataset images 的第一次启动在推理前安全失败并保留；显式使用主 worktree 只读完整 dataset 后，grouped-v2 test split 冻结 15 cases，5 configs 共 75 records、invalid=0。DDIM2 mean-K8 ADE 0.6018 m / 9.28 ms；DDPM10 0.6004 m / 39.98 ms；heuristic TTS8 0.6944 m，为负证据。
+- 最终回归：analysis 21/21、data 11/11、benchmark 7/7；JSON Schema 2020-12、所有 trial/manifest、`git diff --check` 通过。U11–15 因 U09 无 retained scene 而保持真实阻塞。
+
+## 2026-07-11 — Ubuntu v0.2 U09–U15 completion
+
+- 继续使用 single persistent worktree；Codex/OpenAI 为唯一 writer。4 次只读 `glm-5.2 / volcengine-agent-plan` 调用：scene producer、U11–15 producer、integration critic、revision verifier；峰值并发 2。worker 未获写权限。
+- 基于 baseline-only v0.1 timing 冻结 calibration overlay SHA `3c2eec...`，统一 timeout 为 62 cycles / 15.5 s；18-trial gate 保留 easy/medium、淘汰 hard。最终 v0.2 overlay SHA `4df19b...` 在任何跨方法结果前冻结，计划 60 trials。
+- U09 完成 60/60：24 success、36 navigation failure、0 crash、0 infrastructure invalid、0 missing。policy-only primary matrix为 DDPM10 3/6、DDIM2 5/6、DDIM3 5/6、DDIM2+TTS8 5/6、DDIM2+CFG2+TTS8 6/6；stabilizer-on 全部 0/6。
+- integration critic 发现 stabilizer-on 对每个 scene/seed 的五方法轨迹 byte-identical；主控新增机器检测、表图脚注和 claims 降级，只把它解释为 controller override 的负证据与 latency 差异，不视为独立方法结果。
+- critic 对 primary success 的质疑经代码复核被部分驳回：MuJoCo mission 有 `goal_position` 时只采用 physics `<0.5 m`，且 tick-62 timeout 在 goal check 前终止，符合 frozen wording。真正缺陷是 post-hoc robustness 把 terminal 坐标重算成 primary success；已修为 primary condition 精确复用 raw outcome。
+- 精确 repeat audit 显示 medium/seed23 的 DDIM3 从 success 翻为 failure、最大轨迹差 3.30 m；主结果保留但明确为 seeded-stochastic single realization，禁止稳定 ranking/显著性主张。
+- U11 完成 2,000-replicate paired cluster bootstrap、Clopper-Pearson、paired deltas、offline correlation、robustness、trajectory equivalence 和 provenance map；U10 ADE vs policy-only success rho=-0.67、exact p=0.30，为负证据。
+- U12 生成 Table III 与 3 个有效 PDF；U13 更新 abstract/method/captions/evidence/checklist/claim matrix，submission 仍 NO-GO；U14 生成 120-file checksum bundle、checkpoint/U10/secret checks与 byte-identical analysis regeneration；U15 final audit 明确 Ubuntu complete / external robot gates remain。
+
+## 2026-07-11 — U16–U18 full audit, policy backend and scale corrections
+
+- 全盘审计发现 U10 v2 错用 RECON 0.25 m 尺度评估 GO Stanford；修复 runner 为从冻结 training data config 读取 0.12 m，U10 v5 重跑 75/75 valid。v2 明确作废，下游 analysis 绑定 v5 summary SHA。
+- 进一步发现 MuJoCo v0.2 把 NoMaD native action units 直接当作 meter waypoint；新增显式 target action scale，按 Lite3 0.4 m/s / 4 Hz 冻结为 0.1 m。blind DDPM gate 仍保留 easy/medium、拒绝 hard；v0.3 在跨方法结果前冻结，60/60 完成：25 success、35 failure、0 crash/invalid/missing。
+- v0.3 policy-only：DDPM10 4/6、DDIM2 5/6、DDIM3 5/6、DDIM2+TTS8 5/6、DDIM2+CFG2+TTS8 6/6；stabilizer-on 全部 0/6 且同 scene/seed 轨迹跨方法 byte-identical。medium/seed23 exact repeat 5/5 binary preserved，但连续轨迹最大差 0.444 m。
+- 新增 framework-neutral `NavigationPolicyBackend`、Lite3System constructor injection、candidate diagnostics 和 adaptive-compute replay。corrected U10 v5 上 TTS routing 被支配，DDIM3/DDPM 只有后验精度/延迟交换，router 拒绝合并；接口和负结果保留。
+- 新建单 RTX 4090 `TinyNavBrain-ScaleAdaptive` 机器可读计划：shared B0、physical scale/action history tokens、deterministic NFE1 baseline、residual-flow NFE1/2/4；validator 明确所有显存为未实测 partial accounting，未运行训练/backward/optimizer。
+- 最终 revision worker 质疑 `loop_hz_mean` 与 4 Hz 合同；主控逐路径核验确认每次 navigation call 固定推进 12 x 20 ms = 0.24 s 仿真时间，而 11--19 Hz 是 headless 墙钟计算吞吐率。文档补充名义 4 Hz、离散后的 4.167 calls/s 以及 timing 字段语义；该 worker 超过 10 分钟硬上限、未产出正式报告，按 orchestrator 协议终止并记 timeout。

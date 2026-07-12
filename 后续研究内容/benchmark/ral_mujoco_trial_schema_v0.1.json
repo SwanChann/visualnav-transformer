@@ -1,0 +1,139 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ral_mujoco_trial_schema_v0.1.json",
+  "title": "RA-L controlled MuJoCo trial or batch manifest",
+  "oneOf": [
+    {"$ref": "#/$defs/trial"},
+    {"$ref": "#/$defs/batch"}
+  ],
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "xy": {
+      "type": "array",
+      "items": {"type": "number"},
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "trial": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "record_kind", "run_id", "trial_id", "trial_key", "attempt", "created_at_utc", "completed_at_utc", "status", "git", "inputs", "environment", "episode", "policy", "bridge", "outcome", "trajectory", "timing", "artifacts"],
+      "properties": {
+        "schema_version": {"const": "0.1.0"},
+        "record_kind": {"const": "trial"},
+        "run_id": {"type": "string", "minLength": 1},
+        "trial_id": {"type": "string", "minLength": 1},
+        "trial_key": {"type": "string", "minLength": 1},
+        "attempt": {"type": "integer", "minimum": 1},
+        "created_at_utc": {"type": "string", "format": "date-time"},
+        "completed_at_utc": {"type": "string", "format": "date-time"},
+        "status": {"enum": ["completed", "failed", "crashed", "infrastructure_invalid"]},
+        "git": {
+          "type": "object", "additionalProperties": false,
+          "required": ["commit", "dirty", "diff_sha256"],
+          "properties": {
+            "commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+            "dirty": {"type": "boolean"},
+            "diff_sha256": {"oneOf": [{"$ref": "#/$defs/sha256"}, {"type": "null"}]}
+          }
+        },
+        "inputs": {
+          "type": "object", "additionalProperties": false,
+          "required": ["protocol_path", "protocol_sha256", "checkpoint_path", "checkpoint_sha256", "policy_config_path", "policy_config_sha256", "topomap_path", "topomap_tree_sha256", "scene_definition_path", "scene_definition_sha256", "mjcf_path", "mjcf_sha256", "locomotion_policy_path", "locomotion_policy_sha256"],
+          "properties": {
+            "protocol_path": {"type": "string"}, "protocol_sha256": {"$ref": "#/$defs/sha256"},
+            "checkpoint_path": {"type": "string"}, "checkpoint_sha256": {"$ref": "#/$defs/sha256"},
+            "policy_config_path": {"type": "string"}, "policy_config_sha256": {"$ref": "#/$defs/sha256"},
+            "topomap_path": {"type": "string"}, "topomap_tree_sha256": {"$ref": "#/$defs/sha256"},
+            "scene_definition_path": {"type": "string"}, "scene_definition_sha256": {"$ref": "#/$defs/sha256"},
+            "mjcf_path": {"type": "string"}, "mjcf_sha256": {"$ref": "#/$defs/sha256"},
+            "locomotion_policy_path": {"type": "string"}, "locomotion_policy_sha256": {"$ref": "#/$defs/sha256"}
+          }
+        },
+        "environment": {
+          "type": "object", "additionalProperties": false,
+          "required": ["device", "gpu", "precision", "python_version", "torch_version", "simulator_version", "renderer", "onnxruntime_version", "onnx_provider"],
+          "properties": {
+            "device": {"type": "string"}, "gpu": {"type": "string"}, "precision": {"type": "string"},
+            "python_version": {"type": "string"}, "torch_version": {"type": "string"},
+            "simulator_version": {"type": "string"}, "renderer": {"type": "string"},
+            "onnxruntime_version": {"type": "string"}, "onnx_provider": {"type": "string"}
+          }
+        },
+        "episode": {
+          "type": "object", "additionalProperties": false,
+          "required": ["map", "spawn_xy_m", "goal_xy_m", "diffusion_seed", "goal_seed", "stabilizer_mode", "success_radius_m", "max_steps", "simulated_timeout_s"],
+          "properties": {
+            "map": {"enum": ["easy", "medium", "hard"]}, "spawn_xy_m": {"$ref": "#/$defs/xy"}, "goal_xy_m": {"$ref": "#/$defs/xy"},
+            "diffusion_seed": {"type": "integer"}, "goal_seed": {"type": "integer"},
+            "stabilizer_mode": {"enum": ["policy_only_off", "system_stabilizer_on"]},
+            "success_radius_m": {"type": "number", "exclusiveMinimum": 0}, "max_steps": {"type": "integer", "minimum": 1}, "simulated_timeout_s": {"type": "number", "exclusiveMinimum": 0}
+          }
+        },
+        "policy": {
+          "type": "object", "additionalProperties": false,
+          "required": ["encoder", "scheduler", "diffusion_steps", "cfg_weight", "tts_enabled", "tts_budget", "tts_topk", "tts_verifier", "candidate_k", "selection", "image_resize_mode", "image_size_px", "context_frames", "action_horizon", "waypoint_index"],
+          "properties": {
+            "encoder": {"type": "string"}, "scheduler": {"enum": ["ddpm", "ddim"]}, "diffusion_steps": {"type": "integer", "minimum": 1},
+            "cfg_weight": {"type": "number"}, "tts_enabled": {"type": "boolean"},
+            "tts_budget": {"type": ["integer", "null"], "minimum": 1}, "tts_topk": {"type": ["integer", "null"], "minimum": 1}, "tts_verifier": {"type": ["string", "null"]},
+            "candidate_k": {"type": "integer", "minimum": 1}, "selection": {"type": "string"},
+            "image_resize_mode": {"type": "string"}, "image_size_px": {"$ref": "#/$defs/xy"},
+            "context_frames": {"type": "integer", "minimum": 1}, "action_horizon": {"type": "integer", "minimum": 1}, "waypoint_index": {"type": "integer", "minimum": 0}
+          }
+        },
+        "bridge": {
+          "type": "object", "additionalProperties": false,
+          "required": ["type", "yaw_sign", "linear_scale", "yaw_scale", "pd_max_v", "pd_max_w", "bridge_max_v_mps", "bridge_max_w_radps"],
+          "properties": {
+            "type": {"type": "string"}, "yaw_sign": {"type": "number"}, "linear_scale": {"type": "number"}, "yaw_scale": {"type": "number"},
+            "pd_max_v": {"type": ["number", "null"]}, "pd_max_w": {"type": ["number", "null"]},
+            "bridge_max_v_mps": {"type": "number", "minimum": 0}, "bridge_max_w_radps": {"type": "number", "minimum": 0}
+          }
+        },
+        "outcome": {
+          "type": "object", "additionalProperties": false,
+          "required": ["success", "final_distance_m", "path_length_m", "shortest_path_m", "spl", "collision", "fall", "stuck", "timeout", "intervention", "recovery_count", "exception", "exit_code"],
+          "properties": {
+            "success": {"type": "boolean"}, "final_distance_m": {"type": ["number", "null"], "minimum": 0},
+            "path_length_m": {"type": "number", "minimum": 0}, "shortest_path_m": {"type": "number", "minimum": 0}, "spl": {"type": "number", "minimum": 0, "maximum": 1},
+            "collision": {"type": "boolean"}, "fall": {"type": "boolean"}, "stuck": {"type": "boolean"}, "timeout": {"type": "boolean"}, "intervention": {"type": "boolean"},
+            "recovery_count": {"type": "integer", "minimum": 0}, "exception": {"type": ["string", "null"]}, "exit_code": {"type": ["integer", "null"]}
+          }
+        },
+        "trajectory": {
+          "type": "array",
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["tick", "x_m", "y_m"],
+            "properties": {"tick": {"type": "integer", "minimum": 0}, "x_m": {"type": "number"}, "y_m": {"type": "number"}}
+          }
+        },
+        "timing": {
+          "type": "object", "additionalProperties": false,
+          "required": ["warmup_calls", "cuda_synchronized", "sampler_per_call_ms", "full_loop_per_call_ms"],
+          "properties": {
+            "warmup_calls": {"type": "integer", "minimum": 0}, "cuda_synchronized": {"type": "boolean"},
+            "sampler_per_call_ms": {"type": "array", "items": {"type": "number", "minimum": 0}},
+            "full_loop_per_call_ms": {"type": "array", "items": {"type": "number", "minimum": 0}}
+          }
+        },
+        "artifacts": {
+          "type": "object", "additionalProperties": false,
+          "required": ["trial_json", "runtime_dir", "timing_csv"],
+          "properties": {"trial_json": {"type": "string"}, "runtime_dir": {"type": "string"}, "timing_csv": {"type": ["string", "null"]}}
+        }
+      }
+    },
+    "batch": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schema_version", "record_kind", "run_id", "created_at_utc", "protocol_sha256", "planned_trial_count", "completed", "failed", "crashed", "infrastructure_invalid", "missing_trial_keys", "trial_records"],
+      "properties": {
+        "schema_version": {"const": "0.1.0"}, "record_kind": {"const": "batch_manifest"}, "run_id": {"type": "string"}, "created_at_utc": {"type": "string", "format": "date-time"},
+        "protocol_sha256": {"$ref": "#/$defs/sha256"}, "planned_trial_count": {"type": "integer", "minimum": 1},
+        "completed": {"type": "integer", "minimum": 0}, "failed": {"type": "integer", "minimum": 0}, "crashed": {"type": "integer", "minimum": 0}, "infrastructure_invalid": {"type": "integer", "minimum": 0},
+        "missing_trial_keys": {"type": "array", "items": {"type": "string"}}, "trial_records": {"type": "array", "items": {"type": "string"}}
+      }
+    }
+  }
+}

@@ -56,7 +56,9 @@ def pd_controller(waypoint: np.ndarray) -> Tuple[float]:
 		w = np.sign(dy) * np.pi/(2*DT)
 	else:
 		v = dx / DT
-		w = np.arctan(dy/dx) / DT
+		# Preserve the target quadrant; arctan(dy/dx) turns behind-robot targets into
+		# forward headings and is inconsistent with the canonical Lite3 bridge.
+		w = np.arctan2(dy, dx) / DT
 	v = np.clip(v, 0, MAX_V)
 	w = np.clip(w, -MAX_W, MAX_W)
 	return v, w

@@ -1,0 +1,119 @@
+{
+  "schema_version": "0.1.0",
+  "audit_date": "2026-07-11",
+  "ubuntu_workstream_status": "complete",
+  "paper_submission_status": "no_go_external_robot_gates",
+  "worktree": {
+    "path": "/home/swanchan/visualnav-transformer-worktrees/agent-ubuntu-sim-handoff",
+    "branch": "agent/ubuntu-sim-handoff",
+    "head": "463ac70129c6afec71fa84e3eba457d436781642",
+    "remote_ahead": 0,
+    "remote_behind": 0,
+    "state": "dirty_intentional_uncommitted_deliverables"
+  },
+  "task_status": {
+    "U00": "complete", "U01": "complete", "U02": "complete", "U03": "complete", "U04": "complete",
+    "U05": "complete", "U06": "complete", "U07": "complete", "U08": "complete", "U09": "complete",
+    "U10": "complete", "U11": "complete", "U12": "complete", "U13": "complete", "U14": "complete", "U15": "complete",
+    "U16": "complete", "U17": "complete", "U18": "complete"
+  },
+  "controlled_matrix": {
+    "run_id": "u09-v03-controlled-20260711",
+    "protocol_sha256": "102bf5192a404f8585153aecf4d5c8885d8bc6940e5105e5f19b02f6e40b4c1b",
+    "policy_action_scale_m": 0.1,
+    "nominal_nomad_hz": 4.0,
+    "simulated_seconds_per_navigation_call": 0.24,
+    "effective_simulated_calls_per_second": 4.166666666666667,
+    "loop_hz_mean_semantics": "headless_wall_clock_compute_throughput_not_control_rate",
+    "planned": 60,
+    "recorded": 60,
+    "completed_success": 25,
+    "failed": 35,
+    "crashed": 0,
+    "infrastructure_invalid": 0,
+    "missing": 0,
+    "historical_records_ingested": 0,
+    "stabilizer_strata_pooled": false,
+    "descriptive_only_three_seeds": true
+  },
+  "policy_only_success": {
+    "ddpm10_cfg0_standard_k8": "4/6",
+    "ddim2_cfg0_standard_k8": "5/6",
+    "ddim3_cfg0_standard_k8": "5/6",
+    "ddim2_cfg0_tts8": "5/6",
+    "ddim2_cfg2_tts8": "6/6"
+  },
+  "system_stabilizer_on_success": "0/6 for every configuration",
+  "repeatability_audit": {
+    "scope": "medium / seed 23 / policy_only_off / five configurations",
+    "binary_outcome_changes": 0,
+    "changed_configuration": null,
+    "maximum_common_prefix_coordinate_delta_m": 0.4439,
+    "interpretation": "seeded stochastic descriptive realization; no stable method ranking"
+  },
+  "corrected_offline_evaluation": {
+    "run_id": "u10-independent-20260711-v5",
+    "recorded": 75,
+    "invalid": 0,
+    "metric_waypoint_spacing_m": 0.12,
+    "invalidated_predecessor": "u10-independent-20260711-v2"
+  },
+  "policy_backend": {
+    "constructor_injection": true,
+    "framework_neutral_contract": true,
+    "adaptive_compute_router": "rejected_posthoc_insufficient_value",
+    "module_scope_gate": "pass"
+  },
+  "training_plan": {
+    "plan_id": "tinynavbrain-scale-adaptive-v1",
+    "execution_status": "planned_no_training_executed",
+    "target": "single RTX 4090 24GB",
+    "static_validator": "pass",
+    "module_scope_gate": "pass"
+  },
+  "verification": {
+    "analysis_tests": "33/33 pass",
+    "data_tests": "11/11 pass",
+    "benchmark_tests": "7/7 pass",
+    "policy_backend_tests": "5/5 pass",
+    "training_plan_tests": "4/4 pass",
+    "trial_jsonschema": "60/60 v0.3 pass",
+    "analysis_regeneration": "recursive diff empty",
+    "training_path_scan": "pass",
+    "secret_scan": "0 findings",
+    "new_large_artifact_scan_over_10mb": "0 findings; pre-existing checkpoint and history archives excluded",
+    "git_diff_check": "pass"
+  },
+  "artifact_hashes": {
+    "trial_schema": "b92d67cdfa6415e17a754429eb3c15c3629a58079502ce236be298756017467f",
+    "batch_manifest": "ca48c501f118c18cd0ca8d4d52e9b410b16b047c3329b4ae134465bdf1087be8",
+    "analysis_audit": "02a9bb572c6f1506ba05fb4e47987ad832f279839d752a902d0ad7f9b4b93ac6",
+    "table_iii": "ebf865913c51e9df014d2daf6871933559e691f3de1948afcfb7e1eda8ad4ab6",
+    "repro_checksums": "ad070089d479b701b305f9e801a431b14d52bfaee135aefbfe0206b5fa719884",
+    "u10_offline_summary": "4d6fa387482633a6fac9cfbb7f220c491da8483efd0b068bdc80d37d78b27e43"
+  },
+  "forbidden_actions": {
+    "training": false,
+    "backward_or_optimizer": false,
+    "real_robot": false,
+    "automatic_real_outcome_labeling": false,
+    "commit": false,
+    "push": false,
+    "pull": false,
+    "fetch": false
+  },
+  "volc_worker_summary": {
+    "planned_calls": 4,
+    "returned_reports": 3,
+    "timed_out_calls": 1,
+    "peak_concurrency": 2,
+    "worker_model": "glm-5.2",
+    "worker_access": "read_only",
+    "main_agent_integration_only": true
+  },
+  "remaining_external_gates": [
+    "protocolized repeated real-robot outcome trials",
+    "named target-device sustained deadline/miss measurements",
+    "privacy and consent review for human-containing figures"
+  ]
+}

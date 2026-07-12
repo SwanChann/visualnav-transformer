@@ -1,0 +1,50 @@
+{
+  "schema_version": "0.1.0",
+  "gate_id": "u08-scene-gate-20260711",
+  "created_at_utc": "2026-07-11T09:33:00Z",
+  "protocol_sha256": "0dffb341642027af89a51bf81df0053e6682647e062e41a7db0e75a4ef68e62f",
+  "calibration_configuration": "ddpm10_cfg0_standard_k8",
+  "method_blind": true,
+  "diffusion_seeds": [11, 23, 47],
+  "stabilizer_strata_analyzed_separately": true,
+  "planned_trials": 18,
+  "recorded_trials": 18,
+  "validation_failures": 0,
+  "criteria": {
+    "reject_universally_saturated": true,
+    "reject_universally_impossible": true,
+    "reject_broken_physics": true,
+    "reject_hidden_stabilizer_dominance": true,
+    "retained_scene_requirement": "Nontrivial outcome or efficiency variance under identical rules, without a universally saturated primary success outcome."
+  },
+  "scenes": [
+    {
+      "id": "easy",
+      "topomap_tree_sha256": "c713ed397e66c6370832dbef56a066ba8c4259209fdb03499c64543cab15a2ad",
+      "policy_only_off": {"success_n": 3, "trial_n": 3, "stuck_n": 0, "path_length_m": [4.486, 4.720, 4.495]},
+      "system_stabilizer_on": {"success_n": 3, "trial_n": 3, "stuck_n": 3, "path_length_m": [5.458, 5.495, 5.495]},
+      "decision": "reject",
+      "reasons": ["primary success is saturated at 6/6", "stabilizer-on causes stuck in 3/3 and materially lengthens paths"]
+    },
+    {
+      "id": "medium",
+      "topomap_tree_sha256": "d6ff798ea180b91f8fb9088f8d0ff42ece34354e0991a11ef970d5b35a82be30",
+      "policy_only_off": {"success_n": 3, "trial_n": 3, "stuck_n": 0, "path_length_m": [6.427, 6.359, 6.448]},
+      "system_stabilizer_on": {"success_n": 3, "trial_n": 3, "stuck_n": 0, "path_length_m": [6.321, 6.321, 6.321]},
+      "decision": "reject",
+      "reasons": ["primary success is saturated at 6/6", "stabilizer-on outcome and path are deterministic across all three seeds"]
+    },
+    {
+      "id": "hard",
+      "topomap_tree_sha256": "706945fe67b2011524932ab7350e2813108fbed5ca10a1e567fdb6dffea7ec49",
+      "policy_only_off": {"success_n": 3, "trial_n": 3, "stuck_n": 0, "path_length_m": [7.487, 7.537, 7.455]},
+      "system_stabilizer_on": {"success_n": 3, "trial_n": 3, "stuck_n": 3, "path_length_m": [9.604, 8.442, 9.591]},
+      "decision": "reject",
+      "reasons": ["primary success is saturated at 6/6", "stabilizer-on causes stuck in 3/3 and materially changes efficiency"]
+    }
+  ],
+  "retained_scenes": [],
+  "gate_status": "failed_no_non_saturated_scene",
+  "u09_authorization": "blocked",
+  "next_action": "Design method-blind harder scenes and freeze a new protocol version before any cross-configuration closed-loop comparison. Do not alter v0.1 or reuse these calibration outcomes as a method comparison."
+}

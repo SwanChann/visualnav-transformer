@@ -1,0 +1,28 @@
+{
+  "schema_version": "0.2",
+  "protocol_id": "ral_mujoco_calibration_v0.2",
+  "status": "frozen_before_baseline_calibration",
+  "frozen_at_utc": "2026-07-11T12:55:00Z",
+  "base_protocol_path": "后续研究内容/benchmark/ral_mujoco_protocol_v0.1.json",
+  "base_protocol_sha256": "0dffb341642027af89a51bf81df0053e6682647e062e41a7db0e75a4ef68e62f",
+  "selection_evidence_scope": "Only DDPM-10 baseline calibration from protocol v0.1 was inspected; no other controlled configuration result was used.",
+  "rationale": "The v0.1 60 s timeout saturated success at 18/18. A single global 15.5 s navigation budget is fixed for every scene, method, seed, and stabilizer stratum to create a time-constrained non-saturated task without changing success radius, controller, topomap, geometry, checkpoint, or candidate semantics.",
+  "overrides": {
+    "timeout_max_steps": 62,
+    "simulated_navigation_seconds": 15.5,
+    "scene_ids": ["easy", "medium", "hard"],
+    "planned_trial_count_before_gate": 90
+  },
+  "calibration_configuration": "ddpm10_cfg0_standard_k8",
+  "gate": {
+    "minimum_seeds_per_scene_stratum": 3,
+    "retain_if": "At least one stabilizer stratum has nontrivial success (strictly between 0 and 1) or nontrivial path/failure variance, while the scene is not mechanically broken across both strata.",
+    "reject_if": [
+      "success is 0/6 or 6/6 with no meaningful efficiency/failure variance",
+      "both stabilizer strata are universally impossible",
+      "physics is broken or raw records are invalid",
+      "a rule would need per-method adjustment"
+    ],
+    "stabilizer_strata_must_remain_separate": true
+  }
+}

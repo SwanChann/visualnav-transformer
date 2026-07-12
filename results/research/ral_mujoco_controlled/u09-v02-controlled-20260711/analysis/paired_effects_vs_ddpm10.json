@@ -1,0 +1,630 @@
+{
+  "policy_only_off": {
+    "final_distance_m": {
+      "ddim2_cfg0_standard_k8": {
+        "ci95": [
+          -0.09301134453789801,
+          0.587802692020122
+        ],
+        "degenerate_all_zero": false,
+        "mean_delta_vs_ddpm10": 0.15935139833068412,
+        "paired_cluster_n": 6,
+        "replicates": 2000
+      },
+      "ddim2_cfg0_tts8": {
+        "ci95": [
+          -1.0154058991303845,
+          0.018489663661755265
+        ],
+        "degenerate_all_zero": false,
+        "mean_delta_vs_ddpm10": -0.3471629102784211,
+        "paired_cluster_n": 6,
+        "replicates": 2000
+      },
+      "ddim2_cfg2_tts8": {
+        "ci95": [
+          -1.0206032975997568,
+          0.0058793288413712215
+        ],
+        "degenerate_all_zero": false,
+        "mean_delta_vs_ddpm10": -0.35645697920014713,
+        "paired_cluster_n": 6,
+        "replicates": 2000
+      },
+      "ddim3_cfg0_standard_k8": {
+        "ci95": [
+          -0.07373634510913266,
+          0.3951961941461071
+        ],
+        "degenerate_all_zero": false,
+        "mean_delta_vs_ddpm10": 0.11282010574808803,
+        "paired_cluster_n": 6,
+        "replicates": 2000
+      },
+      "ddpm10_cfg0_standard_k8": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "degenerate_all_zero": true,
+        "mean_delta_vs_ddpm10": 0.0,
+        "paired_cluster_n": 6,
+        "replicates": 2000
+      }
+    },
+    "full_loop_p95_ms": {
+      "ddim2_cfg0_standard_k8": {
+        "ci95": [
+          -59.79877332495865,
+          -31.202481099838526
+        ],
+        "degenerate_all_zero": false,
+        "mean_delta_vs_ddpm10": -42.00666419931925,
+        "paired_cluster_n": 6,
+        "replicates": 2000
+      },
+      "ddim2_cfg0_tts8": {
+        "ci95": [
+          -59.07498157618344,
+          -30.437914292573016
+        ],
+        "degenerate_all_zero": false,
+        "mean_delta_vs_ddpm10": -41.02954553382005,
+        "paired_cluster_n": 6,
+        "replicates": 2000
+      },
+      "ddim2_cfg2_tts8": {
+        "ci95": [
+          -36.68839239338316,
+          -5.028796717791313
+        ],
+        "degenerate_all_zero": false,
+        "mean_delta_vs_ddpm10": -16.969313550907824,
+        "paired_cluster_n": 6,
+        "replicates": 2000
+      },
+      "ddim3_cfg0_standard_k8": {
+        "ci95": [
+          -56.33939722526217,
+          -27.54068328322319
+        ],
+        "degenerate_all_zero": false,
+        "mean_delta_vs_ddpm10": -37.96444165830811,
+        "paired_cluster_n": 6,
+        "replicates": 2000
+      },
+      "ddpm10_cfg0_standard_k8": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "degenerate_all_zero": true,
+        "mean_delta_vs_ddpm10": 0.0,
+        "paired_cluster_n": 6,
+        "replicates": 2000
+      }
+    },
+    "path_efficiency": {
+      "ddim2_cfg0_standard_k8": {
+        "ci95": [
+          0.0,
+          0.0238857137010924
+        ],
+        "degenerate_all_zero": false,
+        "mean_delta_vs_ddpm10": 0.008320906019160598,
+        "paired_cluster_n": 6,
+        "replicates": 2000
+      },
+      "ddim2_cfg0_tts8": {
+        "ci95": [
+          -0.0015500546253187086,
+          0.023347211522897704
+        ],
+        "degenerate_all_zero": false,
+        "mean_delta_vs_ddpm10": 0.007265718965859665,
+        "paired_cluster_n": 6,
+        "replicates": 2000
+      },
+      "ddim2_cfg2_tts8": {
+        "ci95": [
+          0.0,
+          0.0238857137010924
+        ],
+        "degenerate_all_zero": false,
+        "mean_delta_vs_ddpm10": 0.008320906019160598,
+        "paired_cluster_n": 6,
+        "replicates": 2000
+      },
+      "ddim3_cfg0_standard_k8": {
+        "ci95": [
+          -0.01801658704767589,
+          0.001615506534584088
+        ],
+        "degenerate_all_zero": false,
+        "mean_delta_vs_ddpm10": -0.005467026837697268,
+        "paired_cluster_n": 6,
+        "replicates": 2000
+      },
+      "ddpm10_cfg0_standard_k8": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "degenerate_all_zero": true,
+        "mean_delta_vs_ddpm10": 0.0,
+        "paired_cluster_n": 6,
+        "replicates": 2000
+      }
+    },
+    "sampler_p95_ms": {
+      "ddim2_cfg0_standard_k8": {
+        "ci95": [
+          -35.48108550042647,
+          -32.245521444201586
+        ],
+        "degenerate_all_zero": false,
+        "mean_delta_vs_ddpm10": -33.690485651065195,
+        "paired_cluster_n": 6,
+        "replicates": 2000
+      },
+      "ddim2_cfg0_tts8": {
+        "ci95": [
+          -35.4895990884423,
+          -32.46136610941903
+        ],
+        "degenerate_all_zero": false,
+        "mean_delta_vs_ddpm10": -33.775318600995284,
+        "paired_cluster_n": 6,
+        "replicates": 2000
+      },
+      "ddim2_cfg2_tts8": {
+        "ci95": [
+          -26.32678985152476,
+          -24.041730934338073
+        ],
+        "degenerate_all_zero": false,
+        "mean_delta_vs_ddpm10": -25.147482334765908,
+        "paired_cluster_n": 6,
+        "replicates": 2000
+      },
+      "ddim3_cfg0_standard_k8": {
+        "ci95": [
+          -31.348827209058072,
+          -28.85946248543405
+        ],
+        "degenerate_all_zero": false,
+        "mean_delta_vs_ddpm10": -29.964667559731122,
+        "paired_cluster_n": 6,
+        "replicates": 2000
+      },
+      "ddpm10_cfg0_standard_k8": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "degenerate_all_zero": true,
+        "mean_delta_vs_ddpm10": 0.0,
+        "paired_cluster_n": 6,
+        "replicates": 2000
+      }
+    },
+    "spl": {
+      "ddim2_cfg0_standard_k8": {
+        "ci95": [
+          0.007782403840965901,
+          0.6744490705076326
+        ],
+        "degenerate_all_zero": false,
+        "mean_delta_vs_ddpm10": 0.3411157371742992,
+        "paired_cluster_n": 6,
+        "replicates": 2000
+      },
+      "ddim2_cfg0_tts8": {
+        "ci95": [
+          0.007782403840965901,
+          0.6822314743485984
+        ],
+        "degenerate_all_zero": false,
+        "mean_delta_vs_ddpm10": 0.3411157371742992,
+        "paired_cluster_n": 6,
+        "replicates": 2000
+      },
+      "ddim2_cfg2_tts8": {
+        "ci95": [
+          0.17444907050763256,
+          0.8411157371742992
+        ],
+        "degenerate_all_zero": false,
+        "mean_delta_vs_ddpm10": 0.5077824038409658,
+        "paired_cluster_n": 6,
+        "replicates": 2000
+      },
+      "ddim3_cfg0_standard_k8": {
+        "ci95": [
+          -0.012011058031783928,
+          0.6666666666666666
+        ],
+        "degenerate_all_zero": false,
+        "mean_delta_vs_ddpm10": 0.3273278043174414,
+        "paired_cluster_n": 6,
+        "replicates": 2000
+      },
+      "ddpm10_cfg0_standard_k8": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "degenerate_all_zero": true,
+        "mean_delta_vs_ddpm10": 0.0,
+        "paired_cluster_n": 6,
+        "replicates": 2000
+      }
+    },
+    "success": {
+      "ddim2_cfg0_standard_k8": {
+        "ci95": [
+          0.0,
+          0.6666666666666666
+        ],
+        "degenerate_all_zero": false,
+        "mean_delta_vs_ddpm10": 0.3333333333333333,
+        "paired_cluster_n": 6,
+        "replicates": 2000
+      },
+      "ddim2_cfg0_tts8": {
+        "ci95": [
+          0.0,
+          0.6666666666666666
+        ],
+        "degenerate_all_zero": false,
+        "mean_delta_vs_ddpm10": 0.3333333333333333,
+        "paired_cluster_n": 6,
+        "replicates": 2000
+      },
+      "ddim2_cfg2_tts8": {
+        "ci95": [
+          0.16666666666666666,
+          0.8333333333333334
+        ],
+        "degenerate_all_zero": false,
+        "mean_delta_vs_ddpm10": 0.5,
+        "paired_cluster_n": 6,
+        "replicates": 2000
+      },
+      "ddim3_cfg0_standard_k8": {
+        "ci95": [
+          0.0,
+          0.6666666666666666
+        ],
+        "degenerate_all_zero": false,
+        "mean_delta_vs_ddpm10": 0.3333333333333333,
+        "paired_cluster_n": 6,
+        "replicates": 2000
+      },
+      "ddpm10_cfg0_standard_k8": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "degenerate_all_zero": true,
+        "mean_delta_vs_ddpm10": 0.0,
+        "paired_cluster_n": 6,
+        "replicates": 2000
+      }
+    }
+  },
+  "system_stabilizer_on": {
+    "final_distance_m": {
+      "ddim2_cfg0_standard_k8": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "degenerate_all_zero": true,
+        "mean_delta_vs_ddpm10": 0.0,
+        "paired_cluster_n": 6,
+        "replicates": 2000
+      },
+      "ddim2_cfg0_tts8": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "degenerate_all_zero": true,
+        "mean_delta_vs_ddpm10": 0.0,
+        "paired_cluster_n": 6,
+        "replicates": 2000
+      },
+      "ddim2_cfg2_tts8": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "degenerate_all_zero": true,
+        "mean_delta_vs_ddpm10": 0.0,
+        "paired_cluster_n": 6,
+        "replicates": 2000
+      },
+      "ddim3_cfg0_standard_k8": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "degenerate_all_zero": true,
+        "mean_delta_vs_ddpm10": 0.0,
+        "paired_cluster_n": 6,
+        "replicates": 2000
+      },
+      "ddpm10_cfg0_standard_k8": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "degenerate_all_zero": true,
+        "mean_delta_vs_ddpm10": 0.0,
+        "paired_cluster_n": 6,
+        "replicates": 2000
+      }
+    },
+    "full_loop_p95_ms": {
+      "ddim2_cfg0_standard_k8": {
+        "ci95": [
+          -36.867965583284466,
+          -31.877514156629637
+        ],
+        "degenerate_all_zero": false,
+        "mean_delta_vs_ddpm10": -34.21329901587644,
+        "paired_cluster_n": 6,
+        "replicates": 2000
+      },
+      "ddim2_cfg0_tts8": {
+        "ci95": [
+          -34.797164515475735,
+          -30.684156915473675
+        ],
+        "degenerate_all_zero": false,
+        "mean_delta_vs_ddpm10": -32.77246649904554,
+        "paired_cluster_n": 6,
+        "replicates": 2000
+      },
+      "ddim2_cfg2_tts8": {
+        "ci95": [
+          -12.25098769086495,
+          -6.381102133370102
+        ],
+        "degenerate_all_zero": false,
+        "mean_delta_vs_ddpm10": -9.528071099036113,
+        "paired_cluster_n": 6,
+        "replicates": 2000
+      },
+      "ddim3_cfg0_standard_k8": {
+        "ci95": [
+          -32.0479886827646,
+          -27.094479248383625
+        ],
+        "degenerate_all_zero": false,
+        "mean_delta_vs_ddpm10": -29.504318499311918,
+        "paired_cluster_n": 6,
+        "replicates": 2000
+      },
+      "ddpm10_cfg0_standard_k8": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "degenerate_all_zero": true,
+        "mean_delta_vs_ddpm10": 0.0,
+        "paired_cluster_n": 6,
+        "replicates": 2000
+      }
+    },
+    "path_efficiency": {
+      "ddim2_cfg0_standard_k8": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "degenerate_all_zero": true,
+        "mean_delta_vs_ddpm10": 0.0,
+        "paired_cluster_n": 6,
+        "replicates": 2000
+      },
+      "ddim2_cfg0_tts8": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "degenerate_all_zero": true,
+        "mean_delta_vs_ddpm10": 0.0,
+        "paired_cluster_n": 6,
+        "replicates": 2000
+      },
+      "ddim2_cfg2_tts8": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "degenerate_all_zero": true,
+        "mean_delta_vs_ddpm10": 0.0,
+        "paired_cluster_n": 6,
+        "replicates": 2000
+      },
+      "ddim3_cfg0_standard_k8": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "degenerate_all_zero": true,
+        "mean_delta_vs_ddpm10": 0.0,
+        "paired_cluster_n": 6,
+        "replicates": 2000
+      },
+      "ddpm10_cfg0_standard_k8": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "degenerate_all_zero": true,
+        "mean_delta_vs_ddpm10": 0.0,
+        "paired_cluster_n": 6,
+        "replicates": 2000
+      }
+    },
+    "sampler_p95_ms": {
+      "ddim2_cfg0_standard_k8": {
+        "ci95": [
+          -38.16541237365527,
+          -33.59297137349131
+        ],
+        "degenerate_all_zero": false,
+        "mean_delta_vs_ddpm10": -35.77907929875437,
+        "paired_cluster_n": 6,
+        "replicates": 2000
+      },
+      "ddim2_cfg0_tts8": {
+        "ci95": [
+          -37.36834347373588,
+          -33.02694247498342
+        ],
+        "degenerate_all_zero": false,
+        "mean_delta_vs_ddpm10": -35.1850220079541,
+        "paired_cluster_n": 6,
+        "replicates": 2000
+      },
+      "ddim2_cfg2_tts8": {
+        "ci95": [
+          -30.40422037505171,
+          -25.12635149978148
+        ],
+        "degenerate_all_zero": false,
+        "mean_delta_vs_ddpm10": -27.781631107730693,
+        "paired_cluster_n": 6,
+        "replicates": 2000
+      },
+      "ddim3_cfg0_standard_k8": {
+        "ci95": [
+          -33.90003501469133,
+          -29.210943915738124
+        ],
+        "degenerate_all_zero": false,
+        "mean_delta_vs_ddpm10": -31.418083898855304,
+        "paired_cluster_n": 6,
+        "replicates": 2000
+      },
+      "ddpm10_cfg0_standard_k8": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "degenerate_all_zero": true,
+        "mean_delta_vs_ddpm10": 0.0,
+        "paired_cluster_n": 6,
+        "replicates": 2000
+      }
+    },
+    "spl": {
+      "ddim2_cfg0_standard_k8": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "degenerate_all_zero": true,
+        "mean_delta_vs_ddpm10": 0.0,
+        "paired_cluster_n": 6,
+        "replicates": 2000
+      },
+      "ddim2_cfg0_tts8": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "degenerate_all_zero": true,
+        "mean_delta_vs_ddpm10": 0.0,
+        "paired_cluster_n": 6,
+        "replicates": 2000
+      },
+      "ddim2_cfg2_tts8": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "degenerate_all_zero": true,
+        "mean_delta_vs_ddpm10": 0.0,
+        "paired_cluster_n": 6,
+        "replicates": 2000
+      },
+      "ddim3_cfg0_standard_k8": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "degenerate_all_zero": true,
+        "mean_delta_vs_ddpm10": 0.0,
+        "paired_cluster_n": 6,
+        "replicates": 2000
+      },
+      "ddpm10_cfg0_standard_k8": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "degenerate_all_zero": true,
+        "mean_delta_vs_ddpm10": 0.0,
+        "paired_cluster_n": 6,
+        "replicates": 2000
+      }
+    },
+    "success": {
+      "ddim2_cfg0_standard_k8": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "degenerate_all_zero": true,
+        "mean_delta_vs_ddpm10": 0.0,
+        "paired_cluster_n": 6,
+        "replicates": 2000
+      },
+      "ddim2_cfg0_tts8": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "degenerate_all_zero": true,
+        "mean_delta_vs_ddpm10": 0.0,
+        "paired_cluster_n": 6,
+        "replicates": 2000
+      },
+      "ddim2_cfg2_tts8": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "degenerate_all_zero": true,
+        "mean_delta_vs_ddpm10": 0.0,
+        "paired_cluster_n": 6,
+        "replicates": 2000
+      },
+      "ddim3_cfg0_standard_k8": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "degenerate_all_zero": true,
+        "mean_delta_vs_ddpm10": 0.0,
+        "paired_cluster_n": 6,
+        "replicates": 2000
+      },
+      "ddpm10_cfg0_standard_k8": {
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "degenerate_all_zero": true,
+        "mean_delta_vs_ddpm10": 0.0,
+        "paired_cluster_n": 6,
+        "replicates": 2000
+      }
+    }
+  }
+}

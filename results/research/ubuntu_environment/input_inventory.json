@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "recorded_at": "2026-07-11T17:06:33+08:00",
+  "repository": {
+    "root": "/home/swanchan/visualnav-transformer-worktrees/agent-ubuntu-sim-handoff",
+    "branch": "agent/ubuntu-sim-handoff",
+    "head": "463ac70129c6afec71fa84e3eba457d436781642"
+  },
+  "policy_checkpoint": {
+    "path": "deployment/model_weights/nomad/nomad.pth",
+    "sha256": "66edf3902382b29e795e64dc6c8dda98932061297b1e55fb0e529332f8540c79",
+    "size_bytes": 76473631,
+    "source": "/home/swanchan/visualnav-transformer/deployment/model_weights/nomad_baseline.pth",
+    "git_status": "ignored local immutable input"
+  },
+  "grouped_manifest": {
+    "path": "results/research/data_audit/dataset_manifest_grouped_v2.csv",
+    "rows_including_header": 3697,
+    "sha256_ubuntu_lf": "b9ea199f6b9ba8ea9d2433863efd17684193da2b544f2307510d58ae314add7e",
+    "sha256_source_windows_crlf": "ad75c57369104e77eecaa752262159c38ec4e561729454ebfda7c3c45966c2dc",
+    "line_ending_explanation": "CRLF normalization exactly reproduces the handoff hash"
+  },
+  "external_diffusion_policy": {
+    "path": "/home/swanchan/diffusion_policy",
+    "commit": "5ba07ac6661db573af695b419a7947ecb704690f",
+    "branch": "main",
+    "remote": "https://github.com/real-stanford/diffusion_policy.git",
+    "worktree_state": "clean"
+  },
+  "lite3_assets": {
+    "mjcf_xml": {
+      "path": "third_party/lite3/sdk_deploy/src/Lite3_sdk_deploy/Lite3_description/lite3_mjcf/mjcf/Lite3.xml",
+      "sha256": "3632cb09785ca796d28b2568ef22d5c451c14c06eb539aeed28b229b80ba1006"
+    },
+    "locomotion_policy": {
+      "path": "third_party/lite3/sdk_deploy/src/Lite3_sdk_deploy/policy/policy.onnx",
+      "sha256": "b169648b9dbdc1849d1c38e89e6fe212c94a7591cb1cbd4054123b8458f26c20"
+    }
+  },
+  "policy_configs": [
+    {
+      "path": "train/config/nomad.yaml",
+      "sha256": "d6cc0c7a466a2671a55409fb7f656f5aaef9649b4d53733a5de773c11adc4c8b"
+    },
+    {
+      "path": "deployment/config/models.yaml",
+      "sha256": "129859d62a4303a680bd756050eab2e9a7b45ae954835ea8f362adac047a1b79"
+    },
+    {
+      "path": "deployment/config/robot.yaml",
+      "sha256": "412198ec6f8658899a9ae996939cfb88a4cb2357b93f9d560727a1f83e46a0d2"
+    }
+  ],
+  "topomaps": [
+    {
+      "path": "topomaps/easy",
+      "file_count": 21,
+      "tree_sha256": "c713ed397e66c6370832dbef56a066ba8c4259209fdb03499c64543cab15a2ad"
+    },
+    {
+      "path": "topomaps/medium",
+      "file_count": 21,
+      "tree_sha256": "d6ff798ea180b91f8fb9088f8d0ff42ece34354e0991a11ef970d5b35a82be30"
+    },
+    {
+      "path": "topomaps/hard",
+      "file_count": 21,
+      "tree_sha256": "706945fe67b2011524932ab7350e2813108fbed5ca10a1e567fdb6dffea7ec49"
+    }
+  ],
+  "repository_transport": {
+    "git_lfs_installed": false,
+    "submodule_status": "metadata inconsistent: historical gitlinks lack .gitmodules mapping"
+  },
+  "selection_status": "inputs inventoried; controlled scene/config selection is frozen later in U05"
+}

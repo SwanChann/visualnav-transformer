@@ -1,0 +1,67 @@
+{
+  "policy_only_off": {
+    "ade_vs_spl": {
+      "degenerate": false,
+      "p_exact": 0.13333333333333333,
+      "permutation_n": 120,
+      "reason": null,
+      "rho": -0.8207826816681234
+    },
+    "ade_vs_success": {
+      "degenerate": false,
+      "p_exact": 0.3,
+      "permutation_n": 120,
+      "reason": null,
+      "rho": -0.6708203932499368
+    },
+    "config_ids": [
+      "ddpm10_cfg0_standard_k8",
+      "ddim2_cfg0_standard_k8",
+      "ddim3_cfg0_standard_k8",
+      "ddim2_cfg0_tts8",
+      "ddim2_cfg2_tts8"
+    ],
+    "sampler_latency_vs_full_loop": {
+      "degenerate": false,
+      "p_exact": 0.08333333333333333,
+      "permutation_n": 120,
+      "reason": null,
+      "rho": 0.8999999999999998
+    }
+  },
+  "source": {
+    "data_config_sha256": "cf1ccf609e97997a0e80aa5c6787c54f660635cdf7bd3220a5f84f039f0eb738",
+    "metric_waypoint_spacing_m": 0.12,
+    "run_id": "u10-independent-20260711-v5",
+    "summary_path": "results/research/ral_offline_independent/u10-independent-20260711-v5/summary.json",
+    "summary_sha256": "4d6fa387482633a6fac9cfbb7f220c491da8483efd0b068bdc80d37d78b27e43"
+  },
+  "system_stabilizer_on": {
+    "ade_vs_spl": {
+      "degenerate": true,
+      "p_exact": null,
+      "reason": "tied_ranking",
+      "rho": null
+    },
+    "ade_vs_success": {
+      "degenerate": true,
+      "p_exact": null,
+      "reason": "tied_ranking",
+      "rho": null
+    },
+    "config_ids": [
+      "ddpm10_cfg0_standard_k8",
+      "ddim2_cfg0_standard_k8",
+      "ddim3_cfg0_standard_k8",
+      "ddim2_cfg0_tts8",
+      "ddim2_cfg2_tts8"
+    ],
+    "sampler_latency_vs_full_loop": {
+      "degenerate": false,
+      "p_exact": 0.08333333333333333,
+      "permutation_n": 120,
+      "reason": null,
+      "rho": 0.8999999999999998
+    }
+  }
+}

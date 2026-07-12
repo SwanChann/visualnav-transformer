@@ -32,9 +32,9 @@ class CaptureFrame:
 
 
 class NavigationSession:
-    def __init__(self, run_label: str = "navigation_session") -> None:
+    def __init__(self, run_label: str = "navigation_session", run_dir: Path | None = None) -> None:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        self.run_dir = repo_path("results", "deployment", f"{timestamp}_{run_label}")
+        self.run_dir = Path(run_dir) if run_dir is not None else repo_path("results", "deployment", f"{timestamp}_{run_label}")
         self.capture_dir = self.run_dir / "captures"
         self.goal_dir = self.run_dir / "goal_views"
         self.images_root = self.run_dir / "images"

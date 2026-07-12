@@ -1,0 +1,130 @@
+{
+  "created_at_utc": "2026-07-11T09:36:29Z",
+  "case_seed": 20260711,
+  "dataset_root": "/home/swanchan/visualnav-transformer/nomad_dataset/go_stanford",
+  "split_path": "/home/swanchan/visualnav-transformer-worktrees/agent-ubuntu-sim-handoff/results/research/data_audit/proposed_splits_v2/go_stanford/test/traj_names.txt",
+  "split_sha256": "3f2a27d941d016be7854d8530feee674cd4e55dfd1c1aa6cbc499028729bd581",
+  "metric_waypoint_spacing_m": 0.25,
+  "cases": [
+    {
+      "dataset_name": "go_stanford",
+      "suite_name": "short",
+      "traj_name": "sim9h_0_8",
+      "traj_path": "/home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/sim9h_0_8",
+      "obs_time": 12,
+      "goal_time": 20
+    },
+    {
+      "dataset_name": "go_stanford",
+      "suite_name": "short",
+      "traj_name": "no16vc_29_1",
+      "traj_path": "/home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no16vc_29_1",
+      "obs_time": 97,
+      "goal_time": 105
+    },
+    {
+      "dataset_name": "go_stanford",
+      "suite_name": "short",
+      "traj_name": "sim22hF_0_7",
+      "traj_path": "/home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/sim22hF_0_7",
+      "obs_time": 93,
+      "goal_time": 101
+    },
+    {
+      "dataset_name": "go_stanford",
+      "suite_name": "short",
+      "traj_name": "no1vcF_18_0",
+      "traj_path": "/home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no1vcF_18_0",
+      "obs_time": 15,
+      "goal_time": 23
+    },
+    {
+      "dataset_name": "go_stanford",
+      "suite_name": "short",
+      "traj_name": "no28vc_17_0",
+      "traj_path": "/home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no28vc_17_0",
+      "obs_time": 16,
+      "goal_time": 24
+    },
+    {
+      "dataset_name": "go_stanford",
+      "suite_name": "medium",
+      "traj_name": "sim9h_0_8",
+      "traj_path": "/home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/sim9h_0_8",
+      "obs_time": 10,
+      "goal_time": 26
+    },
+    {
+      "dataset_name": "go_stanford",
+      "suite_name": "medium",
+      "traj_name": "no16vc_29_1",
+      "traj_path": "/home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no16vc_29_1",
+      "obs_time": 93,
+      "goal_time": 109
+    },
+    {
+      "dataset_name": "go_stanford",
+      "suite_name": "medium",
+      "traj_name": "sim22hF_0_7",
+      "traj_path": "/home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/sim22hF_0_7",
+      "obs_time": 87,
+      "goal_time": 103
+    },
+    {
+      "dataset_name": "go_stanford",
+      "suite_name": "medium",
+      "traj_name": "no1vcF_18_0",
+      "traj_path": "/home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no1vcF_18_0",
+      "obs_time": 13,
+      "goal_time": 29
+    },
+    {
+      "dataset_name": "go_stanford",
+      "suite_name": "medium",
+      "traj_name": "no28vc_17_0",
+      "traj_path": "/home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no28vc_17_0",
+      "obs_time": 12,
+      "goal_time": 28
+    },
+    {
+      "dataset_name": "go_stanford",
+      "suite_name": "long",
+      "traj_name": "sim9h_0_8",
+      "traj_path": "/home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/sim9h_0_8",
+      "obs_time": 8,
+      "goal_time": 32
+    },
+    {
+      "dataset_name": "go_stanford",
+      "suite_name": "long",
+      "traj_name": "no16vc_29_1",
+      "traj_path": "/home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no16vc_29_1",
+      "obs_time": 89,
+      "goal_time": 113
+    },
+    {
+      "dataset_name": "go_stanford",
+      "suite_name": "long",
+      "traj_name": "sim22hF_0_7",
+      "traj_path": "/home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/sim22hF_0_7",
+      "obs_time": 81,
+      "goal_time": 105
+    },
+    {
+      "dataset_name": "go_stanford",
+      "suite_name": "long",
+      "traj_name": "no1vcF_18_0",
+      "traj_path": "/home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no1vcF_18_0",
+      "obs_time": 11,
+      "goal_time": 35
+    },
+    {
+      "dataset_name": "go_stanford",
+      "suite_name": "long",
+      "traj_name": "no28vc_17_0",
+      "traj_path": "/home/swanchan/visualnav-transformer/nomad_dataset/go_stanford/no28vc_17_0",
+      "obs_time": 8,
+      "goal_time": 32
+    }
+  ]
+}

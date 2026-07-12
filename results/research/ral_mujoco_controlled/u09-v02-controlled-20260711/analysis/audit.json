@@ -1,0 +1,23 @@
+{
+  "bootstrap_replicates": 2000,
+  "bootstrap_seed": 20260711,
+  "descriptive_only_three_seeds": true,
+  "historical_records_ingested": 0,
+  "passed": true,
+  "protocol_sha256": "4df19bb8d1d15d6969c1df52c2b2f339e5f489dc3bb6db140fe3586fdd9497d6",
+  "reconciliation": {
+    "completed": 24,
+    "crashed": 0,
+    "errors": [],
+    "failed": 36,
+    "infrastructure_invalid": 0,
+    "missing_n": 0,
+    "passed": true,
+    "planned_n": 60,
+    "recorded_n": 60,
+    "scientific_n": 60
+  },
+  "run_id": "u09-v02-controlled-20260711",
+  "stabilizer_on_all_methods_trajectory_equivalent": true,
+  "stabilizer_pooled_rows": 0
+}

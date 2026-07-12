@@ -1,0 +1,33 @@
+{
+  "schema_version": "0.1.0",
+  "record_kind": "batch_manifest",
+  "run_id": "u08-scene-gate-20260711",
+  "created_at_utc": "2026-07-11T09:31:34Z",
+  "protocol_sha256": "0dffb341642027af89a51bf81df0053e6682647e062e41a7db0e75a4ef68e62f",
+  "planned_trial_count": 18,
+  "completed": 18,
+  "failed": 0,
+  "crashed": 0,
+  "infrastructure_invalid": 0,
+  "missing_trial_keys": [],
+  "trial_records": [
+    "results/research/ral_mujoco_controlled/u08-scene-gate-20260711/trials/ddpm10_cfg0_standard_k8__easy__s11__g0__policy_only_off__a01.json",
+    "results/research/ral_mujoco_controlled/u08-scene-gate-20260711/trials/ddpm10_cfg0_standard_k8__easy__s11__g0__system_stabilizer_on__a01.json",
+    "results/research/ral_mujoco_controlled/u08-scene-gate-20260711/trials/ddpm10_cfg0_standard_k8__easy__s23__g0__policy_only_off__a01.json",
+    "results/research/ral_mujoco_controlled/u08-scene-gate-20260711/trials/ddpm10_cfg0_standard_k8__easy__s23__g0__system_stabilizer_on__a01.json",
+    "results/research/ral_mujoco_controlled/u08-scene-gate-20260711/trials/ddpm10_cfg0_standard_k8__easy__s47__g0__policy_only_off__a01.json",
+    "results/research/ral_mujoco_controlled/u08-scene-gate-20260711/trials/ddpm10_cfg0_standard_k8__easy__s47__g0__system_stabilizer_on__a01.json",
+    "results/research/ral_mujoco_controlled/u08-scene-gate-20260711/trials/ddpm10_cfg0_standard_k8__hard__s11__g0__policy_only_off__a01.json",
+    "results/research/ral_mujoco_controlled/u08-scene-gate-20260711/trials/ddpm10_cfg0_standard_k8__hard__s11__g0__system_stabilizer_on__a01.json",
+    "results/research/ral_mujoco_controlled/u08-scene-gate-20260711/trials/ddpm10_cfg0_standard_k8__hard__s23__g0__policy_only_off__a01.json",
+    "results/research/ral_mujoco_controlled/u08-scene-gate-20260711/trials/ddpm10_cfg0_standard_k8__hard__s23__g0__system_stabilizer_on__a01.json",
+    "results/research/ral_mujoco_controlled/u08-scene-gate-20260711/trials/ddpm10_cfg0_standard_k8__hard__s47__g0__policy_only_off__a01.json",
+    "results/research/ral_mujoco_controlled/u08-scene-gate-20260711/trials/ddpm10_cfg0_standard_k8__hard__s47__g0__system_stabilizer_on__a01.json",
+    "results/research/ral_mujoco_controlled/u08-scene-gate-20260711/trials/ddpm10_cfg0_standard_k8__medium__s11__g0__policy_only_off__a01.json",
+    "results/research/ral_mujoco_controlled/u08-scene-gate-20260711/trials/ddpm10_cfg0_standard_k8__medium__s11__g0__system_stabilizer_on__a01.json",
+    "results/research/ral_mujoco_controlled/u08-scene-gate-20260711/trials/ddpm10_cfg0_standard_k8__medium__s23__g0__policy_only_off__a01.json",
+    "results/research/ral_mujoco_controlled/u08-scene-gate-20260711/trials/ddpm10_cfg0_standard_k8__medium__s23__g0__system_stabilizer_on__a01.json",
+    "results/research/ral_mujoco_controlled/u08-scene-gate-20260711/trials/ddpm10_cfg0_standard_k8__medium__s47__g0__policy_only_off__a01.json",
+    "results/research/ral_mujoco_controlled/u08-scene-gate-20260711/trials/ddpm10_cfg0_standard_k8__medium__s47__g0__system_stabilizer_on__a01.json"
+  ]
+}
