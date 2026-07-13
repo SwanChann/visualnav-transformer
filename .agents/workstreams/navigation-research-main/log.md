@@ -2,6 +2,7 @@
 
 ## 2026-07-13 — GitHub 回收与 Windows 集成整理
 
+- 将已验证整理锚定为 `ac49e99`，原 `F:/codespace/visualnav-transformer` 通过 fast-forward 吸收 Ubuntu 与 Windows 整理成果并 push；临时 integration worktree 随后安全退休。今后原项目目录是人工查看和继续工作的唯一入口。
 - `git fetch origin --prune` 后确认 Ubuntu 完整成果已推送到 `origin/agent/ubuntu-sim-handoff@a49d372`，相对旧本地 HEAD 增加 692 个文件、131,574 行；在 detached integration worktree 整理，原工作区未拉取或覆盖。
 - 独立审计确认 U00–U18 在 Ubuntu 授权边界内完整：U09 v0.3 60/60、U10 v5 75/75、分析/数据/benchmark/backend/training-plan 测试组分别记录为 33/33、11/11、7/7、5/5、4/4，复现清单 141 文件。
 - 新建根目录 `PROJECT_ASSET_MAP.md`，统一映射主结果、论文图表、协议代码、数据/模型、历史证据、作废版本、治理文件与外部阻塞项；校正 `EXP-02` 为已完成，并将旧任务中的 138-file 更正为 141-file。

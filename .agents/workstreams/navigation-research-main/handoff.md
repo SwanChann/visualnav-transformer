@@ -2,9 +2,9 @@
 
 ## 当前快照
 
-- GitHub 来源：`origin/agent/ubuntu-sim-handoff` @ `a49d37220a514dc7b9efd3820edc3d6fbf7ce70c`（`Complete Ubuntu navigation research audit`）。
-- Windows 集成 worktree：`F:/codespace/visualnav-transformer-worktrees/ubuntu-results-integration`，detached HEAD。
-- 原工作区：`F:/codespace/visualnav-transformer`，保持在 `agent/ubuntu-sim-handoff@463ac70`，未拉取、未覆盖。
+- 人工与后续工作的唯一入口：`F:/codespace/visualnav-transformer`。
+- 当前分支：`agent/ubuntu-sim-handoff`；已包含 Ubuntu 审计提交 `a49d372` 和 Windows 资产整理提交 `ac49e99`，并同步至同名远端分支。
+- 临时集成 worktree `F:/codespace/visualnav-transformer-worktrees/ubuntu-results-integration` 已完成使命，在成果提交、快进、验证和 push 后退休；不要再把它当作项目入口。
 - 统一入口：根目录 `PROJECT_ASSET_MAP.md`。
 
 ## 已完成结论
