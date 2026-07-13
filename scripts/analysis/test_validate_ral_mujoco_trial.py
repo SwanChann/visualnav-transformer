@@ -8,6 +8,7 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -86,7 +87,11 @@ class ControlledMuJoCoContractTest(unittest.TestCase):
             def crash(*_args, **_kwargs):
                 raise RuntimeError("synthetic crash")
 
-            path = runner.run_trial_attempt(plan, self.protocol, PROTOCOL_PATH, self.protocol_sha, "unit", run_dir, executor=crash)
+            # The checkpoint is intentionally gitignored and may be absent in a
+            # fresh analysis-only worktree. This test targets runtime crash
+            # retention, not the separate immutable-input preflight.
+            with mock.patch.object(runner, "verify_immutable_files"):
+                path = runner.run_trial_attempt(plan, self.protocol, PROTOCOL_PATH, self.protocol_sha, "unit", run_dir, executor=crash)
             payload = json.loads(path.read_text(encoding="utf-8"))
             self.assertEqual(payload["status"], "crashed")
             self.assertIn("synthetic crash", payload["outcome"]["exception"])

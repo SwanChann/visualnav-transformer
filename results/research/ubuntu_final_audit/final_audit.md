@@ -1,5 +1,7 @@
 # Ubuntu Final Audit — U00–U15
 
+> Windows integration note (2026-07-13): this audit was written before the Ubuntu worktree was committed. The complete packet is now preserved on GitHub at `a49d37220a514dc7b9efd3820edc3d6fbf7ce70c`. The historical worktree/dirty-state statements below describe audit time, not current remote persistence. The authoritative cross-platform asset entry point is `PROJECT_ASSET_MAP.md`; text protocol hashes use LF-normalized UTF-8 semantics, while binary assets retain raw-byte hashes.
+
 ## Verdict
 
 The authorized Ubuntu simulation/offline workstream is complete. Corrected protocol v0.3,

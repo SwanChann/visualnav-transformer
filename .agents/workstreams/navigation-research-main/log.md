@@ -1,5 +1,14 @@
 # Navigation Research Agent Log
 
+## 2026-07-13 — GitHub 回收与 Windows 集成整理
+
+- `git fetch origin --prune` 后确认 Ubuntu 完整成果已推送到 `origin/agent/ubuntu-sim-handoff@a49d372`，相对旧本地 HEAD 增加 692 个文件、131,574 行；在 detached integration worktree 整理，原工作区未拉取或覆盖。
+- 独立审计确认 U00–U18 在 Ubuntu 授权边界内完整：U09 v0.3 60/60、U10 v5 75/75、分析/数据/benchmark/backend/training-plan 测试组分别记录为 33/33、11/11、7/7、5/5、4/4，复现清单 141 文件。
+- 新建根目录 `PROJECT_ASSET_MAP.md`，统一映射主结果、论文图表、协议代码、数据/模型、历史证据、作废版本、治理文件与外部阻塞项；校正 `EXP-02` 为已完成，并将旧任务中的 138-file 更正为 141-file。
+- 修复 Windows CRLF checkout 导致的 protocol overlay 哈希误报：文本协议按 UTF-8/LF 内容身份哈希，二进制 immutable input 继续按原始字节哈希；runtime crash 单测显式隔离 gitignored checkpoint preflight。
+- 火山终审 critic 以 `glm-5.2`/read-only 启动，持续约 8 分钟未产出正式 final，主控按编排时限终止并记录为 timeout；未采纳任何不完整输出，改由本地确定性计数与测试完成终验。
+- 结论不变：Ubuntu 工作完成，但整篇 RA-L 仍受外部数据/训练、目标设备 sustained timing、重复真机 outcome、隐私/同意门阻塞。
+
 ## 2026-07-10 — Onboarding
 
 - 读取 `codex-volc-orchestrator`、`codex-volc-worktree-workflow`、`start-project-agent` 完整技能说明。

@@ -45,6 +45,12 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def sha256_text_file(path: Path) -> str:
+    """Hash UTF-8 text with LF line endings on every operating system."""
+    normalized = path.read_text(encoding="utf-8").replace("\r\n", "\n").replace("\r", "\n")
+    return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
+
+
 def atomic_write_json(path: Path, payload: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     descriptor, temporary_name = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=str(path.parent))
@@ -62,11 +68,14 @@ def atomic_write_json(path: Path, payload: dict[str, Any]) -> None:
 
 def load_protocol(path: Path) -> tuple[dict[str, Any], str]:
     payload = json.loads(path.read_text(encoding="utf-8"))
-    protocol_sha256 = sha256_file(path)
+    # Protocol hashes are content identities, so Git's platform-specific
+    # checkout line endings must not change them. Binary assets remain raw-byte
+    # hashed by ``sha256_file`` in ``verify_immutable_files``.
+    protocol_sha256 = sha256_text_file(path)
     if "base_protocol_path" in payload:
         base_path = (REPO_ROOT / payload["base_protocol_path"]).resolve()
         expected_base_hash = payload.get("base_protocol_sha256")
-        actual_base_hash = sha256_file(base_path)
+        actual_base_hash = sha256_text_file(base_path)
         if actual_base_hash != expected_base_hash:
             raise ValueError(f"Base protocol hash mismatch: {actual_base_hash} != {expected_base_hash}")
         base = json.loads(base_path.read_text(encoding="utf-8"))
