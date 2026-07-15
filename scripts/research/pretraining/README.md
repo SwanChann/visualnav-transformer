@@ -28,3 +28,10 @@ processed-tree 哈希。它们不加载模型，也不执行 forward/backward �
 权重参数。`../models/preflight_tinynav_image_forward.py` 可在真实 canonical batch 上
 执行 inference-only gate 并生成带哈希的 JSON/Markdown 报告。该门不创建 optimizer、
 不执行 backward/训练，也不写 checkpoint；其延迟值不能作为训练或部署结论。
+
+`train_step_runtime.py` 实现 H0/H1 action loss 的可执行 train step、确定性 batch
+cursor，以及包含 model/optimizer/Python/NumPy/Torch CPU/CUDA RNG 的 exact-resume
+checkpoint。`preflight_tinynav_train_step.py` 只用于单独授权的两步集成门；
+`recover_tinynav_train_step_resume.py` 是零 backward、零 optimizer step 的恢复验证路径。
+两步门与 200-step B0 是不同阶段，readiness 或 post-checkpoint forward loss 不得写成
+收敛、训练可行性、模型质量或方法结果。

@@ -10,7 +10,7 @@
 |---|---|---|---|---|
 | Windows 原项目目录 | 论文、证据包、Git 治理、资产地图、静态 pre-training 合同与单元测试已存在；完整 NoMaD 训练依赖不齐；无训练数据 | 唯一人工/Git/论文集成入口；维护协议、任务、代码审查、小型结果和论文；形成供其他环境执行的冻结 commit/config | 不保存数据集；不做真实数据 adapter 验证、训练、跨数据集离线评估、仿真或真机 | 静态实现与测试完成；跨环境执行只认包含 4090 交接包的冻结 Git SHA |
 | Ubuntu 自有电脑 | U00–U18、U09 v0.3、U10 v5 的离线/仿真执行与审计已完成 | 接收通过 4090 `OFFLINE-GATE` 的少量候选 checkpoint；执行新的非饱和闭环 `SIM-GATE`；返回原始 rollout、统计与日志 | 不重复 U00–U18；不保存训练数据；不做多数据集训练或需要完整数据的 LODO/corruption 离线评估 | 历史授权范围完成；等待 4090 晋级 checkpoint |
-| 远程 RTX 4090 服务器 | 已核验 `agent/ubuntu-sim-handoff@ffa3533`、2x RTX 4090、`nomad_train`、Go Stanford 全量内容与冻结 `nomad.pth`；GPU 0 IMAGE-FORWARD 通过 | 数据盘点与合规登记、真实 dataset adapter 接线、manifest/split/leakage、B0 smoke、baseline/H0/H1 训练、IID/mixed/LODO/corruption 离线评估、显存与吞吐测量 | 不直接改论文结论；不把 forward/smoke、loss 下降或单 seed 当方法结果；不绕过 Windows 权威入口 | Phase 0、Go Stanford 单域 pilot 与随机初始化 image forward 完成；RECON/HuRoN、旧训练目录 provenance、backward/optimizer/checkpoint 和任何训练仍阻塞 |
+| 远程 RTX 4090 服务器 | 已核验 `agent/ubuntu-sim-handoff`、2x RTX 4090、`nomad_train`、Go Stanford 全量内容与冻结 `nomad.pth`；GPU 0 IMAGE-FORWARD 与两步 TRAIN-STEP/exact-resume 通过 | 数据盘点与合规登记、真实 dataset adapter 接线、manifest/split/leakage、B0 smoke、baseline/H0/H1 训练、IID/mixed/LODO/corruption 离线评估、显存与吞吐测量 | 不直接改论文结论；不把 forward/两步集成/smoke、loss 下降或单 seed 当方法结果；不绕过 Windows 权威入口 | Phase 0、Go Stanford 单域 pilot、随机初始化 image forward 与两步 plumbing 完成；RECON/HuRoN、旧训练目录 provenance 和 200-step B0 仍阻塞 |
 
 执行链固定为：
 

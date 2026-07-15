@@ -44,6 +44,11 @@ EfficientNet-B0 image policy 共 8513117 个可训练参数，合成数据测试
 H0/H1 inference-only 前向均通过。当前可以实现 train loop，但 loss/train-step、
 checkpoint exact-resume、Git 冻结和任何 backward/optimizer/B0 仍需后续门控。
 
+`TRAIN-STEP` 集成门已按单独授权执行且总计严格为 2 步：synthetic H0 一步、
+Go Stanford 真实 H1 一步。step-2 checkpoint 的 model/optimizer、两张 GPU RNG 和
+下一真实 batch exact-resume 已通过；首次 reload 的 RNG device bug 已记录并以
+resume-only 路径修复，没有重放训练步。该门不是 200-step B0，`EXP-01` 仍阻塞。
+
 ## 执行顺序
 
 Windows 静态实现与 Ubuntu U00–U18 均已完成。4090 必须先检出包含 `HANDOFF-4090` 的冻结 Git SHA，后续顺序是：

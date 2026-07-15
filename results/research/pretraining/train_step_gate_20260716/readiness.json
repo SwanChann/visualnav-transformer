@@ -1,0 +1,123 @@
+{
+  "schema_version": "0.1.0",
+  "gate_id": "tinynavbrain-train-step-resume-only-recovery",
+  "created_at_utc": "2026-07-15T16:35:36.694591+00:00",
+  "execution_boundary": {
+    "checkpoint_recorded_backward_calls": 2,
+    "checkpoint_recorded_optimizer_steps": 2,
+    "recovery_backward_calls": 0,
+    "recovery_optimizer_steps": 0,
+    "total_backward_optimizer_steps_across_gate": 2,
+    "b0_200_step_run_executed": false,
+    "evaluation_executed": false,
+    "pretrained_weights_downloaded": false
+  },
+  "failure_and_recovery": {
+    "original_failure_stage": "post-checkpoint_rng_restore",
+    "root_cause": "map_location moved CPU RNG ByteTensor to CUDA",
+    "repair": "normalize Torch CPU/CUDA RNG state tensors to CPU before setters",
+    "original_step_loss_values_retained": false,
+    "training_steps_replayed": false
+  },
+  "provenance": {
+    "git_commit": "d5083920659ecb6a71ecd72694c8225efe44d876",
+    "tracked_worktree_dirty": false,
+    "worktree_dirty_including_preserved_untracked": true,
+    "manifest_sha256": "b9ea199f6b9ba8ea9d2433863efd17684193da2b544f2307510d58ae314add7e",
+    "split_sha256": "f10c2570f67107b8fcd56dcaef6a9cdfffd0ec4d7bc4eafffbb4015304e42753",
+    "dataset_tree_sha256": "2ca863b8a79645afe31860d3b59a436e5a5e8b4e4032bc530b37535c661b661b",
+    "model_contract_sha256": "05366ad252db95c7daf5710f63bea9235a0b7742ac1cf00895c67287876f84d6",
+    "smoke_config_sha256": "6cac2661fb8f885ee471e98e2abe7b91e5c9da400aeae19ee16b08452ab6e086",
+    "runtime_sha256": "1accc7240f8fee3315daf3ae8430d4bf0092d9acf48462193462426c156bcc91",
+    "writer_script_sha256_current": "e1609849a108b48eea2264447986f5b46631c85f5ccccaae69c36d0e8bdc4365",
+    "recovery_script_sha256": "acec5e5746c6caf616a4ccdbb17e3e030355f89fd82ef9279b24b9890ab199aa"
+  },
+  "hardware": {
+    "device_index": 0,
+    "name": "NVIDIA GeForce RTX 4090",
+    "torch": "2.4.1+cu121",
+    "torch_cuda": "12.1"
+  },
+  "optimizer_step_evidence": {
+    "finite_optimizer_tensors": true,
+    "deterministic_head_step_values": [
+      1
+    ],
+    "flow_head_step_values": [
+      1
+    ],
+    "shared_encoder_step_values": [
+      2
+    ],
+    "optimizer_state_parameter_count": 300,
+    "proves_h0_path_stepped_once": true,
+    "proves_h1_path_stepped_once": true,
+    "proves_shared_path_stepped_twice": true
+  },
+  "postcheckpoint_forward_losses": {
+    "synthetic_h0": 0.03625238686800003,
+    "real_h1": 1.0222798585891724,
+    "measurement_scope": "post-checkpoint forward-only; original step losses were not retained"
+  },
+  "checkpoint": {
+    "path": "results/research/pretraining/train_step_gate_20260716/exact_resume_step2.pt",
+    "sha256": "c732eb398462e6af0d9428df550c5bfbe09672eaf7f47cd97c33351e44f8fa35",
+    "size_bytes": 102542746,
+    "metadata": {
+      "schema_version": "0.1.0",
+      "run_id": "tinynavbrain-train-step-gate-v0.1",
+      "phase": "smoke",
+      "head": "h1_rectified_flow",
+      "seed": 0,
+      "optimizer_step": 2,
+      "git_commit": "d5083920659ecb6a71ecd72694c8225efe44d876",
+      "manifest_sha256": "b9ea199f6b9ba8ea9d2433863efd17684193da2b544f2307510d58ae314add7e",
+      "split_sha256": "f10c2570f67107b8fcd56dcaef6a9cdfffd0ec4d7bc4eafffbb4015304e42753",
+      "model_contract_sha256": "05366ad252db95c7daf5710f63bea9235a0b7742ac1cf00895c67287876f84d6",
+      "config_sha256": "6cac2661fb8f885ee471e98e2abe7b91e5c9da400aeae19ee16b08452ab6e086",
+      "rng_state_present": true,
+      "sampler_state_present": true
+    },
+    "expected_next_batch_identity": [
+      "sim26hF_1_0:97",
+      "no16vc_36_0:73",
+      "sim31h_0_24:173",
+      "no14vcF_11_0:41",
+      "no28vcF_31_0:39",
+      "no32vc_15_0:6",
+      "sim30h_2_5:19",
+      "no2vc_90_0:127"
+    ],
+    "resumed_next_batch_identity": [
+      "sim26hF_1_0:97",
+      "no16vc_36_0:73",
+      "sim31h_0_24:173",
+      "no14vcF_11_0:41",
+      "no28vcF_31_0:39",
+      "no32vc_15_0:6",
+      "sim30h_2_5:19",
+      "no2vc_90_0:127"
+    ]
+  },
+  "gates": {
+    "checkpoint_records_exactly_two_steps": true,
+    "checkpoint_explicitly_not_b0": true,
+    "h0_optimizer_path_evidenced": true,
+    "h1_optimizer_path_evidenced": true,
+    "shared_encoder_two_step_evidenced": true,
+    "finite_optimizer_state": true,
+    "model_differs_from_seeded_initialization": true,
+    "model_state_exact_after_reload": true,
+    "optimizer_state_exact_after_reload": true,
+    "rng_state_exact_after_reload": true,
+    "next_batch_exact_after_reload": true,
+    "finite_postcheckpoint_forward_losses": true,
+    "reload_did_not_change_metadata": true
+  },
+  "ready_for_b0_execution": false,
+  "remaining_before_b0": [
+    "review and freeze the TRAIN-STEP implementation/recovery report in Git",
+    "obtain separate explicit authorization for the frozen 200-step B0 run"
+  ],
+  "claim_boundary": "The checkpoint proves two optimizer-path integration steps and exact resume. Original step loss values were not retained; reported losses are post-checkpoint forward-only checks. This is not B0, convergence, quality, or method evidence."
+}

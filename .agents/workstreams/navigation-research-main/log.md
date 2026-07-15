@@ -1,5 +1,15 @@
 # Navigation Research Agent Log
 
+## 2026-07-16 — 4090 TinyNavBrain TRAIN-STEP gate
+
+- 用户授权实现 H0/H1 可执行 loss/train-step/checkpoint exact-resume，并将执行上限冻结为 synthetic 与一个真实 batch 合计最多 2 个 backward/optimizer step；明确不执行 200-step B0。
+- 新增 `train_step_runtime.py`：复用冻结的 H0 masked SmoothL1、H1 rectified-flow velocity MSE 和 dataset-macro loss；加入 AdamW train step、finite/positive gradient 门、Python/NumPy/Torch CPU/CUDA RNG、确定性 batch cursor 和 checkpoint save/load。
+- GPU 0 严格执行 synthetic H0 一步及 Go Stanford 真实 H1 一步。step-2 checkpoint 的 AdamW state 显示 deterministic head 为 step 1、flow/time head 为 step 1、共享 encoder 为 step 2，且 optimizer tensors finite。
+- checkpoint 写入后首次 reload 失败：`map_location=cuda:0` 将 CPU RNG ByteTensor 搬到 CUDA，`torch.set_rng_state` 拒绝。两步已完成，因此没有重跑；修复为 RNG setter 前显式 `.cpu()`，并新增 CUDA-mapped RNG 回归测试。
+- resume-only 恢复未调用 backward/optimizer.step；model、optimizer、两张可见 GPU 的 RNG、下一 batch index/trajectory/current-index 均精确一致。checkpoint SHA-256 为 `c732eb398462e6af0d9428df550c5bfbe09672eaf7f47cd97c33351e44f8fa35`。
+- 原两步的数值 loss 在 reload 故障前没有落盘，报告明确标为未保留；恢复后只补做 forward-only finite 检查（H0 0.03625239、H1 1.02227986），不得写成原 step loss、收敛或训练结果。
+- 证据：`results/research/pretraining/train_step_gate_20260716/readiness.{json,md}`；98 MiB checkpoint 当前仅为本地隔离产物，未获新一轮 Git/LFS 提交授权。
+
 ## 2026-07-16 — 4090 TinyNavBrain IMAGE-FORWARD gate
 
 - 按用户逐项授权实现 `tinynavbrain_image_policy.py`：单一共享 EfficientNet-B0 encoder，固定 `weights=None`，拒绝任何非空预训练权重配置，并接通 H0 deterministic、H1 velocity/rectified-flow sample 与 progress API。

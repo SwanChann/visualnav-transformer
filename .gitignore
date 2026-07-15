@@ -17,6 +17,8 @@ train/gnm_dataset/*
 !results/day4/20260421_151228_encoder_comparison_experiment/*.png
 *.jpg
 *.pth
+# Local two-step integration artifact; the tracked readiness receipt retains its SHA-256.
+/results/research/pretraining/train_step_gate_20260716/exact_resume_step2.pt
 *.mp4
 *.gif
 
