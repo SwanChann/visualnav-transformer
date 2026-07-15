@@ -1,5 +1,13 @@
 # Stage 2 — training run order
 
+Execution environment: remote RTX 4090 server only. All raw/processed datasets remain
+on that server. Windows supplies the frozen Git/config/contract version and receives
+small provenance/results; Ubuntu does not run this stage.
+
+Before step 1, record a live server snapshot: full Git SHA, dirty state, Python/CUDA/
+PyTorch versions, GPU/VRAM, free disk, dataset inventory, checkpoint hashes and the
+exact manifest/split hashes. Repository plans are not proof that the server is ready.
+
 Freeze one manifest/split version, encoder, image resolution, action horizon,
 normalization, optimizer budget, parameter tolerance, candidate K and hardware.
 

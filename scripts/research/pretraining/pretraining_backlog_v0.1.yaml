@@ -1,0 +1,155 @@
+schema_version: "0.1.0"
+backlog_id: visualnav-transformer-pretraining-v0.1
+status: active_pre_execution
+training_performed: false
+data_residency: rtx4090_server_only
+environment_contract:
+  windows: canonical_git_paper_and_static_contracts
+  rtx4090_server: data_adapter_training_and_cross_dataset_offline
+  ubuntu: promoted_checkpoint_closed_loop_simulation
+  target_device_tbd: sustained_timing_and_robot_execution_not_yet_assigned
+evidence_boundary: Static contracts and unit tests are infrastructure evidence, not model-quality evidence.
+tasks:
+  - id: TRAIN-INFRA-BATCH
+    stage: TRAIN-INFRA
+    status: done
+    external: false
+    requires_training: false
+    execution_environment: windows
+    depends_on: []
+    objective: Adapt the seven-item ViNT batch into the frozen canonical dict without changing the legacy tuple API.
+    acceptance: Explicit meter scale and manifest metadata are required; shapes, masks, units, and audit IDs validate.
+    falsification: Any dataset-dependent guessed scale, tuple-order mutation, or goal-masked target contribution fails the task.
+    evidence: [scripts/research/pretraining/batch_contract.py, scripts/research/pretraining/test_pretraining_contracts.py]
+  - id: TRAIN-INFRA-HISTORY
+    stage: TRAIN-INFRA
+    status: done
+    external: false
+    requires_training: false
+    execution_environment: windows
+    depends_on: [TRAIN-INFRA-BATCH]
+    objective: Construct action history only from pose indices at or before the observation time.
+    acceptance: Future-pose mutation cannot change history; padding is zero and separately masked.
+    falsification: Any accessed index later than current_index or nonzero padding fails the task.
+    evidence: [scripts/research/pretraining/batch_contract.py, scripts/research/pretraining/test_pretraining_contracts.py]
+  - id: TRAIN-INFRA-SAMPLER
+    stage: TRAIN-INFRA
+    status: done
+    external: false
+    requires_training: false
+    execution_environment: windows
+    depends_on: []
+    objective: Freeze proportional and dataset-balanced sample-weight semantics.
+    acceptance: Proportional mode is uniform per sample; balanced mode assigns equal total probability mass per dataset.
+    falsification: A large dataset receives more mass in balanced mode or weights do not sum to one.
+    evidence: [scripts/research/pretraining/sampler_contract.py, scripts/research/pretraining/test_pretraining_contracts.py]
+  - id: TRAIN-INFRA-LOSS
+    stage: TRAIN-INFRA
+    status: done
+    external: false
+    requires_training: false
+    execution_environment: windows
+    depends_on: [TRAIN-INFRA-BATCH, TRAIN-INFRA-SAMPLER]
+    objective: Freeze H0 SmoothL1 and H1 rectified-flow masked dataset-macro loss contracts.
+    acceptance: Invalid targets are excluded and dataset means receive equal macro weight.
+    falsification: Frame count or dataset size silently dominates the macro objective.
+    evidence: [scripts/research/pretraining/training_contract.py, scripts/research/pretraining/test_pretraining_contracts.py]
+  - id: TRAIN-INFRA-CHECKPOINT
+    stage: TRAIN-INFRA
+    status: done
+    external: false
+    requires_training: false
+    execution_environment: windows
+    depends_on: [TRAIN-INFRA-SAMPLER]
+    objective: Freeze checkpoint provenance and exact-resume compatibility fields.
+    acceptance: Resolved hashes, Git SHA, RNG state, sampler state, seed, head, and step are mandatory.
+    falsification: A placeholder hash or immutable resume mismatch is accepted.
+    evidence: [scripts/research/pretraining/checkpoint_contract.py, scripts/research/pretraining/test_pretraining_contracts.py]
+  - id: TRAIN-INFRA-SMOKE-CONFIG
+    stage: TRAIN-INFRA
+    status: done
+    external: false
+    requires_training: false
+    execution_environment: windows
+    depends_on: [TRAIN-INFRA-LOSS, TRAIN-INFRA-CHECKPOINT]
+    objective: Freeze a 200-step H0-then-H1 smoke protocol without executing it.
+    acceptance: Config remains explicitly unexecuted and requires reload, provenance, leakage, VRAM, and throughput gates.
+    falsification: Static validation is represented as a completed smoke or model result.
+    evidence: [scripts/research/pretraining/smoke_config_v0.1.yaml, scripts/research/pretraining/validate_pretraining_backlog.py]
+  - id: DATA-PILOT
+    stage: DATA-PILOT
+    status: blocked_external
+    external: true
+    requires_training: false
+    execution_environment: rtx4090_server
+    depends_on: []
+    objective: Materialize legally usable RECON and HuRoN pilots alongside Go Stanford.
+    acceptance: Each domain has artifact receipt, license snapshot, manifest, and zero-leakage group-safe split.
+    falsification: Fewer than three auditable processed domains forbids any cross-dataset claim.
+    evidence: []
+  - id: B0-SMOKE
+    stage: B0
+    status: blocked_external
+    external: true
+    requires_training: true
+    execution_environment: rtx4090_server
+    depends_on: [TRAIN-INFRA-SMOKE-CONFIG]
+    objective: Execute the frozen 200-step smoke after explicit user authorization.
+    acceptance: Finite loss, exact next-batch resume, meter-scale sanity, measured peak VRAM, and throughput are recorded.
+    falsification: Reload diverges, scale sanity fails, loss is non-finite, or the 4090 budget is infeasible.
+    evidence: []
+  - id: BASELINE-MATRIX
+    stage: BASELINE
+    status: blocked_external
+    external: true
+    requires_training: true
+    execution_environment: rtx4090_server
+    depends_on: [DATA-PILOT, B0-SMOKE]
+    objective: Train specialists, proportional and balanced Multi-NoMaD, H0, and low-NFE controls under fixed exposure.
+    acceptance: At least three seeds, full provenance, failures retained, and equalized comparison factors.
+    falsification: Seed variance dominates claimed gain or any comparison changes encoder, data exposure, K, or bridge.
+    evidence: []
+  - id: H1-TRAIN
+    stage: H1
+    status: blocked_external
+    external: true
+    requires_training: true
+    execution_environment: rtx4090_server
+    depends_on: [BASELINE-MATRIX]
+    objective: Test H1 rectified flow only after baselines are stable.
+    acceptance: H1 exceeds same-encoder H0 at equal compute beyond seed variance on at least two shifted dimensions.
+    falsification: H0 ties H1, action-history or scale explains the gain, or low NFE loses its deployment advantage.
+    evidence: []
+  - id: OFFLINE-GATE
+    stage: OFFLINE-GATE
+    status: blocked_external
+    external: true
+    requires_training: false
+    execution_environment: rtx4090_server
+    depends_on: [H1-TRAIN]
+    objective: Evaluate frozen IID, mixed, LODO, and corruption tracks.
+    acceptance: Per-domain multi-seed effects and uncertainty are reported with negative results retained.
+    falsification: Gain exists only in macro average or only on IID.
+    evidence: []
+  - id: SIM-GATE
+    stage: SIM-GATE
+    status: blocked_external
+    external: true
+    requires_training: false
+    execution_environment: ubuntu
+    depends_on: [OFFLINE-GATE]
+    objective: Test promotion on a frozen non-saturated procedural or variant closed-loop benchmark.
+    acceptance: Closed-loop gain survives without method-specific stabilizer or bridge changes.
+    falsification: Offline gain does not transfer or benchmark outcomes saturate.
+    evidence: []
+  - id: DEVICE-ROBOT-GATE
+    stage: DEVICE-ROBOT-GATE
+    status: blocked_external
+    external: true
+    requires_training: false
+    execution_environment: target_device_tbd
+    depends_on: [SIM-GATE]
+    objective: Run named-device sustained timing and protocolized robot trials after separate authorization.
+    acceptance: Deadline misses, power, temperature, repeated outcomes, safety, privacy, and consent are complete.
+    falsification: Timing misses the frozen deadline or robot evidence is not repeatable and auditable.
+    evidence: []

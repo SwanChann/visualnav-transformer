@@ -53,7 +53,8 @@ U09 v0.3 共 60 个计划/记录：25 success、35 failure、0 crash、0 infrast
 | RA-L 分析/校验/复现工具 | `scripts/analysis/` |
 | 数据 registry、manifest、split、receipt | `后续研究内容/data/`、`scripts/research/data/` |
 | policy backend 探索 | `scripts/research/policy_backend/`、`后续研究内容/05_policy后端与小模型研究.md` |
-| TinyNavBrain 合同/scaffold/训练计划 | `后续研究内容/model/`、`scripts/research/tinynavbrain/`、`scripts/research/training_plans/` |
+| TinyNavBrain 合同/scaffold/训练计划 | `后续研究内容/model/`、`scripts/research/models/`、`scripts/research/training_plans/` |
+| Pre-training backlog/本地合同测试 | `scripts/research/pretraining/`；仅静态基础设施，不是训练结果 |
 | 后续研究总览 | `后续研究内容/README.md`、`01_后续研究总览.md` 至 `04_RA-L后续研究投稿规划.md` |
 | 外部执行 runbook | `后续研究内容/external_execution/` |
 
@@ -77,6 +78,8 @@ U09 v0.3 共 60 个计划/记录：25 success、35 failure、0 crash、0 infrast
 | 资产 | 位置 |
 |---|---|
 | 当前任务队列 | `.agents/workstreams/navigation-research-main/TASKS.md` |
+| 三环境职责与执行链 | `ENVIRONMENT.md`；Windows 主控、4090 数据/训练/离线、Ubuntu 晋级仿真 |
+| 4090 pre-training 交接 | `.agents/handoffs/visualnav-transformer/pretraining-4090/2026-07-15-1641/handoff.md`；先 live snapshot，数据获取与训练仍需另行授权 |
 | 工作日志 | `.agents/workstreams/navigation-research-main/log.md` |
 | 当前交接 | `.agents/workstreams/navigation-research-main/handoff.md` |
 | 旧证据索引 | `results/evidence_index.md`（只覆盖早期 Tier A；以本文件为总入口） |
@@ -87,3 +90,4 @@ U09 v0.3 共 60 个计划/记录：25 success、35 failure、0 crash、0 infrast
 - stabilizer-on 跨方法轨迹相同，不构成五个独立策略的导航证据。
 - 当前 counts 与相关性仅为 seeded-stochastic、描述性结果，不支持稳定排名、显著优越或真机泛化主张。
 - Ubuntu 范围已完成；全项目尚缺 RECON/HuRoN 合规数据、多数据集训练、目标设备持续 timing、协议化重复真机 outcome 和隐私/同意。RA-L 当前可写但不可提交。
+- 完整数据集只驻留 4090；真实数据接线、训练和跨数据集离线评估不得分配给 Windows/Ubuntu。环境职责以 `ENVIRONMENT.md` 为准。

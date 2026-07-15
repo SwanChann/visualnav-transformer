@@ -1,5 +1,14 @@
 # Navigation Research Agent Log
 
+## 2026-07-15 — 三环境职责冻结与 Windows 收口
+
+- 用户确认完整数据集只存放在远程 RTX 4090 服务器；Windows/Ubuntu 均不保存训练数据副本。
+- 冻结职责：Windows 为唯一人工/Git/论文集成入口；4090 负责数据、真实 adapter、smoke、训练和跨数据集离线门；Ubuntu 只负责晋级 checkpoint 的新闭环仿真；目标设备/真机位置待指定。
+- 将环境归属写入 `ENVIRONMENT.md`、资产地图、任务队列、pre-training backlog、smoke 配置、4090 训练计划和外部执行 runbook；机器校验拒绝把 DATA/B0/BASELINE/H1/OFFLINE 分给非 4090 或把 SIM 分给非 Ubuntu。
+- Windows 的静态实现和测试完成不等于训练完成；4090 live HEAD、依赖、数据完整性、磁盘和旧 checkpoint 尚未远程核验，必须从只读 snapshot 开始。
+- 本轮按 `codex-volc-orchestrator` 启动 2 个只读 `glm-5.2` producer，并各缩小范围重试一次；4 次调用均未在时限内返回 final-only 报告，未采纳任何 worker 内容，未替换模型。
+- 复用唯一原项目 worktree；未创建/删除 worktree，未执行 fetch/pull/push/commit/branch/merge。
+
 ## 2026-07-13 — GitHub 回收与 Windows 集成整理
 
 - 将已验证整理锚定为 `ac49e99`，原 `F:/codespace/visualnav-transformer` 通过 fast-forward 吸收 Ubuntu 与 Windows 整理成果并 push；临时 integration worktree 随后安全退休。今后原项目目录是人工查看和继续工作的唯一入口。
@@ -97,5 +106,5 @@
 - 进一步发现 MuJoCo v0.2 把 NoMaD native action units 直接当作 meter waypoint；新增显式 target action scale，按 Lite3 0.4 m/s / 4 Hz 冻结为 0.1 m。blind DDPM gate 仍保留 easy/medium、拒绝 hard；v0.3 在跨方法结果前冻结，60/60 完成：25 success、35 failure、0 crash/invalid/missing。
 - v0.3 policy-only：DDPM10 4/6、DDIM2 5/6、DDIM3 5/6、DDIM2+TTS8 5/6、DDIM2+CFG2+TTS8 6/6；stabilizer-on 全部 0/6 且同 scene/seed 轨迹跨方法 byte-identical。medium/seed23 exact repeat 5/5 binary preserved，但连续轨迹最大差 0.444 m。
 - 新增 framework-neutral `NavigationPolicyBackend`、Lite3System constructor injection、candidate diagnostics 和 adaptive-compute replay。corrected U10 v5 上 TTS routing 被支配，DDIM3/DDPM 只有后验精度/延迟交换，router 拒绝合并；接口和负结果保留。
-- 新建单 RTX 4090 `TinyNavBrain-ScaleAdaptive` 机器可读计划：shared B0、physical scale/action history tokens、deterministic NFE1 baseline、residual-flow NFE1/2/4；validator 明确所有显存为未实测 partial accounting，未运行训练/backward/optimizer。
+- 新建单 RTX 4090 `TinyNavBrain-ScaleAdaptive` 机器可读计划：shared B0、physical scale/action history tokens、deterministic NFE1 baseline；当时草案称 residual-flow NFE1/2/4，2026-07-15 合同审查已更正为 rectified-flow NFE1/2/4/8。validator 明确所有显存为未实测 partial accounting，未运行训练/backward/optimizer。
 - 最终 revision worker 质疑 `loop_hz_mean` 与 4 Hz 合同；主控逐路径核验确认每次 navigation call 固定推进 12 x 20 ms = 0.24 s 仿真时间，而 11--19 Hz 是 headless 墙钟计算吞吐率。文档补充名义 4 Hz、离散后的 4.167 calls/s 以及 timing 字段语义；该 worker 超过 10 分钟硬上限、未产出正式报告，按 orchestrator 协议终止并记 timeout。

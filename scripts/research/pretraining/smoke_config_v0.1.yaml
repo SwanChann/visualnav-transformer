@@ -1,0 +1,34 @@
+schema_version: "0.1.0"
+config_id: tinynavbrain-b0-smoke-v0.1
+status: planned_no_training_executed
+execution_environment: rtx4090_server
+data_residency: rtx4090_server_only
+optimizer_steps: 200
+heads: [h0_deterministic, h1_rectified_flow]
+seed: 0
+data_fraction: 0.05
+sampler: balanced
+batch_size_candidate: 8
+action_space: meter_radian
+observation_frames: 6
+action_history_steps: 4
+action_horizon: 8
+required_provenance:
+  - git_commit
+  - manifest_sha256
+  - split_sha256
+  - model_contract_sha256
+  - config_sha256
+  - rng_state
+  - sampler_state
+gates:
+  - canonical_batch_contract_passes
+  - finite_masked_dataset_macro_loss
+  - checkpoint_reload_exact_next_batch
+  - no_train_test_leakage
+  - measured_peak_vram_and_throughput_recorded
+actual_results: null
+claims_forbidden:
+  - training_feasibility_measured_on_4090
+  - model_improvement
+  - cross_dataset_generalization

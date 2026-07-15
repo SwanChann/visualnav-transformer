@@ -31,6 +31,28 @@ class PlanValidationTests(unittest.TestCase):
         broken["phases"][0]["optimizer_steps"] = 1
         self.assertIn("static phase must use zero optimizer steps", validate(broken))
 
+    def test_rejects_identity_token_and_wrong_frame_count(self):
+        broken = copy.deepcopy(self.payload)
+        broken["model"]["physical_tokens"].append("embodiment_id")
+        broken["model"]["observation_frames"] = 4
+        errors = validate(broken)
+        self.assertIn("model.observation_frames must equal the frozen contract value 6", errors)
+        self.assertIn("model.physical_tokens must exclude dataset or embodiment identity", errors)
+
+    def test_rejects_obsolete_residual_flow_name(self):
+        broken = copy.deepcopy(self.payload)
+        del broken["model"]["rectified_flow_head"]
+        broken["model"]["residual_flow_head"] = True
+        self.assertIn("model must use the frozen rectified_flow_head name", validate(broken))
+
+    def test_rejects_wrong_execution_environment(self):
+        broken = copy.deepcopy(self.payload)
+        broken["execution"]["environment"] = "windows"
+        broken["execution"]["data_residency"] = "local_copy"
+        errors = validate(broken)
+        self.assertIn("execution.environment must be rtx4090_server", errors)
+        self.assertIn("execution.data_residency must be rtx4090_server_only", errors)
+
     def test_budget_is_explicitly_unmeasured(self):
         self.assertEqual(analytic_budget(self.payload)["kind"], "analytic_partial-accounting_not_measured")
 

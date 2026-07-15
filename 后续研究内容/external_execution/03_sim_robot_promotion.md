@@ -1,8 +1,14 @@
 # Stage 3 — simulation and robot promotion
 
+Environment boundary: promoted-checkpoint closed-loop simulation runs on the Ubuntu
+computer. Dataset-dependent offline evaluation remains on the 4090 server. Target-
+device timing and robot execution are unassigned until the actual device/control
+host is named; they must not be assumed to run on Ubuntu or 4090.
+
 ## Simulation
 
-Promote only the frozen B2/B3, B4 and non-dominated H1 checkpoints. Use identical
+Promote from 4090 to Ubuntu only the frozen B2/B3, B4 and non-dominated H1 checkpoints.
+Bind each checkpoint to its SHA-256, Git SHA, config and offline result package. Use identical
 scene sets, >=3 seeds, goal definitions, timeouts, bridge and stabilizer. Log seed,
 checkpoint hash, success, final distance, path/SPL, collision, fall, stuck,
 intervention, per-call inference and full-loop latency. Replace scenes whose success
