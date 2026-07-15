@@ -54,6 +54,11 @@ AdamW、FP16/GradScaler、EMA、50-step checkpoint/keep-last-3、step-100 exact-
 config/runner dry-run 通过且 forward/backward/optimizer 均为 0；执行仍需新一轮明确授权，
 因此 `B0-SMOKE` 与 `EXP-01` 状态不变。
 
+后续授权的 Go Stanford 单域 `B0-SMOKE` 已在 GPU 0 执行完成：H0/H1 各 200
+optimizer steps，预算、finite、GradScaler no-skip、step-100 exact-resume、checkpoint
+retention/receipt 均通过。它只关闭单域训练 plumbing smoke，不是收敛或效果证据；
+RECON/HuRoN、多数据集 baseline/H1 与离线门均未执行，故 `EXP-01` 仍为外部阻塞。
+
 ## 执行顺序
 
 Windows 静态实现与 Ubuntu U00–U18 均已完成。4090 必须先检出包含 `HANDOFF-4090` 的冻结 Git SHA，后续顺序是：

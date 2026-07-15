@@ -1,0 +1,154 @@
+{
+  "schema_version": "0.1.0",
+  "audit_id": "tinynavbrain-go-stanford-b0-v0.1-audit",
+  "created_at_utc": "2026-07-15T17:09:48.712744+00:00",
+  "source_report_sha256": "6c30d2075d47eb28ba4cd281f71e8188532da4f87460d4b20ccb17ba6421b2d1",
+  "config_sha256": "8f2ae8951a17395c885d54ec7316652200481226750fe2bf6b44ba29afa30301",
+  "runner_sha256": "65c97e53059bd919c4511bca97e80e9bcf0766e3166b33758110903dc2ddd857",
+  "git": {
+    "commit": "45d4d14e4481819b8317173f6420bef5f7beec09",
+    "branch": "agent/ubuntu-sim-handoff",
+    "origin_commit": "45d4d14e4481819b8317173f6420bef5f7beec09",
+    "tracked_worktree_dirty": false,
+    "worktree_dirty_including_preserved_untracked": true
+  },
+  "execution_boundary": {
+    "mode": "execute",
+    "optimizer_steps": 400,
+    "backward_calls": 800,
+    "evaluation_performed": false,
+    "pretrained_weights_downloaded": false
+  },
+  "runs": [
+    {
+      "run_id": "h0-200",
+      "head": "h0_deterministic",
+      "optimizer_steps": 200,
+      "backward_calls": 400,
+      "examples_seen": 1600,
+      "step_records": 200,
+      "step_sequence_exact": true,
+      "all_recorded_values_finite": true,
+      "grad_scaler_no_skip": true,
+      "loss_range_observed_not_convergence": [
+        0.006508240709081292,
+        0.15574178099632263
+      ],
+      "gradient_norm_range_preclip": [
+        0.07227234542369843,
+        2.7420973777770996
+      ],
+      "steady_step_timing_ms_median": 78.93063127994537,
+      "steady_step_timing_ms_p95": 100.2710317261517,
+      "effective_examples_per_second_from_median": 101.3548209392395,
+      "peak_cuda_memory_bytes_training_steps": 501940736,
+      "target_max_abs_m": 1.350401520729065,
+      "sample_identity_count": 1600,
+      "sample_identity_unique_count": 1600,
+      "exact_resume_gates": {
+        "model_state_exact": true,
+        "optimizer_state_exact": true,
+        "grad_scaler_state_exact": true,
+        "ema_state_exact": true,
+        "rng_probe_exact": true,
+        "next_batch_identity_exact": true,
+        "metadata_exact": true
+      },
+      "retained_checkpoints": [
+        {
+          "path": "results/research/pretraining/b0_go_stanford_v0.1/h0-200/step-100.pt",
+          "sha256": "46fe5850f3c5243dcad99db727e9de409656cfb6defadaa87b3d10c8351eae3d",
+          "size_bytes": 133127886,
+          "receipt_exact": true
+        },
+        {
+          "path": "results/research/pretraining/b0_go_stanford_v0.1/h0-200/step-150.pt",
+          "sha256": "61fcc7a93f6f4df7f9d4dbfe2174a347adf6acc6c177754da94c335ccf7e9d64",
+          "size_bytes": 133147406,
+          "receipt_exact": true
+        },
+        {
+          "path": "results/research/pretraining/b0_go_stanford_v0.1/h0-200/step-200.pt",
+          "sha256": "fd9d2b7577de358c5f069d01197e8976c9a31eb12fe0beb28753e83301df7e5f",
+          "size_bytes": 133163790,
+          "receipt_exact": true
+        }
+      ]
+    },
+    {
+      "run_id": "h1-200",
+      "head": "h1_rectified_flow",
+      "optimizer_steps": 200,
+      "backward_calls": 400,
+      "examples_seen": 1600,
+      "step_records": 200,
+      "step_sequence_exact": true,
+      "all_recorded_values_finite": true,
+      "grad_scaler_no_skip": true,
+      "loss_range_observed_not_convergence": [
+        0.7231645584106445,
+        1.347957968711853
+      ],
+      "gradient_norm_range_preclip": [
+        0.6150190830230713,
+        2.1671628952026367
+      ],
+      "steady_step_timing_ms_median": 79.46684793569148,
+      "steady_step_timing_ms_p95": 96.49665001779795,
+      "effective_examples_per_second_from_median": 100.6709113022074,
+      "peak_cuda_memory_bytes_training_steps": 512251904,
+      "target_max_abs_m": 1.350401520729065,
+      "sample_identity_count": 1600,
+      "sample_identity_unique_count": 1600,
+      "exact_resume_gates": {
+        "model_state_exact": true,
+        "optimizer_state_exact": true,
+        "grad_scaler_state_exact": true,
+        "ema_state_exact": true,
+        "rng_probe_exact": true,
+        "next_batch_identity_exact": true,
+        "metadata_exact": true
+      },
+      "retained_checkpoints": [
+        {
+          "path": "results/research/pretraining/b0_go_stanford_v0.1/h1-200/step-100.pt",
+          "sha256": "c766c305d95f4b84c3d6b2239858f2a805dc4ee2fa889b59c8742d9626d9241f",
+          "size_bytes": 136155342,
+          "receipt_exact": true
+        },
+        {
+          "path": "results/research/pretraining/b0_go_stanford_v0.1/h1-200/step-150.pt",
+          "sha256": "ae82657613d9f1ef2e85b0aa9cf48e2a8a2e50c5fd08c992b86000f7e0164a4f",
+          "size_bytes": 136174926,
+          "receipt_exact": true
+        },
+        {
+          "path": "results/research/pretraining/b0_go_stanford_v0.1/h1-200/step-200.pt",
+          "sha256": "96b135879708348d490337aa5c8cc13aa535602efaad30c1f2938efc4b340eb4",
+          "size_bytes": 136191310,
+          "receipt_exact": true
+        }
+      ]
+    }
+  ],
+  "total_checkpoint_bytes": 807960660,
+  "gates": {
+    "config_hash_exact": true,
+    "runner_hash_exact": true,
+    "execution_budget_exact": true,
+    "no_evaluation": true,
+    "no_pretrained_download": true,
+    "two_runs_present": true,
+    "each_run_budget_exact": true,
+    "all_values_finite": true,
+    "no_grad_scaler_skip": true,
+    "all_exact_resume_gates_pass": true,
+    "all_samples_unique_within_each_run": true,
+    "meter_targets_finite_and_under_10m": true,
+    "checkpoint_retention_exact": true,
+    "all_checkpoint_receipts_exact": true,
+    "checkpoint_space_under_authorized_1gib": true
+  },
+  "passed": true,
+  "claim_boundary": "This audit establishes B0 plumbing, finite recorded values, exact resume, local checkpoint receipts, and scoped smoke timing/memory only. Loss ranges are not convergence or model-quality evidence; the <10 m check is not independent physical calibration."
+}

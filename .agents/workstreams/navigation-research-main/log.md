@@ -1,5 +1,16 @@
 # Navigation Research Agent Log
 
+## 2026-07-16 — 4090 TinyNavBrain Go Stanford B0 execution
+
+- 用户逐项授权后，先将 B0 static 成果提交并 push 为 `45d4d14e4481819b8317173f6420bef5f7beec09`；执行前确认 HEAD=origin、tracked clean、config SHA=`8f2ae895...`、GPU 0 空闲、634 GiB 磁盘可用且 checkpoint root 为空。
+- 在 GPU 0 唯一执行一次冻结 runner：H0 deterministic 200 optimizer steps + H1 rectified-flow 200 optimizer steps；micro-batch 4 × accumulation 2，因此每条 400 backward、总计 400 optimizer steps / 800 backward。没有 retry，没有使用 GPU 1。
+- 每条 run 看到 1600 个唯一 sample；全部记录的 action loss、gradient norm 和 timing finite；GradScaler 始终 65536，0 skip。loss 只作 finite plumbing 记录，不解释为下降、收敛或模型效果。
+- 两条 run 的 step-100 exact-resume 均通过 model、optimizer、GradScaler、EMA、Python/NumPy/Torch CPU/两张 CUDA RNG、metadata 与 next-batch identity 精确一致；resume probe 没有增加 optimizer step。
+- H0/H1 训练 step 峰值显存分别 478.69/488.52 MiB；排除前 10 步且包含数据读取/两微批、排除 checkpoint I/O 的 step median/p95 分别为 78.931/100.271 ms 与 79.467/96.497 ms。这不是部署 latency。
+- 每条仅保留 step 100/150/200 三份 checkpoint；6 文件共 807960660 bytes。所有文件 SHA-256 与 JSON receipt 一致，final checkpoint 均绑定 Git/config/manifest/split/model contract，并含 200 optimizer/400 micro-batch/1600 examples、EMA 200 updates 与两张 GPU RNG。
+- 独立 `audit_b0_execution.py` 全部 15 gates 通过。原始结果与 audit 位于 `results/research/pretraining/b0_go_stanford_v0.1/`；checkpoint 仅本地且被 `.gitignore` 排除。
+- 证据边界：这是 Go Stanford 单域、随机初始化、seed 0 的 200-step plumbing smoke。未执行评测/仿真，未下载权重，不证明训练收敛、模型质量、H1 优于 H0、跨数据集泛化或方法结果；RECON/HuRoN 仍未处理。
+
 ## 2026-07-16 — 4090 TinyNavBrain B0 static freeze
 
 - 按用户授权只实现与静态审查 B0，不执行训练。新增 `b0_execution_config_v0.1.yaml`，冻结 H0 200 optimizer steps + H1 200 optimizer steps，总预算 400 optimizer steps / 800 backward calls。

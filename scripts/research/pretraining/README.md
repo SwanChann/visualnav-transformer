@@ -42,3 +42,9 @@ checkpoint retention 和 step-100 exact-resume。`validate_b0_execution_config.p
 `run_tinynav_b0.py --dry-run` 不导入模型路径、不读取图片且不创建 optimizer。
 `run_tinynav_b0.py --execute` 仍要求独立授权 token、冻结分支/commit 和 clean tracked
 worktree；静态 readiness 不能解读为 B0 已执行。
+
+4090 上获独立执行授权后，冻结 config 已完成 Go Stanford 单域 H0/H1 各 200-step
+plumbing smoke。原始逐步 JSON、checkpoint receipts 与只读 `audit_b0_execution.py`
+汇总位于 `results/research/pretraining/b0_go_stanford_v0.1/`。冻结 config 继续保留
+pre-execution 状态以维持其哈希，不回填 actual result；执行事实只认带 Git/config/code
+哈希的结果与 audit。B0 loss、timing 和显存不构成收敛、模型效果或部署结论。
