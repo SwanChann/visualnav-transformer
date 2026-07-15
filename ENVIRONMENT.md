@@ -1,6 +1,6 @@
 # Environment Notes
 
-更新日期：2026-07-15
+更新日期：2026-07-16
 
 ## 1. 当前三环境权威划分
 
@@ -10,7 +10,7 @@
 |---|---|---|---|---|
 | Windows 原项目目录 | 论文、证据包、Git 治理、资产地图、静态 pre-training 合同与单元测试已存在；完整 NoMaD 训练依赖不齐；无训练数据 | 唯一人工/Git/论文集成入口；维护协议、任务、代码审查、小型结果和论文；形成供其他环境执行的冻结 commit/config | 不保存数据集；不做真实数据 adapter 验证、训练、跨数据集离线评估、仿真或真机 | 静态实现与测试完成；跨环境执行只认包含 4090 交接包的冻结 Git SHA |
 | Ubuntu 自有电脑 | U00–U18、U09 v0.3、U10 v5 的离线/仿真执行与审计已完成 | 接收通过 4090 `OFFLINE-GATE` 的少量候选 checkpoint；执行新的非饱和闭环 `SIM-GATE`；返回原始 rollout、统计与日志 | 不重复 U00–U18；不保存训练数据；不做多数据集训练或需要完整数据的 LODO/corruption 离线评估 | 历史授权范围完成；等待 4090 晋级 checkpoint |
-| 远程 RTX 4090 服务器 | 已核验 `agent/ubuntu-sim-handoff`、2x RTX 4090、`nomad_train`、Go Stanford 全量内容与冻结 `nomad.pth`；GPU 0 IMAGE-FORWARD、两步 TRAIN-STEP/exact-resume 和 Go Stanford B0 smoke 通过 | 数据盘点与合规登记、真实 dataset adapter 接线、manifest/split/leakage、B0 smoke、baseline/H0/H1 训练、IID/mixed/LODO/corruption 离线评估、显存与吞吐测量 | 不直接改论文结论；不把 forward/两步集成/static/smoke、loss 下降或单 seed 当方法结果；不绕过 Windows 权威入口 | Phase 0、Go Stanford 单域 pilot、随机初始化 image forward、两步 plumbing 与单域 B0 完成；RECON/HuRoN、旧训练目录 provenance、多数据集训练与离线门仍阻塞 |
+| 远程 RTX 4090 服务器 | 已核验 `agent/ubuntu-sim-handoff`、2x RTX 4090、`nomad_train`、Go Stanford 全量内容与冻结 `nomad.pth`；GPU 0 IMAGE-FORWARD、两步 TRAIN-STEP/exact-resume 和 Go Stanford B0 smoke 通过 | 数据盘点与合规登记、真实 dataset adapter 接线、manifest/split/leakage、B0 smoke、baseline/H0/H1 训练、IID/mixed/LODO/corruption 离线评估、显存与吞吐测量 | 不直接改论文结论；不把 forward/两步集成/static/smoke、loss 下降或单 seed 当方法结果；不绕过 Windows 权威入口 | Phase 0、Go Stanford 单域 pilot、随机初始化 image forward、两步 plumbing 与单域 B0 完成；两个授权工作区内 RECON/HuRoN 0/2 materialized，多数据集训练与离线门仍阻塞 |
 
 执行链固定为：
 
@@ -29,6 +29,7 @@ Windows 冻结代码/协议/配置
 
 - Windows 和 Ubuntu 状态已由当前仓库与 U00–U18 审计核验。
 - 4090 Phase 0 已核验 Git、Python/CUDA/GPU/磁盘、Go Stanford 和冻结 `nomad.pth`。Go Stanford 内容级 pilot 通过，但 raw receipt、per-frame timestamp、pinned processor version 和独立物理标定仍缺失；142 GB 旧训练目录也未建立逐 checkpoint provenance。
+- 2026-07-16 对 `visualnav-transformer` 与 `diffusion_policy` 的 RECON/HuRoN 只读 DATA-PILOT 为 0/2 materialized：预期根目录、原始 HDF5/ROS bag、receipt、许可快照和 manifest/split 均不存在；`recon_datavis` 仅为可视化源码。现有处理器及其 `--help` 可用只证明入口存在，不证明数据就绪。
 - 目标设备与真机执行位置尚未确定，不能默认归入 Ubuntu 或 4090。
 
 ## 2. Windows 环境历史体检

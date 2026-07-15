@@ -37,7 +37,13 @@
 4090 的 Go Stanford 单域 live pilot 已通过：3696 轨迹、198126 图片全量可读，
 group-safe manifest 覆盖完整，真实 canonical adapter/DataLoader 可产生米制 batch；
 train split 有 131950 个可用 sample，冻结 5% 子集为 6598。该结果不改变
-`DATA-04` / `EXP-01` 的 `blocked_external` 状态；RECON/HuRoN 未授权，且未执行训练。
+`DATA-04` / `EXP-01` 的 `blocked_external` 状态；当时未处理 RECON/HuRoN。
+
+后续授权的 RECON/HuRoN 只读本地 presence audit 已完成：在
+`visualnav-transformer` 与 `diffusion_policy` 两个授权工作区内，预期根目录、原始
+HDF5/ROS bag、receipt、许可快照和 manifest/split 均未发现，materialized 为 0/2；
+`recon_datavis` 只含可视化源码。处理器入口与只读 `--help` 通过不等于数据就绪，
+因此 `DATA-04` 和多数据集 `EXP-01` 继续为 `blocked_external`。
 
 `IMAGE-FORWARD` gate 已在 GPU 0 通过：随机初始化且不下载权重的共享
 EfficientNet-B0 image policy 共 8513117 个可训练参数，合成数据测试与真实 batch 的

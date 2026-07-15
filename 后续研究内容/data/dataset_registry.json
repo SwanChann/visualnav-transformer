@@ -1,6 +1,6 @@
 {
   "schema_version": "0.1.0",
-  "verified_at": "2026-07-15",
+  "verified_at": "2026-07-16",
   "policy": {
     "minimum_processed_datasets_for_multidataset_claim": 3,
     "split_unit": "trajectory_or_collection_session",
@@ -65,6 +65,9 @@
       "processor": "train/process_recon.py",
       "expected_local_root": "nomad_dataset/recon",
       "local_status": "not_processed",
+      "local_presence_status": "absent_in_authorized_workspaces",
+      "local_presence_verified_at": "2026-07-16",
+      "local_presence_audit": "results/research/data_pilot/recon_huron_presence_20260716/audit.json",
       "research_role": ["second_visual_domain", "outdoor_transfer", "leave_one_dataset_out"],
       "blocking_risks": [
         "Download and HDF5 integrity must be checksum-verified.",
@@ -92,6 +95,9 @@
       "processor_config": "train/vint_train/process_data/process_bags_config.yaml#sacson",
       "expected_local_root": "nomad_dataset/sacson",
       "local_status": "not_processed",
+      "local_presence_status": "absent_in_authorized_workspaces",
+      "local_presence_verified_at": "2026-07-16",
+      "local_presence_audit": "results/research/data_pilot/recon_huron_presence_20260716/audit.json",
       "research_role": ["third_domain", "social_navigation_visual_shift", "leave_one_dataset_out"],
       "blocking_risks": [
         "The release intentionally uses low-resolution imagery for privacy.",

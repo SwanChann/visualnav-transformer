@@ -1,5 +1,13 @@
 # Navigation Research Agent Log
 
+## 2026-07-16 — RECON/HuRoN read-only local DATA-PILOT
+
+- 按用户授权只盘点 `visualnav-transformer` 与 `diffusion_policy` 的现有本地数据；没有下载、数据转换、模型执行、训练、评测或仿真。
+- RECON 预期根 `nomad_dataset/recon` 与 HuRoN/SACSoN 预期根 `nomad_dataset/sacson` 均不存在；授权工作区内未发现其他 RECON/HuRoN/SACSoN 数据目录、HDF5、ROS bag、DB3 或 MCAP 候选，materialized 为 0/2。
+- `nomad_dataset/recon_datavis` 仅有 12 个可视化源码/说明文件、34451 file bytes，不能作为数据 payload。现有三个历史 manifest 也都只有 Go Stanford 行。
+- `train/process_recon.py`、`train/process_bags.py`、SACSoN config 与 bag utils 存在且只读 `--help` 通过；这只证明处理入口存在，不证明数据、许可或尺度就绪。
+- 两个数据集均缺原始 artifact、官方许可/隐私快照、receipt/checksum、processed trajectory、group-safe manifest/split；因此 `DATA-04` 与多数据集 `EXP-01` 继续 `blocked_external`。证据：`results/research/data_pilot/recon_huron_presence_20260716/audit.{json,md}`。
+
 ## 2026-07-16 — 4090 TinyNavBrain Go Stanford B0 execution
 
 - 用户逐项授权后，先将 B0 static 成果提交并 push 为 `45d4d14e4481819b8317173f6420bef5f7beec09`；执行前确认 HEAD=origin、tracked clean、config SHA=`8f2ae895...`、GPU 0 空闲、634 GiB 磁盘可用且 checkpoint root 为空。

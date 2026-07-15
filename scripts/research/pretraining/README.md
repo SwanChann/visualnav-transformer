@@ -48,3 +48,9 @@ plumbing smoke。原始逐步 JSON、checkpoint receipts 与只读 `audit_b0_exe
 汇总位于 `results/research/pretraining/b0_go_stanford_v0.1/`。冻结 config 继续保留
 pre-execution 状态以维持其哈希，不回填 actual result；执行事实只认带 Git/config/code
 哈希的结果与 audit。B0 loss、timing 和显存不构成收敛、模型效果或部署结论。
+
+`audit_recon_huron_presence.py` 对 `visualnav-transformer` 与 `diffusion_policy` 做
+RECON/HuRoN 本地只读 presence audit。2026-07-16 的报告位于
+`results/research/data_pilot/recon_huron_presence_20260716/`，结果为 0/2 materialized；
+`train/process_recon.py`、`train/process_bags.py` 和 `recon_datavis` 的存在都不能替代
+原始数据、receipt、许可快照、manifest/split 或内容/尺度验证。

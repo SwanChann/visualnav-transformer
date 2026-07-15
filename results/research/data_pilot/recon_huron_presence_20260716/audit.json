@@ -1,0 +1,213 @@
+{
+  "schema_version": "0.1.0",
+  "audit_id": "recon-huron-local-presence-20260716",
+  "created_at_utc": "2026-07-15T17:21:49.730579+00:00",
+  "scope": {
+    "workspace_roots": [
+      "/home/yifei/codespace/visualnav-transformer",
+      "/home/yifei/codespace/diffusion_policy"
+    ],
+    "read_only_data_scan": true,
+    "external_download_performed": false,
+    "data_conversion_performed": false,
+    "model_execution_performed": false,
+    "training_or_evaluation_performed": false
+  },
+  "git": {
+    "commit": "a537c3e2a079fe094b5a5c5dba15b83120bc7d4f",
+    "branch": "agent/ubuntu-sim-handoff",
+    "tracked_worktree_dirty": true,
+    "worktree_dirty_including_preserved_untracked": true
+  },
+  "audit_script": {
+    "path": "scripts/research/pretraining/audit_recon_huron_presence.py",
+    "sha256": "506495aab18e0b56c61bb0a03fb515fc4075a8a49521cf96e149045654d04370"
+  },
+  "registry": {
+    "path": "后续研究内容/data/dataset_registry.json",
+    "sha256": "8eda748363b4c0b729a0c9cf51167fe5010b4d6ae1ee793041ce3ec7fd39ce67",
+    "license_evidence_boundary": "Registry statements are repository records, not a live official-page snapshot or payload receipt."
+  },
+  "datasets": {
+    "recon": {
+      "registry_contract": {
+        "display_name": "RECON Outdoor Navigation Dataset",
+        "raw_format": "HDF5",
+        "expected_local_root": "nomad_dataset/recon",
+        "metric_waypoint_spacing_m": 0.25,
+        "nominal_dt_s": null,
+        "registry_license_status": "official_dataset_page_explicit",
+        "registry_license_name": "MIT",
+        "registry_local_status": "not_processed"
+      },
+      "local_root": {
+        "path": "/home/yifei/codespace/visualnav-transformer/nomad_dataset/recon",
+        "exists": false
+      },
+      "processed_trajectory_count": 0,
+      "manifest_rows_present": false,
+      "raw_artifact_receipt_present": false,
+      "live_official_license_snapshot_present": false,
+      "materialized": false
+    },
+    "huron_sacson": {
+      "registry_contract": {
+        "display_name": "HuRoN / SACSoN Dataset",
+        "raw_format": "ROS bags with compressed images",
+        "expected_local_root": "nomad_dataset/sacson",
+        "metric_waypoint_spacing_m": 0.255,
+        "nominal_dt_s": null,
+        "registry_license_status": "official_dataset_page_explicit",
+        "registry_license_name": "MIT",
+        "registry_local_status": "not_processed"
+      },
+      "local_root": {
+        "path": "/home/yifei/codespace/visualnav-transformer/nomad_dataset/sacson",
+        "exists": false
+      },
+      "processed_trajectory_count": 0,
+      "manifest_rows_present": false,
+      "raw_artifact_receipt_present": false,
+      "live_official_license_snapshot_present": false,
+      "materialized": false
+    }
+  },
+  "recon_datavis_candidate": {
+    "path": "/home/yifei/codespace/visualnav-transformer/nomad_dataset/recon_datavis",
+    "exists": true,
+    "is_directory": true,
+    "file_count": 12,
+    "directory_count_below_root": 3,
+    "total_file_bytes": 34451,
+    "root_mtime_ns": 1775735069484475331,
+    "newest_mtime_ns": 1775735069484475331,
+    "suffix_counts": {
+      ".md": 1,
+      ".py": 9,
+      ".txt": 1,
+      "<none>": 1
+    },
+    "classification": "visualization_source_code_not_dataset_payload"
+  },
+  "raw_payload_extension_candidates": [],
+  "manifests": [
+    {
+      "path": "results/research/data_audit/dataset_manifest.csv",
+      "sha256": "2eb64fbc312837180e96054a38351627e7a85411f0fd2405b81a1dcce5cb46ca",
+      "dataset_ids": [
+        "go_stanford"
+      ]
+    },
+    {
+      "path": "results/research/data_audit/dataset_manifest_grouped.csv",
+      "sha256": "b9ea199f6b9ba8ea9d2433863efd17684193da2b544f2307510d58ae314add7e",
+      "dataset_ids": [
+        "go_stanford"
+      ]
+    },
+    {
+      "path": "results/research/data_audit/dataset_manifest_grouped_v2.csv",
+      "sha256": "b9ea199f6b9ba8ea9d2433863efd17684193da2b544f2307510d58ae314add7e",
+      "dataset_ids": [
+        "go_stanford"
+      ]
+    }
+  ],
+  "receipt_or_license_snapshot_candidates": [],
+  "processors": {
+    "recon": {
+      "path": "train/process_recon.py",
+      "exists": true,
+      "size_bytes": 2559,
+      "mtime_ns": 1775735069542478011,
+      "sha256": "3e254b7e0c7658ffc2665a95c5f9524e7e5dbcd582e1b9d21de6d73a2ba34c4e"
+    },
+    "huron_sacson": {
+      "path": "train/process_bags.py",
+      "exists": true,
+      "size_bytes": 4011,
+      "mtime_ns": 1775735069542478011,
+      "sha256": "ec01f1950a799eda2165e8293f7eea211c994fa3b81afe324ea640a5a0e556f6"
+    },
+    "huron_config": {
+      "path": "train/vint_train/process_data/process_bags_config.yaml",
+      "exists": true,
+      "size_bytes": 823,
+      "mtime_ns": 1775735069545478150,
+      "sha256": "f5b4be4aed960981658b5f6f0fd0af452b8bda2aa13ac9eac911085ac56c33e8"
+    },
+    "bag_utils": {
+      "path": "train/vint_train/process_data/process_data_utils.py",
+      "exists": true,
+      "size_bytes": 9535,
+      "mtime_ns": 1775735069545478150,
+      "sha256": "0e1e7d147358a1241247ea6c8d8667d93edf9c5e4343ffc3325f5a1c31e6a706"
+    }
+  },
+  "processor_help": {
+    "recon": {
+      "command": [
+        "python",
+        "process_recon.py",
+        "--help"
+      ],
+      "cwd": "/home/yifei/codespace/visualnav-transformer/train",
+      "returncode": 0,
+      "usage_line": "usage: process_recon.py [-h] --input-dir INPUT_DIR [--output-dir OUTPUT_DIR]"
+    },
+    "huron_sacson": {
+      "command": [
+        "python",
+        "process_bags.py",
+        "--help"
+      ],
+      "cwd": "/home/yifei/codespace/visualnav-transformer/train",
+      "returncode": 0,
+      "usage_line": "usage: process_bags.py [-h] --dataset-name DATASET_NAME --input-dir INPUT_DIR"
+    }
+  },
+  "dependency_specs": {
+    "h5py": true,
+    "PIL": true,
+    "cv2": true,
+    "numpy": true,
+    "yaml": true,
+    "rosbag": true,
+    "rosbags": false
+  },
+  "static_processor_risks": [
+    "processors create output directly and do not emit raw artifact receipts or checksums",
+    "processors do not pin their own code/config version in each processed trajectory",
+    "RECON session identity depends only on HDF5 filename and is not independently registered",
+    "HuRoN output name preserves one parent directory plus bag filename but not collection policy/version metadata",
+    "HuRoN human-containing imagery still requires an official terms/privacy snapshot attached to any manifest"
+  ],
+  "gates": {
+    "recon_expected_root_present": false,
+    "recon_processed_trajectories_present": false,
+    "recon_manifest_rows_present": false,
+    "recon_raw_receipt_present": false,
+    "huron_expected_root_present": false,
+    "huron_processed_trajectories_present": false,
+    "huron_manifest_rows_present": false,
+    "huron_raw_receipt_present": false,
+    "processor_entrypoints_present": true,
+    "processor_help_read_only_passed": true,
+    "no_external_download_performed": true,
+    "no_data_conversion_performed": true,
+    "no_model_or_training_performed": true
+  },
+  "blocking_gates": [
+    "recon_expected_root_present",
+    "recon_processed_trajectories_present",
+    "recon_manifest_rows_present",
+    "recon_raw_receipt_present",
+    "huron_expected_root_present",
+    "huron_processed_trajectories_present",
+    "huron_manifest_rows_present",
+    "huron_raw_receipt_present"
+  ],
+  "materialized_dataset_count": 0,
+  "passed": false,
+  "claim_boundary": "This is a local presence audit only. Processor code and registry records do not count as data. No RECON/HuRoN content, license payload, physical scale, timestamp, or session split was validated."
+}
