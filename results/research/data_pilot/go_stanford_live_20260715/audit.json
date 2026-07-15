@@ -1,0 +1,107 @@
+{
+  "schema_version": "0.1.0",
+  "audit_id": "go-stanford-live-data-pilot",
+  "created_at_utc": "2026-07-15T15:57:22.251869+00:00",
+  "execution_boundary": {
+    "training_performed": false,
+    "model_forward_performed": false,
+    "data_downloaded": false,
+    "dataset_mutated": false,
+    "full_image_decode": true
+  },
+  "provenance": {
+    "git_commit": "ffa353351e5b24eb83522b1c21bf6439d81ce658",
+    "tracked_worktree_dirty": true,
+    "adapter_sha256": "695cd76bc8d200bb41e81eddea67488da59348526a1ea35e54b24c5a889363c2",
+    "audit_script_sha256": "f9be222f2bc6e26655bfbeec0b57f4f137aa4ede72b31ec31c1ddb26bbaac92c",
+    "dataset_root": "/home/yifei/codespace/visualnav-transformer/nomad_dataset/go_stanford",
+    "manifest_path": "results/research/data_audit/dataset_manifest_grouped_v2.csv",
+    "manifest_sha256": "b9ea199f6b9ba8ea9d2433863efd17684193da2b544f2307510d58ae314add7e",
+    "split_sha256": "f10c2570f67107b8fcd56dcaef6a9cdfffd0ec4d7bc4eafffbb4015304e42753",
+    "canonical_dataset_tree_sha256": "2ca863b8a79645afe31860d3b59a436e5a5e8b4e4032bc530b37535c661b661b",
+    "tree_scope": "sorted trajectory_id; traj_data.pkl and numbered jpg content; backups excluded",
+    "raw_artifact_receipt_present": false,
+    "processor_version_pinned": false
+  },
+  "counts": {
+    "manifest_rows": 3696,
+    "trajectory_directories": 3696,
+    "metadata_backup_matches": 3696,
+    "images_expected": 198126,
+    "images_decoded": 198126,
+    "eligible_trajectories": 2294,
+    "eligible_canonical_samples": 163058
+  },
+  "image_contract": {
+    "shape_counts": {
+      "160x120": 198126
+    },
+    "mode_counts": {
+      "RGB": 198126
+    }
+  },
+  "pose_contract": {
+    "position_unit_from_contract": "meter",
+    "yaw_unit_from_contract": "radian",
+    "independent_metric_calibration_performed": false,
+    "step_count": 194430,
+    "zero_step_count": 0,
+    "positive_step_quantiles_m": {
+      "p01": 0.004975210831517241,
+      "p50": 0.14531897622396792,
+      "p99": 0.1698726755922978,
+      "max": 0.18835313690879715
+    }
+  },
+  "scale_contract": {
+    "registry_waypoint_spacing_m": 0.12,
+    "registry_nominal_dt_s": 0.3333333333,
+    "loader_waypoint_spacing_m": 0.12,
+    "manifest_waypoint_spacing_m_values": [
+      0.12
+    ],
+    "consistent": true,
+    "note": "Contract agreement is not independent physical calibration."
+  },
+  "timestamp_contract": {
+    "nominal_dt_s": 0.3333333333,
+    "per_frame_timestamps_present": false,
+    "monotonicity_verified": false
+  },
+  "canonical_sample": {
+    "trajectory_id": "no10vcF_10_0",
+    "current_index": 5,
+    "obs_shape": [
+      1,
+      6,
+      3,
+      96,
+      96
+    ],
+    "goal_shape": [
+      1,
+      3,
+      96,
+      96
+    ],
+    "history_shape": [
+      1,
+      4,
+      3
+    ],
+    "target_shape": [
+      1,
+      8,
+      2
+    ],
+    "target_unit": "meter",
+    "dt_s": 0.3333333432674408,
+    "waypoint_spacing_m": 0.11999999731779099
+  },
+  "errors": {
+    "count_by_code": {},
+    "samples": {}
+  },
+  "passed": true,
+  "claim_boundary": "This audit establishes processed-data readability and contract consistency only; it is not training, model-quality evidence, independent physical calibration, or a raw-artifact provenance receipt."
+}

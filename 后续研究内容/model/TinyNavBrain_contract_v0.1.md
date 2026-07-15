@@ -134,4 +134,7 @@ TinyNavBrain 只有同时满足下列条件才进入论文方法表：
 
 ## 10. 当前代码状态
 
-`scripts/research/models/tinynavbrain_scaffold.py` 已实现 feature-level fusion、H0、H1 velocity/sample 和 progress API，用于 shape/seed/参数预算测试。它从预计算视觉特征开始，尚未包含 EfficientNet 图像 adapter、dataset adapter、loss/train loop、checkpoint 或部署导出，因此不能称为可训练完成模型，更不能视为实验结果。
+`scripts/research/models/tinynavbrain_scaffold.py` 已实现 feature-level fusion、H0、H1 velocity/sample 和 progress API。
+4090 IMAGE-FORWARD gate 新增 `tinynavbrain_image_policy.py`，以单一共享、随机初始化且禁止下载权重的 EfficientNet-B0
+接受 canonical 图像 batch；Go Stanford 的真实 Dataset/DataLoader 位于 `scripts/research/pretraining/go_stanford_adapter.py`。
+当前仍缺 loss/train loop、checkpoint/exact-resume 执行和部署导出，且任何 forward-only 结果都不是训练或方法效果证据。

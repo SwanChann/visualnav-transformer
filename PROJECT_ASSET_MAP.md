@@ -1,6 +1,6 @@
 # 项目资产地图
 
-> 统一入口，更新于 2026-07-13。基准快照：`origin/agent/ubuntu-sim-handoff@a49d37220a514dc7b9efd3820edc3d6fbf7ce70c`。
+> 统一入口，更新于 2026-07-15。交付基线：`agent/ubuntu-sim-handoff@ffa353351e5b24eb83522b1c21bf6439d81ce658`。
 
 ## 1. 当前结果一览
 
@@ -12,6 +12,8 @@
 | 受控统计与关联分析 | 完成 | U09 v0.3 下的 `analysis/` |
 | 论文 Table III 与 3 张 PDF | 完成 | `投稿冲刺/workspace/controlled_results/` |
 | RA-L 写作包 | 可继续写作；投稿 NO-GO | `投稿冲刺/workspace/`、`后续研究内容/paper/` |
+| 4090 Go Stanford live DATA-PILOT | 内容/adapter/DataLoader 通过；仅单域，未运行模型 | `results/research/data_pilot/go_stanford_live_20260715/` |
+| TinyNavBrain IMAGE-FORWARD | GPU 0 inference-only 通过；未 backward/训练 | `scripts/research/models/tinynavbrain_image_policy.py`、`results/research/data_pilot/go_stanford_live_20260715/image_forward_readiness.md` |
 | 多数据集训练 | 未执行，外部阻塞 | `后续研究内容/external_execution/02_training_run_order.md` |
 | 目标设备/协议化真机 | 未执行，外部阻塞 | `后续研究内容/external_execution/03_sim_robot_promotion.md` |
 
@@ -52,8 +54,9 @@ U09 v0.3 共 60 个计划/记录：25 success、35 failure、0 crash、0 infrast
 | 独立离线 runner | `scripts/experiments/ral_offline_independent.py` |
 | RA-L 分析/校验/复现工具 | `scripts/analysis/` |
 | 数据 registry、manifest、split、receipt | `后续研究内容/data/`、`scripts/research/data/` |
+| Go Stanford 真实 adapter / 内容审计 | `scripts/research/pretraining/go_stanford_adapter.py`、`audit_go_stanford_pilot.py` |
 | policy backend 探索 | `scripts/research/policy_backend/`、`后续研究内容/05_policy后端与小模型研究.md` |
-| TinyNavBrain 合同/scaffold/训练计划 | `后续研究内容/model/`、`scripts/research/models/`、`scripts/research/training_plans/` |
+| TinyNavBrain 合同/scaffold/image policy/训练计划 | `后续研究内容/model/`、`scripts/research/models/`、`scripts/research/training_plans/` |
 | Pre-training backlog/本地合同测试 | `scripts/research/pretraining/`；仅静态基础设施，不是训练结果 |
 | 后续研究总览 | `后续研究内容/README.md`、`01_后续研究总览.md` 至 `04_RA-L后续研究投稿规划.md` |
 | 外部执行 runbook | `后续研究内容/external_execution/` |
@@ -90,4 +93,4 @@ U09 v0.3 共 60 个计划/记录：25 success、35 failure、0 crash、0 infrast
 - stabilizer-on 跨方法轨迹相同，不构成五个独立策略的导航证据。
 - 当前 counts 与相关性仅为 seeded-stochastic、描述性结果，不支持稳定排名、显著优越或真机泛化主张。
 - Ubuntu 范围已完成；全项目尚缺 RECON/HuRoN 合规数据、多数据集训练、目标设备持续 timing、协议化重复真机 outcome 和隐私/同意。RA-L 当前可写但不可提交。
-- 完整数据集只驻留 4090；真实数据接线、训练和跨数据集离线评估不得分配给 Windows/Ubuntu。环境职责以 `ENVIRONMENT.md` 为准。
+- 完整数据集只驻留 4090；Go Stanford 已在 4090 完成 3696 轨迹 / 198126 图片的内容级审计，但 raw receipt、per-frame timestamp 和 processor version 仍缺失。真实数据接线、训练和跨数据集离线评估不得分配给 Windows/Ubuntu。环境职责以 `ENVIRONMENT.md` 为准。

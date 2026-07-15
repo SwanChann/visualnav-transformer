@@ -1,0 +1,65 @@
+{
+  "schema_version": "0.1.0",
+  "preflight_id": "go-stanford-b0-batch-readiness",
+  "created_at_utc": "2026-07-15T16:24:49.923073+00:00",
+  "execution_boundary": {
+    "training_performed": false,
+    "model_instantiated": false,
+    "model_forward_performed": false,
+    "backward_performed": false,
+    "optimizer_created": false,
+    "gpu_tensor_created": false,
+    "dataset_mutated": false
+  },
+  "provenance": {
+    "git_commit": "ffa353351e5b24eb83522b1c21bf6439d81ce658",
+    "tracked_worktree_dirty": true,
+    "manifest_sha256": "b9ea199f6b9ba8ea9d2433863efd17684193da2b544f2307510d58ae314add7e",
+    "split_sha256": "f10c2570f67107b8fcd56dcaef6a9cdfffd0ec4d7bc4eafffbb4015304e42753",
+    "dataset_tree_sha256": "2ca863b8a79645afe31860d3b59a436e5a5e8b4e4032bc530b37535c661b661b",
+    "adapter_sha256": "695cd76bc8d200bb41e81eddea67488da59348526a1ea35e54b24c5a889363c2",
+    "preflight_script_sha256": "87e85cdfe5fb103b43f830764c41bee7d6ca360179348126d78b9fcd848af223",
+    "smoke_config_sha256": "6cac2661fb8f885ee471e98e2abe7b91e5c9da400aeae19ee16b08452ab6e086",
+    "model_contract_sha256": "05366ad252db95c7daf5710f63bea9235a0b7742ac1cf00895c67287876f84d6"
+  },
+  "dataset": {
+    "split": "train",
+    "full_canonical_sample_count": 131950,
+    "data_fraction": 0.05,
+    "expected_subset_sample_count": 6598,
+    "actual_subset_sample_count": 6598,
+    "subset_seed": 0
+  },
+  "observed_batches": {
+    "requested_max_batches": 32,
+    "batches": 32,
+    "samples": 256,
+    "unique_trajectories": 57,
+    "batch_size_candidate": 8,
+    "elapsed_s": 0.9340332122519612,
+    "samples_per_s_cpu_single_worker": 274.08018969987376,
+    "observation_tensor_min": -2.1179039478302,
+    "observation_tensor_max": 2.640000104904175,
+    "history_valid_fraction": 1.0,
+    "target_radius_quantiles_m": {
+      "p01": 0.05643683172762394,
+      "p50": 0.5726211667060852,
+      "p99": 1.3159294009208677,
+      "max": 1.3433183431625366
+    }
+  },
+  "gates": {
+    "content_audit_passed": true,
+    "manifest_identity_matches": true,
+    "deterministic_fraction_count_matches": true,
+    "canonical_batches_passed": true,
+    "image_net_normalization_applied": true,
+    "full_image_encoder_implemented": false,
+    "train_loop_implemented": false,
+    "model_forward_authorized": false,
+    "b0_training_authorized": false
+  },
+  "ready_for_image_encoder_implementation": true,
+  "ready_for_b0_training": false,
+  "claim_boundary": "This is a CPU DataLoader/canonical-batch readiness check only. It is not a model forward, loss evaluation, throughput measurement for training, or training result."
+}

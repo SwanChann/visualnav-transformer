@@ -34,6 +34,16 @@
 | PRIV-01 | P0 | blocked_external | Windows 主控 + 真机环境 | 真机数据隐私/同意审查 | 场地、人员、视频发布与匿名化记录完备 |
 | PAPER-03 | P0 | blocked_external | Windows | RA-L 最终投稿门 | 上述外部门全部闭合，主张、图表和统计重新冻结并复核 |
 
+4090 的 Go Stanford 单域 live pilot 已通过：3696 轨迹、198126 图片全量可读，
+group-safe manifest 覆盖完整，真实 canonical adapter/DataLoader 可产生米制 batch；
+train split 有 131950 个可用 sample，冻结 5% 子集为 6598。该结果不改变
+`DATA-04` / `EXP-01` 的 `blocked_external` 状态；RECON/HuRoN 未授权，且未执行训练。
+
+`IMAGE-FORWARD` gate 已在 GPU 0 通过：随机初始化且不下载权重的共享
+EfficientNet-B0 image policy 共 8513117 个可训练参数，合成数据测试与真实 batch 的
+H0/H1 inference-only 前向均通过。当前可以实现 train loop，但 loss/train-step、
+checkpoint exact-resume、Git 冻结和任何 backward/optimizer/B0 仍需后续门控。
+
 ## 执行顺序
 
 Windows 静态实现与 Ubuntu U00–U18 均已完成。4090 必须先检出包含 `HANDOFF-4090` 的冻结 Git SHA，后续顺序是：

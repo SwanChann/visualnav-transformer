@@ -1,6 +1,6 @@
 {
   "schema_version": "0.1.0",
-  "verified_at": "2026-07-10",
+  "verified_at": "2026-07-15",
   "policy": {
     "minimum_processed_datasets_for_multidataset_claim": 3,
     "split_unit": "trajectory_or_collection_session",
@@ -31,10 +31,14 @@
       "local_status": "processed_present",
       "local_verified_counts": {
         "trajectories": 3696,
-        "images": 201822
+        "images": 198126
       },
       "local_manifest": "results/research/data_audit/dataset_manifest_grouped_v2.csv",
-      "local_manifest_sha256": "ad75c57369104e77eecaa752262159c38ec4e561729454ebfda7c3c45966c2dc",
+      "local_manifest_sha256": "b9ea199f6b9ba8ea9d2433863efd17684193da2b544f2307510d58ae314add7e",
+      "local_split_sha256": "f10c2570f67107b8fcd56dcaef6a9cdfffd0ec4d7bc4eafffbb4015304e42753",
+      "local_dataset_tree_sha256": "2ca863b8a79645afe31860d3b59a436e5a5e8b4e4032bc530b37535c661b661b",
+      "local_dataset_tree_scope": "sorted trajectory_id; traj_data.pkl and numbered jpg content; backups excluded",
+      "local_live_audit": "results/research/data_pilot/go_stanford_live_20260715/audit.json",
       "research_role": ["pipeline_anchor", "specialist_baseline", "one_domain_in_mixture"],
       "blocking_risks": [
         "Non-commercial and share-alike terms constrain redistribution and downstream packaging.",

@@ -1,0 +1,142 @@
+{
+  "schema_version": "0.1.0",
+  "gate_id": "tinynavbrain-image-forward-only",
+  "created_at_utc": "2026-07-15T16:24:52.407203+00:00",
+  "execution_boundary": {
+    "encoder_weights": "random_initialization_weights_none",
+    "weights_downloaded": false,
+    "model_instantiated": true,
+    "model_forward_performed": true,
+    "inference_mode": true,
+    "backward_performed": false,
+    "optimizer_created": false,
+    "training_performed": false,
+    "checkpoint_written": false
+  },
+  "provenance": {
+    "git_commit": "ffa353351e5b24eb83522b1c21bf6439d81ce658",
+    "tracked_worktree_dirty": true,
+    "manifest_sha256": "b9ea199f6b9ba8ea9d2433863efd17684193da2b544f2307510d58ae314add7e",
+    "split_sha256": "f10c2570f67107b8fcd56dcaef6a9cdfffd0ec4d7bc4eafffbb4015304e42753",
+    "dataset_tree_sha256": "2ca863b8a79645afe31860d3b59a436e5a5e8b4e4032bc530b37535c661b661b",
+    "model_contract_sha256": "05366ad252db95c7daf5710f63bea9235a0b7742ac1cf00895c67287876f84d6",
+    "smoke_config_sha256": "6cac2661fb8f885ee471e98e2abe7b91e5c9da400aeae19ee16b08452ab6e086",
+    "adapter_sha256": "695cd76bc8d200bb41e81eddea67488da59348526a1ea35e54b24c5a889363c2",
+    "scaffold_sha256": "170c10537a93ea3df8201f6e7ea29f2e0e4891d4cb472cf6d4d854d6cc5e7a6c",
+    "image_policy_sha256": "b9550001083b78e7544ef3d836982f0da09c11ee56264a914518b6cdbee11396",
+    "gate_script_sha256": "7517b8136f523345ff35ad176f2ac92ab90bb20333fc37227b06acd6006597bc"
+  },
+  "hardware": {
+    "device_index": 0,
+    "name": "NVIDIA GeForce RTX 4090",
+    "total_memory_bytes": 25241190400,
+    "torch": "2.4.1+cu121",
+    "torch_cuda": "12.1"
+  },
+  "model": {
+    "shared_image_encoder": "torchvision_efficientnet_b0",
+    "shared_encoder_instance_count": 1,
+    "trainable_parameters": 8513117,
+    "encoder_trainable_parameters": 4007548,
+    "max_trainable_parameters": 20000000,
+    "parameter_budget_passed": true
+  },
+  "batch": {
+    "batch_size": 8,
+    "obs_shape": [
+      8,
+      6,
+      3,
+      96,
+      96
+    ],
+    "goal_shape": [
+      8,
+      3,
+      96,
+      96
+    ],
+    "history_shape": [
+      8,
+      4,
+      3
+    ],
+    "target_shape": [
+      8,
+      8,
+      2
+    ],
+    "trajectory_ids": [
+      "no10vcF_10_0",
+      "no10vcF_10_0",
+      "no10vcF_10_0",
+      "no10vcF_18_0",
+      "no10vcF_18_0",
+      "no10vcF_22_0",
+      "no10vcF_22_0",
+      "no10vcF_22_0"
+    ]
+  },
+  "outputs": {
+    "shapes": {
+      "context": [
+        8,
+        256
+      ],
+      "h0_waypoints": [
+        8,
+        8,
+        2
+      ],
+      "progress": [
+        8,
+        1
+      ],
+      "h1_velocity": [
+        8,
+        8,
+        2
+      ],
+      "h1_candidates": [
+        8,
+        1,
+        8,
+        2
+      ]
+    },
+    "non_finite_counts": {
+      "context": 0,
+      "h0_waypoints": 0,
+      "progress": 0,
+      "h1_velocity": 0,
+      "h1_candidates": 0
+    },
+    "h1_fixed_seed_reproducible": true
+  },
+  "forward_gate_measurements": {
+    "h0_forward_ms_batch": 3.5990593023598194,
+    "h1_velocity_forward_ms_batch": 4.62734280154109,
+    "h1_nfe2_sample_forward_ms_batch": 4.169954918324947,
+    "peak_cuda_memory_bytes": 164162048,
+    "scope": "inference-only forward gate; not training throughput or deployment latency"
+  },
+  "gates": {
+    "synthetic_cpu_forward_tests_passed": true,
+    "real_batch_h0_passed": true,
+    "real_batch_h1_velocity_passed": true,
+    "real_batch_h1_sample_passed": true,
+    "finite_outputs": true,
+    "fixed_seed_reproducible": true,
+    "single_shared_encoder": true,
+    "parameter_budget_passed": true,
+    "no_gradients_created": true
+  },
+  "ready_for_train_loop_implementation": true,
+  "ready_for_b0_training": false,
+  "remaining_before_b0": [
+    "implement and test loss/train-step/checkpoint exact-resume path",
+    "freeze current dirty worktree in an authorized Git commit",
+    "obtain separate backward/optimizer/training authorization"
+  ],
+  "claim_boundary": "Random-initialized inference-only shape/finite/timing checks establish interface readiness only. They are not training feasibility, model quality, or method evidence."
+}

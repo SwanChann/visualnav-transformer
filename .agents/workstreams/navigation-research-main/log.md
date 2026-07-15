@@ -1,5 +1,25 @@
 # Navigation Research Agent Log
 
+## 2026-07-16 — 4090 TinyNavBrain IMAGE-FORWARD gate
+
+- 按用户逐项授权实现 `tinynavbrain_image_policy.py`：单一共享 EfficientNet-B0 encoder，固定 `weights=None`，拒绝任何非空预训练权重配置，并接通 H0 deterministic、H1 velocity/rectified-flow sample 与 progress API。
+- 合成 CPU inference-only 模型测试 9/9 通过；GPU 0 上使用 Go Stanford canonical batch（8×6×3×96×96 observation、8×3×96×96 goal）完成真实 forward-only gate。
+- 默认模型 8513117 个可训练参数，其中 encoder 4007548，低于 20000000 上限；H0、H1 velocity、H1 NFE=2 sample 输出均为 finite，固定 seed bitwise 可复现，未创建 parameter gradient。
+- 本次单批 inference-only 观测值为 H0 3.629 ms、H1 velocity 5.699 ms、H1 NFE=2 sample 5.252 ms、峰值显存 156.56 MiB；这些值不是训练吞吐、部署 latency、模型质量或方法结果。
+- 没有下载权重，没有 backward、optimizer、训练或 checkpoint。train-loop 实现可进入下一门，但 B0 仍需 loss/train-step/checkpoint exact-resume、授权 Git 冻结与独立训练授权。
+- 证据：`results/research/data_pilot/go_stanford_live_20260715/image_forward_readiness.{json,md}`；报告绑定完整 Git SHA、dirty 状态、数据/manifest/split、合同、adapter、scaffold、image policy 和 gate script 哈希。
+
+## 2026-07-15 — 4090 Go Stanford live DATA-PILOT
+
+- 在用户明确授权的 4090 工作区内执行 Go Stanford 内容级只读审计；未下载数据，未运行模型 forward/backward、optimizer、训练、评测或仿真。
+- 实时盘点确认 3696 条轨迹、198126 张 160x120 RGB JPEG、3696 个 `traj_data.pkl`；全部图片可解码，全部 metadata backup 与主 pickle 哈希一致。
+- 新增无 LMDB/index 写入的 `go_stanford_adapter.py`，直接产生 6-frame / 4-step past-only history / 8-step horizon 的米制 canonical batch；新增 4 个合成测试，pre-training 回归 14/14 通过。
+- 后续补齐 ImageNet normalization、map-style Dataset、canonical collate 和确定性 5% subset；更新后 pre-training 回归 15/15 通过。真实 CPU-only preflight 读取 32 batches / 256 samples，未实例化模型或创建 GPU tensor。
+- train split 共 131950 个 canonical samples，冻结 seed=0 的 5% 子集为 6598；该数据门就绪，但完整图像 encoder 与 train loop 仍缺失，且未获得 model forward/B0 训练授权。
+- grouped-v2 manifest 覆盖 3696/3696；其 SHA-256 为 `b9ea199f...`，split SHA-256 为 `f10c2570...`，processed dataset tree SHA-256 为 `2ca863b8...`。修正 registry 旧图片数 201822 为实际 198126。
+- 保留证据边界：0.12 m 仅在 manifest/registry/loader 合同中一致，不是独立物理标定；processed copy 没有 raw artifact receipt、可观测 per-frame timestamp 或 pinned processor version。
+- 因用户本轮明确不处理 RECON/HuRoN，完整 `DATA-PILOT` 仍为 external blocked，不允许 cross-dataset claim，也不解锁 B0-SMOKE。
+
 ## 2026-07-15 — 三环境职责冻结与 Windows 收口
 
 - 用户确认完整数据集只存放在远程 RTX 4090 服务器；Windows/Ubuntu 均不保存训练数据副本。
