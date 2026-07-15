@@ -49,6 +49,11 @@ Go Stanford 真实 H1 一步。step-2 checkpoint 的 model/optimizer、两张 GP
 下一真实 batch exact-resume 已通过；首次 reload 的 RNG device bug 已记录并以
 resume-only 路径修复，没有重放训练步。该门不是 200-step B0，`EXP-01` 仍阻塞。
 
+`B0-STATIC` 已冻结 H0 200 步与 H1 200 步的独立 run：micro-batch 4 × accumulation 2、
+AdamW、FP16/GradScaler、EMA、50-step checkpoint/keep-last-3、step-100 exact-resume。
+config/runner dry-run 通过且 forward/backward/optimizer 均为 0；执行仍需新一轮明确授权，
+因此 `B0-SMOKE` 与 `EXP-01` 状态不变。
+
 ## 执行顺序
 
 Windows 静态实现与 Ubuntu U00–U18 均已完成。4090 必须先检出包含 `HANDOFF-4090` 的冻结 Git SHA，后续顺序是：

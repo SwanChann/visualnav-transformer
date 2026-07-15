@@ -1,0 +1,152 @@
+schema_version: "0.1.0"
+config_id: tinynavbrain-go-stanford-b0-v0.1
+status: frozen_pending_execution_authorization
+execution_environment: rtx4090_server
+execution_performed: false
+actual_results: null
+
+parent_contracts:
+  smoke_config: scripts/research/pretraining/smoke_config_v0.1.yaml
+  smoke_config_sha256: 6cac2661fb8f885ee471e98e2abe7b91e5c9da400aeae19ee16b08452ab6e086
+  model_contract: 后续研究内容/model/TinyNavBrain_contract_v0.1.md
+  model_contract_sha256: 05366ad252db95c7daf5710f63bea9235a0b7742ac1cf00895c67287876f84d6
+
+prerequisites:
+  data_audit:
+    path: results/research/data_pilot/go_stanford_live_20260715/audit.json
+    sha256: 1a3516799c48e784e381f9657f02eb677b7147e2e34c6a03241794f647aaea82
+  canonical_batch_readiness:
+    path: results/research/data_pilot/go_stanford_live_20260715/b0_batch_readiness.json
+    sha256: bf69161317d19b9cb668e643b08953bf1e6857af9c16612bb741565fe908db5d
+  image_forward_readiness:
+    path: results/research/data_pilot/go_stanford_live_20260715/image_forward_readiness.json
+    sha256: cee259e210e0195b9124d1b63fad0c4fa726a8ceb7d576217063bff7dea1f006
+  train_step_readiness:
+    path: results/research/pretraining/train_step_gate_20260716/readiness.json
+    sha256: d864aa2aad9f038bcb3470584f1b543eb1d723b2f735b94cfed4d85a4c91f18b
+
+data:
+  dataset_id: go_stanford
+  dataset_root: nomad_dataset/go_stanford
+  manifest: results/research/data_audit/dataset_manifest_grouped_v2.csv
+  manifest_sha256: b9ea199f6b9ba8ea9d2433863efd17684193da2b544f2307510d58ae314add7e
+  split_sha256: f10c2570f67107b8fcd56dcaef6a9cdfffd0ec4d7bc4eafffbb4015304e42753
+  dataset_tree_sha256: 2ca863b8a79645afe31860d3b59a436e5a5e8b4e4032bc530b37535c661b661b
+  split: train
+  data_fraction: 0.05
+  subset_seed: 0
+  num_workers: 0
+  image_size: [96, 96]
+  observation_frames: 6
+  action_history_steps: 4
+  action_horizon: 8
+
+model:
+  family: tinynavbrain
+  encoder: efficientnet_b0_shared
+  encoder_weights: null
+  random_initialization: true
+  pretrained_download_forbidden: true
+  max_trainable_parameters: 20000000
+
+runs:
+  - id: h0-200
+    head: h0_deterministic
+    optimizer_steps: 200
+    loss: masked_smooth_l1_meter_dataset_macro
+  - id: h1-200
+    head: h1_rectified_flow
+    optimizer_steps: 200
+    loss: masked_rectified_flow_velocity_mse_dataset_macro
+
+training:
+  seed: 0
+  reset_seed_before_each_run: true
+  independent_model_per_run: true
+  run_order: [h0-200, h1-200]
+  total_optimizer_steps_if_authorized: 400
+  total_backward_calls_if_authorized: 800
+  micro_batch_size: 4
+  gradient_accumulation_steps: 2
+  effective_batch_size: 8
+  optimizer:
+    name: adamw
+    learning_rate: 0.0001
+    weight_decay: 0.01
+    betas: [0.9, 0.999]
+    eps: 0.00000001
+  scheduler: null
+  precision:
+    autocast: true
+    autocast_dtype: float16
+    grad_scaler: true
+    init_scale: 65536.0
+    growth_factor: 2.0
+    backoff_factor: 0.5
+    growth_interval: 2000
+  gradients:
+    zero_grad_set_to_none: true
+    max_l2_norm: 10.0
+    non_finite_policy: fail_closed_no_step
+  ema:
+    enabled: true
+    decay: 0.999
+    update_after_optimizer_step: 0
+    update_every_optimizer_steps: 1
+    include_trainable_parameters_only: true
+
+checkpoint:
+  root: results/research/pretraining/b0_go_stanford_v0.1
+  format: torch_save_pt_local_only_until_separate_git_policy
+  save_every_optimizer_steps: 50
+  save_at_final_step: true
+  keep_last: 3
+  save_only_at_accumulation_boundary: true
+  required_state:
+    - model
+    - optimizer
+    - grad_scaler
+    - ema
+    - python_rng
+    - numpy_rng
+    - torch_cpu_rng
+    - torch_cuda_rng_all_visible_devices
+    - deterministic_batch_cursor
+    - exposure_counters
+    - optimizer_step
+  exact_resume_probe_optimizer_step: 100
+  exact_resume_probe_additional_optimizer_steps: 0
+  exact_resume_requires:
+    - metadata_match
+    - model_state_exact
+    - optimizer_state_exact
+    - grad_scaler_state_exact
+    - ema_state_exact
+    - rng_probe_exact
+    - next_batch_identity_exact
+
+reporting:
+  log_every_optimizer_steps: 10
+  retain_per_step_action_loss: true
+  retain_gradient_norm: true
+  retain_grad_scaler_scale: true
+  retain_examples_seen: true
+  measure_peak_cuda_memory: true
+  timing_scope: optimizer_step_including_two_micro_batches_excluding_checkpoint_io
+  evaluation_performed: false
+
+execution_guard:
+  required_cli_mode: execute
+  required_authorization_token: RUN-B0-H0-200-H1-200
+  required_branch: agent/ubuntu-sim-handoff
+  require_tracked_worktree_clean: true
+  require_head_equals_origin_branch: true
+  dry_run_is_non_training: true
+  authorization_granted_in_this_config: false
+
+claims_forbidden:
+  - convergence
+  - model_quality
+  - method_improvement
+  - cross_dataset_generalization
+  - deployment_latency

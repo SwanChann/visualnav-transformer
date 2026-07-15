@@ -1,0 +1,77 @@
+{
+  "schema_version": "0.1.0",
+  "gate_id": "tinynavbrain-b0-static-dry-run",
+  "created_at_utc": "2026-07-15T16:52:52.845267+00:00",
+  "config_id": "tinynavbrain-go-stanford-b0-v0.1",
+  "config_sha256": "8f2ae8951a17395c885d54ec7316652200481226750fe2bf6b44ba29afa30301",
+  "runner_sha256": "65c97e53059bd919c4511bca97e80e9bcf0766e3166b33758110903dc2ddd857",
+  "git": {
+    "commit": "39b45348484436769f1fea05df73de7a2ffda193",
+    "branch": "agent/ubuntu-sim-handoff",
+    "origin_commit": "39b45348484436769f1fea05df73de7a2ffda193",
+    "tracked_worktree_dirty": false,
+    "worktree_dirty_including_preserved_untracked": true
+  },
+  "planned_runs": [
+    {
+      "id": "h0-200",
+      "head": "h0_deterministic",
+      "optimizer_steps": 200,
+      "loss": "masked_smooth_l1_meter_dataset_macro"
+    },
+    {
+      "id": "h1-200",
+      "head": "h1_rectified_flow",
+      "optimizer_steps": 200,
+      "loss": "masked_rectified_flow_velocity_mse_dataset_macro"
+    }
+  ],
+  "planned_budget": {
+    "optimizer_steps": 400,
+    "backward_calls": 800,
+    "micro_batch_size": 4,
+    "gradient_accumulation_steps": 2,
+    "effective_batch_size": 8
+  },
+  "prerequisite_receipts": {
+    "canonical_batch_readiness": {
+      "path": "results/research/data_pilot/go_stanford_live_20260715/b0_batch_readiness.json",
+      "sha256": "bf69161317d19b9cb668e643b08953bf1e6857af9c16612bb741565fe908db5d"
+    },
+    "data_audit": {
+      "path": "results/research/data_pilot/go_stanford_live_20260715/audit.json",
+      "sha256": "1a3516799c48e784e381f9657f02eb677b7147e2e34c6a03241794f647aaea82"
+    },
+    "image_forward_readiness": {
+      "path": "results/research/data_pilot/go_stanford_live_20260715/image_forward_readiness.json",
+      "sha256": "cee259e210e0195b9124d1b63fad0c4fa726a8ceb7d576217063bff7dea1f006"
+    },
+    "train_step_readiness": {
+      "path": "results/research/pretraining/train_step_gate_20260716/readiness.json",
+      "sha256": "d864aa2aad9f038bcb3470584f1b543eb1d723b2f735b94cfed4d85a4c91f18b"
+    }
+  },
+  "execution_boundary": {
+    "mode": "dry-run",
+    "torch_imported_by_runner": false,
+    "dataset_images_read": false,
+    "model_instantiated": false,
+    "optimizer_created": false,
+    "forward_calls": 0,
+    "backward_calls": 0,
+    "optimizer_steps": 0,
+    "checkpoints_written": 0,
+    "training_performed": false
+  },
+  "gates": {
+    "config_valid": true,
+    "parent_contract_hashes_match": true,
+    "prerequisite_report_hashes_match": true,
+    "prerequisite_semantics_pass": true,
+    "h0_h1_budget_frozen": true,
+    "execution_still_requires_new_authorization": true
+  },
+  "ready_for_execution_authorization": true,
+  "execution_authorized": false,
+  "claim_boundary": "Static dry-run only. No torch model, optimizer, forward/backward, checkpoint, or B0 training was executed."
+}

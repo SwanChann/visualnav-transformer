@@ -19,6 +19,8 @@ train/gnm_dataset/*
 *.pth
 # Local two-step integration artifact; the tracked readiness receipt retains its SHA-256.
 /results/research/pretraining/train_step_gate_20260716/exact_resume_step2.pt
+# B0 checkpoints are local execution artifacts; JSON/Markdown receipts remain trackable.
+/results/research/pretraining/b0_go_stanford_v0.1/**/*.pt
 *.mp4
 *.gif
 

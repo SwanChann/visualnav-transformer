@@ -35,3 +35,10 @@ checkpoint。`preflight_tinynav_train_step.py` 只用于单独授权的两步集
 `recover_tinynav_train_step_resume.py` 是零 backward、零 optimizer step 的恢复验证路径。
 两步门与 200-step B0 是不同阶段，readiness 或 post-checkpoint forward loss 不得写成
 收敛、训练可行性、模型质量或方法结果。
+
+`b0_execution_config_v0.1.yaml` 是 Go Stanford 单域 B0 的精确执行 overlay：H0/H1
+各 200 optimizer steps，并固定 AdamW、FP16/GradScaler、gradient accumulation、EMA、
+checkpoint retention 和 step-100 exact-resume。`validate_b0_execution_config.py` 与
+`run_tinynav_b0.py --dry-run` 不导入模型路径、不读取图片且不创建 optimizer。
+`run_tinynav_b0.py --execute` 仍要求独立授权 token、冻结分支/commit 和 clean tracked
+worktree；静态 readiness 不能解读为 B0 已执行。

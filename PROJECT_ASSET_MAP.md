@@ -15,6 +15,7 @@
 | 4090 Go Stanford live DATA-PILOT | 内容/adapter/DataLoader 通过；仅单域，未运行模型 | `results/research/data_pilot/go_stanford_live_20260715/` |
 | TinyNavBrain IMAGE-FORWARD | GPU 0 inference-only 通过；未 backward/训练 | `scripts/research/models/tinynavbrain_image_policy.py`、`results/research/data_pilot/go_stanford_live_20260715/image_forward_readiness.md` |
 | TinyNavBrain TRAIN-STEP | 两步集成与 exact-resume 通过；不是 B0 | `scripts/research/pretraining/train_step_runtime.py`、`results/research/pretraining/train_step_gate_20260716/readiness.md` |
+| TinyNavBrain B0 static | H0/H1 各 200 步配置与 runner dry-run 通过；未执行 | `scripts/research/pretraining/b0_execution_config_v0.1.yaml`、`results/research/pretraining/b0_static_readiness_20260716/readiness.md` |
 | 多数据集训练 | 未执行，外部阻塞 | `后续研究内容/external_execution/02_training_run_order.md` |
 | 目标设备/协议化真机 | 未执行，外部阻塞 | `后续研究内容/external_execution/03_sim_robot_promotion.md` |
 

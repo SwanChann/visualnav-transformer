@@ -1,5 +1,15 @@
 # Navigation Research Agent Log
 
+## 2026-07-16 — 4090 TinyNavBrain B0 static freeze
+
+- 按用户授权只实现与静态审查 B0，不执行训练。新增 `b0_execution_config_v0.1.yaml`，冻结 H0 200 optimizer steps + H1 200 optimizer steps，总预算 400 optimizer steps / 800 backward calls。
+- 每条 run 独立重置 seed=0 和随机初始化模型；Go Stanford 冻结 5% subset；micro-batch 4、gradient accumulation 2、effective batch 8；AdamW lr=1e-4、weight decay=0.01，无 scheduler。
+- 冻结 FP16 autocast/GradScaler、max gradient norm 10、EMA decay 0.999；每 50 optimizer steps 保存，只保留最后 3 份；step 100 exact-resume 不增加 optimizer step，并要求 model/optimizer/scaler/EMA/RNG/next-batch 全精确。
+- runner 的 execute 分支要求 token `RUN-B0-H0-200-H1-200`、指定分支、tracked-clean、HEAD 等于本地 origin ref，并拒绝覆盖既有 checkpoint。失败会写 receipt；checkpoint I/O 不计入 step timing，resume probe 的双模型内存不计入训练 step peak。
+- DATA-PILOT、canonical batch、IMAGE-FORWARD、TRAIN-STEP 四份 prerequisite JSON 均以文件 SHA-256 固定；父 smoke/model 合同与 manifest/data tree hashes 也固定。
+- validator 与专项测试 9/9 通过；dry-run 未导入 torch model 路径、未读取数据图片、未实例化模型/optimizer，forward/backward/optimizer/checkpoint 均为 0。
+- 最终 config SHA-256：`8f2ae8951a17395c885d54ec7316652200481226750fe2bf6b44ba29afa30301`；证据：`results/research/pretraining/b0_static_readiness_20260716/readiness.{json,md}`。该结果只是执行准备，不是 B0 或训练结果。
+
 ## 2026-07-16 — 4090 TinyNavBrain TRAIN-STEP gate
 
 - 用户授权实现 H0/H1 可执行 loss/train-step/checkpoint exact-resume，并将执行上限冻结为 synthetic 与一个真实 batch 合计最多 2 个 backward/optimizer step；明确不执行 200-step B0。
