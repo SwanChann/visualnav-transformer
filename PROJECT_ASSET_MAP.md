@@ -1,6 +1,6 @@
 # 项目资产地图
 
-> 统一入口，更新于 2026-07-16。当前已推送基线：`agent/ubuntu-sim-handoff@a537c3e2a079fe094b5a5c5dba15b83120bc7d4f`。
+> 统一入口，更新于 2026-07-16。当前已推送基线：`agent/ubuntu-sim-handoff@7de25f68916f5adebcf06d235d8c883f28c1136c`。
 
 ## 1. 当前结果一览
 
@@ -17,6 +17,7 @@
 | TinyNavBrain TRAIN-STEP | 两步集成与 exact-resume 通过；不是 B0 | `scripts/research/pretraining/train_step_runtime.py`、`results/research/pretraining/train_step_gate_20260716/readiness.md` |
 | TinyNavBrain Go Stanford B0 | H0/H1 各 200-step plumbing smoke 与 exact-resume 通过；无评测/效果主张 | `results/research/pretraining/b0_go_stanford_v0.1/b0_audit.md` |
 | RECON/HuRoN local DATA-PILOT | 授权工作区内 0/2 materialized；只有处理器，数据/receipt/manifest/许可快照均缺失 | `results/research/data_pilot/recon_huron_presence_20260716/audit.md` |
+| RECON/HuRoN acquisition dry-run | receipt/checksum/license 模板与零转换 preflight 已实现；因无 raw/receipt/许可快照继续阻塞 | `results/research/data_pilot/recon_huron_dry_run_20260716/`、`后续研究内容/data/templates/recon_huron/` |
 | 多数据集训练 | 未执行，外部阻塞 | `后续研究内容/external_execution/02_training_run_order.md` |
 | 目标设备/协议化真机 | 未执行，外部阻塞 | `后续研究内容/external_execution/03_sim_robot_promotion.md` |
 

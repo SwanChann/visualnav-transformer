@@ -1,0 +1,29 @@
+{
+  "_template_only": true,
+  "schema_version": "0.1.0",
+  "dataset_id": "<recon|huron_sacson>",
+  "display_name": "<FROM_REGISTRY>",
+  "registry_sha256": "<64_LOWERCASE_HEX>",
+  "registry_entry_sha256": "<64_LOWERCASE_HEX>",
+  "artifact": {
+    "path": "<LOCAL_DOWNLOAD_ARTIFACT_PATH>",
+    "bytes": "<INTEGER>",
+    "sha256": "<64_LOWERCASE_HEX>"
+  },
+  "source_url": "<OFFICIAL_HTTPS_URL>",
+  "official_page": "<OFFICIAL_HTTPS_URL>",
+  "license": {
+    "name": "<FROM_REGISTRY_AFTER_LIVE_VERIFICATION>",
+    "status": "<FROM_REGISTRY_AFTER_LIVE_VERIFICATION>",
+    "snapshot_path": "<LOCAL_LICENSE_SNAPSHOT_PATH>",
+    "snapshot_sha256": "<64_LOWERCASE_HEX>",
+    "snapshot_match": "asserted_by_operator"
+  },
+  "operator": "<OPERATOR>",
+  "git": {
+    "commit": "<40_LOWERCASE_HEX>",
+    "dirty": false
+  },
+  "registered_at_utc": "<ISO-8601>",
+  "conversion_status": "not_started"
+}

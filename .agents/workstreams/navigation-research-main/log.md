@@ -1,5 +1,13 @@
 # Navigation Research Agent Log
 
+## 2026-07-16 — RECON/HuRoN acquisition governance dry-run
+
+- presence audit 已按用户授权提交并 push 为 `7de25f68916f5adebcf06d235d8c883f28c1136c`，不含数据或 checkpoint；6 个 B0 checkpoint 继续仅本地且被 Git ignore。
+- 新增明确标记为非证据的 raw artifact receipt、raw tree checksum manifest 与官方 license/privacy snapshot 模板；真实 receipt 仍必须由 `register_raw_artifact.py` 从本地 artifact 和操作者保存的官方页面快照生成。
+- 新增 `preflight_recon_huron_raw.py`：只盘点 RECON HDF5 或 HuRoN ROS bag、可选计算 SHA-256、检查 receipt/license 绑定并渲染带 working directory 的旧处理器命令；不 import/调用转换器，不创建 processed root。
+- 对缺失的 `nomad_dataset/recon_raw` 与 `nomad_dataset/huron_raw` 执行 metadata-only dry-run，均为 0 candidate、6 个预期阻塞门、所有 download/conversion/model/train/eval/sim 计数为 0。数据治理单测 15/15 通过。
+- 当前仍无用户提供的其他本地数据路径；未扩大到两个授权工作区以外扫描，也未下载或转换数据。报告：`results/research/data_pilot/recon_huron_dry_run_20260716/`。
+
 ## 2026-07-16 — RECON/HuRoN read-only local DATA-PILOT
 
 - 按用户授权只盘点 `visualnav-transformer` 与 `diffusion_policy` 的现有本地数据；没有下载、数据转换、模型执行、训练、评测或仿真。

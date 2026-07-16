@@ -50,6 +50,11 @@ TartanDrive 的价值主要是 off-road 和物理尺度 stress test。它来自�
 
 这些问题不要求现在修改训练逻辑，但必须由下一步 manifest/audit 工具显式检测。否则 benchmark 会在数据进入模型之前就失去可解释性。
 
+2026-07-16 的本地只读盘点确认两个授权工作区内 RECON/HuRoN 为 0/2
+materialized。后续获取前使用 `templates/recon_huron/` 的 receipt/checksum/license
+snapshot 模板，并用 `scripts/research/data/preflight_recon_huron_raw.py` 生成只读 raw
+inventory 和计划转换命令。该 dry-run 不调用转换器；任何下载或转换仍需另行授权。
+
 ## Gate A
 
 只有同时满足以下条件，才把下一篇论文继续定位为 multi-dataset benchmark：

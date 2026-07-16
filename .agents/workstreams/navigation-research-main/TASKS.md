@@ -45,6 +45,11 @@ HDF5/ROS bag、receipt、许可快照和 manifest/split 均未发现，materiali
 `recon_datavis` 只含可视化源码。处理器入口与只读 `--help` 通过不等于数据就绪，
 因此 `DATA-04` 和多数据集 `EXP-01` 继续为 `blocked_external`。
 
+获取治理 scaffold 已补齐：`templates/recon_huron/` 提供明确标记为非证据的
+receipt/checksum/license-snapshot 模板，`preflight_recon_huron_raw.py` 只盘点 raw
+候选、可选计算 SHA-256 并渲染旧处理器命令，绝不调用转换器。对当前缺失根目录的
+两次 dry-run 均为 0 candidate/0 execution；基础设施就绪不改变 `DATA-04` 状态。
+
 `IMAGE-FORWARD` gate 已在 GPU 0 通过：随机初始化且不下载权重的共享
 EfficientNet-B0 image policy 共 8513117 个可训练参数，合成数据测试与真实 batch 的
 H0/H1 inference-only 前向均通过。当前可以实现 train loop，但 loss/train-step、

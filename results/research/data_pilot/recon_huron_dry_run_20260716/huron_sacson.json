@@ -1,0 +1,100 @@
+{
+  "schema_version": "0.1.0",
+  "gate_id": "huron_sacson-raw-dry-run-preflight",
+  "created_at_utc": "2026-07-15T17:34:40.377940+00:00",
+  "dataset_id": "huron_sacson",
+  "git": {
+    "branch": "agent/ubuntu-sim-handoff",
+    "commit": "7de25f68916f5adebcf06d235d8c883f28c1136c",
+    "tracked_worktree_dirty": true,
+    "worktree_dirty_including_preserved_untracked": true
+  },
+  "preflight_script": {
+    "path": "scripts/research/data/preflight_recon_huron_raw.py",
+    "sha256": "e31d5f31d157e783e20c1a2ccf96085a63772744326fa86e9165bf012ce7c83f"
+  },
+  "registry": {
+    "path": "/home/yifei/codespace/visualnav-transformer/后续研究内容/data/dataset_registry.json",
+    "sha256": "8eda748363b4c0b729a0c9cf51167fe5010b4d6ae1ee793041ce3ec7fd39ce67",
+    "expected_local_root": "nomad_dataset/sacson",
+    "raw_format": "ROS bags with compressed images",
+    "metric_waypoint_spacing_m_registry_record": 0.255
+  },
+  "input": {
+    "root": "/home/yifei/codespace/visualnav-transformer/nomad_dataset/huron_raw",
+    "scan_root": "/home/yifei/codespace/visualnav-transformer/nomad_dataset/huron_raw",
+    "checksum_mode": "metadata",
+    "candidate_count": 0,
+    "total_bytes": 0,
+    "candidates": [],
+    "duplicate_planned_source_ids": []
+  },
+  "receipt": {
+    "path": null,
+    "present": false,
+    "schema_and_registry_binding_valid": false,
+    "license_snapshot_path": null,
+    "license_snapshot_present": false,
+    "license_snapshot_hash_matches": false,
+    "artifact_checksum_reverified": false,
+    "errors": [
+      "raw artifact receipt is missing"
+    ]
+  },
+  "processor": {
+    "path": "train/process_bags.py",
+    "sha256": "ec01f1950a799eda2165e8293f7eea211c994fa3b81afe324ea640a5a0e556f6",
+    "config_path": "train/vint_train/process_data/process_bags_config.yaml",
+    "config_sha256": "f5b4be4aed960981658b5f6f0fd0af452b8bda2aa13ac9eac911085ac56c33e8",
+    "working_directory": "/home/yifei/codespace/visualnav-transformer/train",
+    "planned_command": [
+      "python",
+      "process_bags.py",
+      "--dataset-name",
+      "sacson",
+      "--input-dir",
+      "/home/yifei/codespace/visualnav-transformer/nomad_dataset/huron_raw",
+      "--output-dir",
+      "/home/yifei/codespace/visualnav-transformer/nomad_dataset/sacson"
+    ],
+    "executed": false
+  },
+  "output": {
+    "processed_root": "/home/yifei/codespace/visualnav-transformer/nomad_dataset/sacson",
+    "created_or_modified": false
+  },
+  "execution_counts": {
+    "downloads": 0,
+    "conversions": 0,
+    "model_forward": 0,
+    "backward": 0,
+    "optimizer_steps": 0,
+    "training": 0,
+    "evaluation": 0,
+    "simulation": 0
+  },
+  "gates": {
+    "input_root_present": false,
+    "expected_raw_layout_present": false,
+    "raw_candidates_present": false,
+    "planned_source_ids_unique": true,
+    "processor_present": true,
+    "processor_config_present_or_not_required": true,
+    "raw_artifact_receipt_schema_binding_valid": false,
+    "license_snapshot_hash_matches_receipt": false,
+    "raw_file_sha256_captured": false,
+    "processed_output_root_safe": true,
+    "conversion_execution_count_is_zero": true,
+    "model_training_evaluation_count_is_zero": true
+  },
+  "blocking_gates": [
+    "input_root_present",
+    "expected_raw_layout_present",
+    "raw_candidates_present",
+    "raw_artifact_receipt_schema_binding_valid",
+    "license_snapshot_hash_matches_receipt",
+    "raw_file_sha256_captured"
+  ],
+  "passed": false,
+  "claim_boundary": "Dry-run inventory and conversion-command rendering only. Raw candidate presence and hashes do not validate payload semantics, physical scale, timestamps, session grouping, conversion correctness, or model behavior."
+}

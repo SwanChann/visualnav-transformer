@@ -1,0 +1,22 @@
+{
+  "_template_only": true,
+  "schema_version": "0.1.0",
+  "dataset_id": "<recon|huron_sacson>",
+  "raw_root": "<LOCAL_RAW_ROOT>",
+  "artifact_receipt_path": "<IMMUTABLE_RECEIPT_PATH>",
+  "artifact_receipt_sha256": "<64_LOWERCASE_HEX>",
+  "generated_at_utc": "<ISO-8601>",
+  "generated_by": "<OPERATOR_OR_TOOL>",
+  "path_policy": "relative_to_raw_root_posix",
+  "hash_algorithm": "sha256",
+  "entries": [
+    {
+      "relative_path": "<recon_release/session.hdf5 OR collection/session.bag>",
+      "bytes": "<INTEGER>",
+      "mtime_ns": "<INTEGER_INFORMATIONAL_ONLY>",
+      "sha256": "<64_LOWERCASE_HEX>",
+      "planned_source_id": "<STABLE_SESSION_ID>"
+    }
+  ],
+  "conversion_status": "not_started"
+}
