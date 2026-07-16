@@ -1,6 +1,6 @@
 # 项目资产地图
 
-> 统一入口，更新于 2026-07-16。当前已推送基线：`agent/ubuntu-sim-handoff@aab6f0d8bde091cde1980bc42027b22994769186`。
+> 统一入口，更新于 2026-07-16。活跃分支：`agent/ubuntu-sim-handoff`；精确基线须在执行时核对完整 `HEAD` 与 upstream SHA，避免在提交内容中维护不可自洽的自身 commit hash。
 
 ## 1. 当前结果一览
 
