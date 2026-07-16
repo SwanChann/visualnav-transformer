@@ -12,14 +12,16 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import subprocess
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Mapping
+from urllib.parse import urlparse
 
 
-SHA256_LENGTH = 64
+SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 DATASET_SPECS: dict[str, dict[str, Any]] = {
     "recon": {
         "raw_suffixes": (".h5", ".hdf5"),
@@ -44,6 +46,20 @@ def sha256_file(path: Path, chunk_size: int = 1024 * 1024) -> str:
         for chunk in iter(lambda: handle.read(chunk_size), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def canonical_sha256(value: Mapping[str, Any]) -> str:
+    encoded = json.dumps(
+        value,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def is_sha256(value: Any) -> bool:
+    return isinstance(value, str) and SHA256_RE.fullmatch(value) is not None
 
 
 def git_context(repo_root: Path) -> dict[str, Any]:
@@ -160,22 +176,46 @@ def validate_receipt(
 
     artifact = receipt.get("artifact", {})
     license_record = receipt.get("license", {})
+    source_url = receipt.get("source_url", "")
+    parsed_source = urlparse(source_url)
+    official_urls = [
+        registry_entry.get("official_download"),
+        registry_entry.get("official_page"),
+    ]
+    official_hosts = {
+        urlparse(url).netloc.lower() for url in official_urls if url
+    }
     checks = {
+        "not_a_template": receipt.get("_template_only") is not True,
+        "schema_version": receipt.get("schema_version") == "0.1.0",
         "dataset_id": receipt.get("dataset_id") == dataset_id,
         "registry_sha256": receipt.get("registry_sha256") == registry_sha256,
-        "artifact_sha256": (
-            isinstance(artifact.get("sha256"), str)
-            and len(artifact["sha256"]) == SHA256_LENGTH
+        "registry_entry_sha256": (
+            receipt.get("registry_entry_sha256")
+            == canonical_sha256(registry_entry)
         ),
-        "artifact_bytes": isinstance(artifact.get("bytes"), int),
+        "artifact_path": bool(str(artifact.get("path", "")).strip()),
+        "artifact_sha256": is_sha256(artifact.get("sha256")),
+        "artifact_bytes": (
+            isinstance(artifact.get("bytes"), int)
+            and artifact["bytes"] >= 0
+        ),
+        "source_url_https_official_host": (
+            parsed_source.scheme == "https"
+            and bool(parsed_source.netloc)
+            and parsed_source.netloc.lower() in official_hosts
+        ),
         "license_name": (
             license_record.get("name")
             == registry_entry.get("license_spdx_or_name")
         ),
-        "license_snapshot_sha256": (
-            isinstance(license_record.get("snapshot_sha256"), str)
-            and len(license_record["snapshot_sha256"]) == SHA256_LENGTH
+        "license_status": (
+            license_record.get("status") == registry_entry.get("license_status")
         ),
+        "license_snapshot_sha256": (
+            is_sha256(license_record.get("snapshot_sha256"))
+        ),
+        "operator": bool(str(receipt.get("operator", "")).strip()),
         "conversion_not_started": receipt.get("conversion_status") == "not_started",
     }
     for name, passed in checks.items():
@@ -184,6 +224,9 @@ def validate_receipt(
     result["schema_and_registry_binding_valid"] = all(checks.values())
 
     if result["license_snapshot_present"]:
+        if license_snapshot_path.stat().st_size == 0:
+            result["errors"].append("license snapshot is empty")
+            return result
         actual = sha256_file(license_snapshot_path)
         result["license_snapshot_sha256"] = actual
         result["license_snapshot_hash_matches"] = (

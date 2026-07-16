@@ -21,3 +21,7 @@
 `raw_artifact_receipt.template.json` 只展示字段形状；权威生成器仍是
 `register_raw_artifact.py`。所有 `<PLACEHOLDER>` 和 `_template_only` 字段都必须在真实
 receipt 中消失。
+
+`preflight_recon_huron_raw.py` 会明确拒绝 `_template_only: true`、非 lowercase SHA-256、
+非 registry 官方 HTTPS host、registry-entry hash 不一致或 license snapshot hash 不一致的
+receipt。模板通过 JSON 解析不代表它能通过治理门。

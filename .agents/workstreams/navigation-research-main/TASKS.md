@@ -56,6 +56,11 @@ manifest/split 静态链已进一步闭合：首次 manifest 可在没有既有 
 作为 `source_session`，并拒绝这两个数据集使用通用 trajectory fallback，以防同一 bag
 的切片跨 split。该合同只解决静态泄漏风险，不替代真实 dt/尺度/内容验证。
 
+raw receipt 的 dry-run 校验也已收紧：模板标记、schema、lowercase SHA-256、完整
+registry entry、官方 HTTPS host、license name/status、operator 与 snapshot hash 必须
+同时匹配；模板或非官方 URL 会被拒绝。artifact 本体 checksum 是否重新读取仍被单独
+记录，不能由 receipt schema 通过来替代。
+
 `IMAGE-FORWARD` gate 已在 GPU 0 通过：随机初始化且不下载权重的共享
 EfficientNet-B0 image policy 共 8513117 个可训练参数，合成数据测试与真实 batch 的
 H0/H1 inference-only 前向均通过。当前可以实现 train loop，但 loss/train-step、

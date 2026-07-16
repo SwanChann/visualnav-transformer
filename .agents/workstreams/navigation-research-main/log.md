@@ -1,5 +1,12 @@
 # Navigation Research Agent Log
 
+## 2026-07-16 — RECON/HuRoN receipt preflight hardening
+
+- 最终静态边界审计发现 dry-run 对 receipt SHA 只检查长度，且没有拒绝模板或重新验证官方 source host / registry entry，可能把手填模板误作治理证据。
+- 现严格要求非模板 `schema_version=0.1.0`、lowercase SHA-256、完整 registry 与 dataset-entry hash、官方 HTTPS host、artifact path/bytes、license name/status、operator、`conversion_status=not_started` 和非空 snapshot hash 全部一致。
+- `artifact_checksum_reverified` 继续独立为 False；schema 绑定通过不冒充 artifact 本体已重算 checksum。新增模板/恶意 host 负测试，数据治理测试 19/19 通过。
+- 使用当前脚本重新生成两个缺失-root dry-run；仍为 0 candidate、6 个预期 blocker、所有执行计数为 0。没有下载、转换、模型、训练、评测或仿真。
+
 ## 2026-07-16 — RECON/HuRoN manifest session hardening
 
 - 无数据静态审查发现两个 DATA-04 缺口：HuRoN legacy converter 的同一 bag 会产生多个 `_index` 片段，而 manifest builder 原先把每个片段当独立 session；同时首次构建 manifest 强制依赖已有 split tree，与 grouped-split 的输入顺序形成死结。

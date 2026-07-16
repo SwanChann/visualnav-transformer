@@ -1,17 +1,17 @@
 {
   "schema_version": "0.1.0",
   "gate_id": "huron_sacson-raw-dry-run-preflight",
-  "created_at_utc": "2026-07-15T17:34:40.377940+00:00",
+  "created_at_utc": "2026-07-16T07:35:45.084638+00:00",
   "dataset_id": "huron_sacson",
   "git": {
     "branch": "agent/ubuntu-sim-handoff",
-    "commit": "7de25f68916f5adebcf06d235d8c883f28c1136c",
+    "commit": "aab6f0d8bde091cde1980bc42027b22994769186",
     "tracked_worktree_dirty": true,
     "worktree_dirty_including_preserved_untracked": true
   },
   "preflight_script": {
     "path": "scripts/research/data/preflight_recon_huron_raw.py",
-    "sha256": "e31d5f31d157e783e20c1a2ccf96085a63772744326fa86e9165bf012ce7c83f"
+    "sha256": "651a815d9025b4b84566bdd52238e4c8eee2f673bfd8f534df45dad9091f6582"
   },
   "registry": {
     "path": "/home/yifei/codespace/visualnav-transformer/后续研究内容/data/dataset_registry.json",
