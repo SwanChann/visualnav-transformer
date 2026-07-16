@@ -28,5 +28,12 @@ session/bag identity. Acceptance: checksum receipt, decodable images, metric pos
 odometry, monotonic timestamps, non-empty trajectories, and zero grouped-split
 leakage. Reject silent frame drops, per-frame random splits, and missing provenance.
 
+For a new processed pilot, first run `build_nav_manifest.py` without `--split-root`;
+the resulting rows are intentionally `unassigned`. Pass that manifest through
+`build_grouped_splits.py`, then audit the assigned output with
+`audit_nav_dataset.py`. RECON groups by HDF5 stem. HuRoN groups every legacy
+`<parent>_<bag_stem>_<segment_index>` trajectory under the same bag identity; never
+replace this with per-trajectory fallback grouping.
+
 Before releasing any derived Go Stanford artifact, include attribution, the
 CC-BY-NC-SA-3.0 notice, non-commercial restriction, and share-alike obligations.

@@ -14,6 +14,9 @@
 4. 对本地 raw root 运行 `preflight_recon_huron_raw.py --checksum-mode sha256`。
    它只盘点并生成计划命令，不调用转换器。
 5. 转换仍需新的逐轮授权，并应写入隔离的新 output root。
+6. 转换后首次运行 `build_nav_manifest.py` 时省略 `--split-root`，再用
+   `build_grouped_splits.py` 分组赋值并以 `audit_nav_dataset.py` 复核。RECON 按 HDF5
+   stem 分组；HuRoN 同一 bag 的所有 converter segment 必须保持在同一 split。
 
 `raw_artifact_receipt.template.json` 只展示字段形状；权威生成器仍是
 `register_raw_artifact.py`。所有 `<PLACEHOLDER>` 和 `_template_only` 字段都必须在真实

@@ -102,6 +102,55 @@ class NavDataContractsTest(unittest.TestCase):
             self.assertTrue(rows[0]["has_traj_data"])
             self.assertEqual(len(rows[0]["trajectory_meta_sha256"]), 64)
 
+    def test_builder_can_create_initial_unassigned_manifest(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            trajectory = root / "dataset" / "session_0"
+            trajectory.mkdir(parents=True)
+            (trajectory / "0.jpg").write_bytes(b"frame-placeholder")
+            (trajectory / "traj_data.pkl").write_bytes(b"metadata-placeholder")
+            rows = build.build_rows(
+                "recon",
+                root / "dataset",
+                None,
+                self.registry()["demo"],
+                "test-v1",
+            )
+            self.assertEqual(rows[0]["split"], "unassigned")
+            self.assertEqual(rows[0]["source_session"], "session_0")
+            report = audit.audit_rows(rows, {"recon": self.registry()["demo"]}, False)
+            codes = {item["code"] for item in report["errors"]}
+            self.assertIn("invalid_or_unassigned_split", codes)
+
+    def test_recon_and_huron_session_identity_matches_legacy_processors(self) -> None:
+        self.assertEqual(
+            build.infer_session("recon", "recon_session_01"),
+            ("recon_session_01", "recon_hdf5_stem_identity"),
+        )
+        self.assertEqual(
+            build.infer_session("huron_sacson", "building_a_day_01_0"),
+            ("building_a_day_01", "sacson_legacy_bag_remove_segment_index"),
+        )
+        self.assertEqual(
+            build.infer_session("huron_sacson", "building_a_day_01_7"),
+            ("building_a_day_01", "sacson_legacy_bag_remove_segment_index"),
+        )
+
+    def test_huron_fallback_session_is_rejected(self) -> None:
+        row = self.row("bag_0", "train", "bag_0")
+        row["dataset_id"] = "huron_sacson"
+        row["leakage_group"] = "huron_sacson:bag_0"
+        row["source_session_method"] = "trajectory_id_fallback"
+        registry = {
+            "huron_sacson": {
+                "dataset_id": "huron_sacson",
+                "license_spdx_or_name": "MIT",
+            }
+        }
+        report = audit.audit_rows([row], registry, check_paths=False)
+        codes = {item["code"] for item in report["errors"]}
+        self.assertIn("unsafe_session_method", codes)
+
     def test_grouped_split_keeps_session_together(self) -> None:
         rows = [
             self.row("t1", "train", "same"),

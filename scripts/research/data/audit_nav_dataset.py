@@ -14,6 +14,13 @@ from build_nav_manifest import FIELDS, MANIFEST_VERSION, ManifestError
 
 
 VALID_SPLITS = {"train", "val", "test", "heldout"}
+TRUSTED_SESSION_METHODS = {
+    "recon": {"recon_hdf5_stem_identity", "explicit_raw_session_map"},
+    "huron_sacson": {
+        "sacson_legacy_bag_remove_segment_index",
+        "explicit_raw_session_map",
+    },
+}
 
 
 def canonical_split(value: str) -> str:
@@ -87,6 +94,7 @@ def audit_rows(
         trajectory_id = row["trajectory_id"].strip()
         split = canonical_split(row["split"])
         source_session = row["source_session"].strip()
+        source_session_method = row["source_session_method"].strip()
         leakage_group = row["leakage_group"].strip()
         identity_rows[(dataset_id, trajectory_id)].append(index)
         leakage_splits[leakage_group].add(split)
@@ -106,13 +114,30 @@ def audit_rows(
             add(errors, "empty_trajectory_id", "trajectory_id is empty", [index])
         if not source_session:
             add(errors, "empty_source_session", "source_session is empty", [index])
+        if not source_session_method:
+            add(
+                errors,
+                "empty_source_session_method",
+                "source_session_method is empty",
+                [index],
+            )
+        if (
+            dataset_id in TRUSTED_SESSION_METHODS
+            and source_session_method not in TRUSTED_SESSION_METHODS[dataset_id]
+        ):
+            add(
+                errors,
+                "unsafe_session_method",
+                f"Dataset {dataset_id} requires an auditable raw HDF5/bag session method",
+                [index],
+            )
         if not leakage_group:
             add(errors, "empty_leakage_group", "leakage_group is empty", [index])
         if split not in VALID_SPLITS:
             add(errors, "invalid_or_unassigned_split", f"Invalid split {split!r}", [index])
         if not _positive_number(row["num_frames"]):
             add(errors, "no_frames", "num_frames must be positive", [index])
-        if row["has_traj_data"].lower() != "true":
+        if str(row["has_traj_data"]).lower() != "true":
             add(errors, "missing_traj_data", "traj_data.pkl is missing", [index])
         if not _positive_number(row["nominal_dt_s"]):
             add(errors, "missing_dt", "nominal_dt_s must be known and positive", [index])

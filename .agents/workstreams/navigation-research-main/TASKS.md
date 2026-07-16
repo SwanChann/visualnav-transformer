@@ -50,6 +50,12 @@ receipt/checksum/license-snapshot 模板，`preflight_recon_huron_raw.py` 只盘
 候选、可选计算 SHA-256 并渲染旧处理器命令，绝不调用转换器。对当前缺失根目录的
 两次 dry-run 均为 0 candidate/0 execution；基础设施就绪不改变 `DATA-04` 状态。
 
+manifest/split 静态链已进一步闭合：首次 manifest 可在没有既有 split tree 时生成
+`unassigned` 行，再由 grouped-split 工具唯一分配；最终 audit 继续拒绝任何
+`unassigned`。RECON 以 HDF5 stem、HuRoN 以去除 legacy segment index 后的 bag identity
+作为 `source_session`，并拒绝这两个数据集使用通用 trajectory fallback，以防同一 bag
+的切片跨 split。该合同只解决静态泄漏风险，不替代真实 dt/尺度/内容验证。
+
 `IMAGE-FORWARD` gate 已在 GPU 0 通过：随机初始化且不下载权重的共享
 EfficientNet-B0 image policy 共 8513117 个可训练参数，合成数据测试与真实 batch 的
 H0/H1 inference-only 前向均通过。当前可以实现 train loop，但 loss/train-step、

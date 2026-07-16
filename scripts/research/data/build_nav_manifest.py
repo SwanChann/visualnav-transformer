@@ -86,6 +86,15 @@ def infer_session(dataset_id: str, trajectory_id: str) -> tuple[str, str]:
         prefix, separator, suffix = trajectory_id.rpartition("_")
         if separator and suffix.isdigit() and prefix:
             return prefix, "heuristic_remove_trailing_segment"
+    if dataset_id == "recon":
+        # process_recon.py maps one HDF5 filename stem to one trajectory folder.
+        return trajectory_id, "recon_hdf5_stem_identity"
+    if dataset_id == "huron_sacson":
+        # process_bags.py names each filtered segment <parent>_<bag_stem>_<index>.
+        # Group every segment from one bag before assigning train/val/test.
+        prefix, separator, suffix = trajectory_id.rpartition("_")
+        if separator and suffix.isdigit() and prefix:
+            return prefix, "sacson_legacy_bag_remove_segment_index"
     return trajectory_id, "trajectory_id_fallback"
 
 
@@ -111,13 +120,13 @@ def count_frames(trajectory_dir: Path) -> int:
 def build_rows(
     dataset_id: str,
     dataset_root: Path,
-    split_root: Path,
+    split_root: Path | None,
     registry_entry: dict[str, Any],
     processor_version: str,
 ) -> list[dict[str, Any]]:
     if not dataset_root.is_dir():
         raise ManifestError(f"Dataset root does not exist: {dataset_root}")
-    splits = load_splits(split_root)
+    splits = load_splits(split_root) if split_root is not None else {}
     rows: list[dict[str, Any]] = []
     for trajectory_dir in sorted(path for path in dataset_root.iterdir() if path.is_dir()):
         trajectory_id = trajectory_dir.name
@@ -172,7 +181,14 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Build a ViNT trajectory manifest without training.")
     parser.add_argument("--dataset-id", required=True)
     parser.add_argument("--dataset-root", type=Path, required=True)
-    parser.add_argument("--split-root", type=Path, required=True)
+    parser.add_argument(
+        "--split-root",
+        type=Path,
+        help=(
+            "existing split tree; omit for an initial all-unassigned manifest "
+            "that will be passed to build_grouped_splits.py"
+        ),
+    )
     parser.add_argument("--registry", type=Path, required=True)
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--processor-version", default="preexisting_unknown")

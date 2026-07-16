@@ -1,5 +1,12 @@
 # Navigation Research Agent Log
 
+## 2026-07-16 — RECON/HuRoN manifest session hardening
+
+- 无数据静态审查发现两个 DATA-04 缺口：HuRoN legacy converter 的同一 bag 会产生多个 `_index` 片段，而 manifest builder 原先把每个片段当独立 session；同时首次构建 manifest 强制依赖已有 split tree，与 grouped-split 的输入顺序形成死结。
+- `infer_session` 现在明确绑定 legacy processor 命名：RECON 的 HDF5 stem 为 session；HuRoN 去除最后的 converter segment index 后，以 `<parent>_<bag_stem>` 为 session。audit 对两者仅接受这些已知方法或显式 raw-session map，拒绝通用/未知 fallback。
+- `--split-root` 改为可选：省略时只生成 `unassigned` 初始 manifest，必须再经过 `build_grouped_splits.py`；最终 `audit_nav_dataset.py` 仍将 `unassigned` 判为错误。
+- 数据治理测试增至 18/18 通过；只使用临时合成占位文件，没有读取/转换 RECON/HuRoN，没有模型、训练、评测或仿真。
+
 ## 2026-07-16 — RECON/HuRoN acquisition governance dry-run
 
 - presence audit 已按用户授权提交并 push 为 `7de25f68916f5adebcf06d235d8c883f28c1136c`，不含数据或 checkpoint；6 个 B0 checkpoint 继续仅本地且被 Git ignore。

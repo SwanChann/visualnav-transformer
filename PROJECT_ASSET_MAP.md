@@ -1,6 +1,6 @@
 # 项目资产地图
 
-> 统一入口，更新于 2026-07-16。当前已推送基线：`agent/ubuntu-sim-handoff@7de25f68916f5adebcf06d235d8c883f28c1136c`。
+> 统一入口，更新于 2026-07-16。当前已推送基线：`agent/ubuntu-sim-handoff@448680c62aa78e8eaed2e0792179825d516dab41`。
 
 ## 1. 当前结果一览
 
