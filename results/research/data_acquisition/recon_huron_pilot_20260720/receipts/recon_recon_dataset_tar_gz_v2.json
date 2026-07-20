@@ -1,0 +1,35 @@
+{
+  "schema_version": "0.1.0",
+  "dataset_id": "recon",
+  "display_name": "RECON Outdoor Navigation Dataset",
+  "registry_sha256": "c1e974805327b6fc05a59928e5c693dce61309fbc5c818a1b1580cda795b20aa",
+  "registry_entry_sha256": "f9d62c5eae74ecff976d65fc9197c4f4d9def36fb43b0d2271cbe363d718ca2c",
+  "artifact": {
+    "path": "nomad_dataset/_artifacts/recon_huron/recon/recon_dataset.tar.gz",
+    "bytes": 53235196027,
+    "sha256": "65e32b9902bc9458b9a6da58257b53de8634261e41d256f0b840e7604988c299"
+  },
+  "source_url": "https://rail.eecs.berkeley.edu/datasets/recon-navigation/recon_dataset.tar.gz",
+  "official_page": "https://sites.google.com/view/recon-robot/dataset",
+  "license": {
+    "name": "MIT",
+    "status": "official_dataset_page_explicit",
+    "snapshot_path": "results/research/data_acquisition/recon_huron_pilot_20260720/licenses/recon_dataset_page_20260720.html",
+    "snapshot_sha256": "a08991604a3a86cecf26f4d5c96d8950e84d403c96f6771f915c09be757bfd98",
+    "snapshot_match": "asserted_by_operator"
+  },
+  "operator": "swanchann",
+  "git": {
+    "commit": "2475574dc876cdfb9137660e57ab27254290d1b7",
+    "dirty": true
+  },
+  "registered_at_utc": "2026-07-20T08:41:31.632108+00:00",
+  "conversion_status": "not_started",
+  "prior_receipts_same_artifact": [
+    {
+      "path": "results/research/data_acquisition/recon_huron_pilot_20260720/receipts/recon_recon_dataset_tar_gz.json",
+      "receipt_sha256": "33814c0c872e54f6166096a98f6e8a5fdc6a00c234b4bbb415ea37fba0fc4826",
+      "registry_sha256": "badc3b77e3aca10ff002b57e10515a8c2f829060a29fb6d8a1a26e75c576a141"
+    }
+  ]
+}

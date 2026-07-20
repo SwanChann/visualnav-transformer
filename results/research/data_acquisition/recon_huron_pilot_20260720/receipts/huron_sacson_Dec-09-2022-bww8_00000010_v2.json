@@ -1,0 +1,35 @@
+{
+  "schema_version": "0.1.0",
+  "dataset_id": "huron_sacson",
+  "display_name": "HuRoN / SACSoN Dataset",
+  "registry_sha256": "c1e974805327b6fc05a59928e5c693dce61309fbc5c818a1b1580cda795b20aa",
+  "registry_entry_sha256": "14ce83ee4825d26a36f40c91d718952c0eadecd239159a620eb060530815dd0d",
+  "artifact": {
+    "path": "nomad_dataset/huron_raw/Dec-09-2022-bww8/00000010.bag",
+    "bytes": 11044659,
+    "sha256": "71ac9844157bee7e90f9a6ab1d91af10ebad7e39073fd2885ccabc6d66034397"
+  },
+  "source_url": "https://rail.eecs.berkeley.edu/datasets/huron/Dec-09-2022-bww8/00000010.bag",
+  "official_page": "https://sites.google.com/view/sacson-review/huron-dataset",
+  "license": {
+    "name": "MIT",
+    "status": "official_dataset_page_explicit",
+    "snapshot_path": "results/research/data_acquisition/recon_huron_pilot_20260720/licenses/huron_dataset_page_20260720.html",
+    "snapshot_sha256": "4ca092ac3936b571af412bbcc72a0f351c615ca5fd0ca25fd9f396dff73a0507",
+    "snapshot_match": "asserted_by_operator"
+  },
+  "operator": "swanchann",
+  "git": {
+    "commit": "2475574dc876cdfb9137660e57ab27254290d1b7",
+    "dirty": true
+  },
+  "registered_at_utc": "2026-07-20T08:41:31.774954+00:00",
+  "conversion_status": "not_started",
+  "prior_receipts_same_artifact": [
+    {
+      "path": "results/research/data_acquisition/recon_huron_pilot_20260720/receipts/huron_sacson_Dec-09-2022-bww8_00000010.json",
+      "receipt_sha256": "99b0a72e397c1d1f0577ba0abfcbd0d93c72ad4d68b3c7980a76d5c24d55e1d9",
+      "registry_sha256": "badc3b77e3aca10ff002b57e10515a8c2f829060a29fb6d8a1a26e75c576a141"
+    }
+  ]
+}

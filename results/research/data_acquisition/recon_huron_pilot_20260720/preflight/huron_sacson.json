@@ -1,0 +1,104 @@
+{
+  "schema_version": "0.1.0",
+  "gate_id": "huron_sacson-raw-dry-run-preflight",
+  "created_at_utc": "2026-07-20T08:44:54.780574+00:00",
+  "dataset_id": "huron_sacson",
+  "git": {
+    "branch": "agent/ubuntu-sim-handoff",
+    "commit": "2475574dc876cdfb9137660e57ab27254290d1b7",
+    "tracked_worktree_dirty": true,
+    "worktree_dirty_including_preserved_untracked": true
+  },
+  "preflight_script": {
+    "path": "scripts/research/data/preflight_recon_huron_raw.py",
+    "sha256": "2761695cae0dcbcb66a625e27973298705a6c140e038e019e84c4b8a3ace49f5"
+  },
+  "registry": {
+    "path": "/home/yifei/codespace/visualnav-transformer/后续研究内容/data/dataset_registry.json",
+    "sha256": "c1e974805327b6fc05a59928e5c693dce61309fbc5c818a1b1580cda795b20aa",
+    "expected_local_root": "nomad_dataset/sacson",
+    "raw_format": "ROS bags with compressed images",
+    "metric_waypoint_spacing_m_registry_record": 0.255
+  },
+  "input": {
+    "root": "/home/yifei/codespace/visualnav-transformer/nomad_dataset/huron_raw",
+    "scan_root": "/home/yifei/codespace/visualnav-transformer/nomad_dataset/huron_raw",
+    "checksum_mode": "sha256",
+    "candidate_count": 1,
+    "total_bytes": 11044659,
+    "candidates": [
+      {
+        "relative_path": "Dec-09-2022-bww8/00000010.bag",
+        "bytes": 11044659,
+        "mtime_ns": 1784532485956309311,
+        "planned_source_id": "Dec-09-2022-bww8_00000010",
+        "sha256": "71ac9844157bee7e90f9a6ab1d91af10ebad7e39073fd2885ccabc6d66034397"
+      }
+    ],
+    "duplicate_planned_source_ids": []
+  },
+  "receipt": {
+    "path": "/home/yifei/codespace/visualnav-transformer/results/research/data_acquisition/recon_huron_pilot_20260720/receipts/huron_sacson_Dec-09-2022-bww8_00000010_v2.json",
+    "present": true,
+    "schema_and_registry_binding_valid": true,
+    "license_snapshot_path": "/home/yifei/codespace/visualnav-transformer/results/research/data_acquisition/recon_huron_pilot_20260720/licenses/huron_dataset_page_20260720.html",
+    "license_snapshot_present": true,
+    "license_snapshot_hash_matches": true,
+    "artifact_checksum_reverified": true,
+    "errors": [],
+    "artifact_resolved_path": "/home/yifei/codespace/visualnav-transformer/nomad_dataset/huron_raw/Dec-09-2022-bww8/00000010.bag",
+    "artifact_actual_bytes": 11044659,
+    "artifact_actual_sha256": "71ac9844157bee7e90f9a6ab1d91af10ebad7e39073fd2885ccabc6d66034397",
+    "license_snapshot_sha256": "4ca092ac3936b571af412bbcc72a0f351c615ca5fd0ca25fd9f396dff73a0507"
+  },
+  "processor": {
+    "path": "train/process_bags.py",
+    "sha256": "ec01f1950a799eda2165e8293f7eea211c994fa3b81afe324ea640a5a0e556f6",
+    "config_path": "train/vint_train/process_data/process_bags_config.yaml",
+    "config_sha256": "f5b4be4aed960981658b5f6f0fd0af452b8bda2aa13ac9eac911085ac56c33e8",
+    "working_directory": "/home/yifei/codespace/visualnav-transformer/train",
+    "planned_command": [
+      "python",
+      "process_bags.py",
+      "--dataset-name",
+      "sacson",
+      "--input-dir",
+      "/home/yifei/codespace/visualnav-transformer/nomad_dataset/huron_raw",
+      "--output-dir",
+      "/home/yifei/codespace/visualnav-transformer/nomad_dataset/sacson"
+    ],
+    "executed": false
+  },
+  "output": {
+    "processed_root": "/home/yifei/codespace/visualnav-transformer/nomad_dataset/sacson",
+    "created_or_modified": false
+  },
+  "execution_counts": {
+    "downloads": 0,
+    "conversions": 0,
+    "model_forward": 0,
+    "backward": 0,
+    "optimizer_steps": 0,
+    "training": 0,
+    "evaluation": 0,
+    "simulation": 0
+  },
+  "gates": {
+    "input_root_present": true,
+    "expected_raw_layout_present": true,
+    "raw_candidates_present": true,
+    "planned_source_ids_unique": true,
+    "processor_present": true,
+    "processor_config_present_or_not_required": true,
+    "raw_artifact_receipt_schema_binding_valid": true,
+    "license_snapshot_hash_matches_receipt": true,
+    "receipt_artifact_checksum_reverified": true,
+    "raw_file_sha256_captured": true,
+    "processed_output_root_safe": true,
+    "conversion_execution_count_is_zero": true,
+    "model_training_evaluation_count_is_zero": true
+  },
+  "blocking_gates": [],
+  "passed": true,
+  "claim_boundary": "Dry-run inventory and conversion-command rendering only. Raw candidate presence and hashes do not validate payload semantics, physical scale, timestamps, session grouping, conversion correctness, or model behavior."
+}

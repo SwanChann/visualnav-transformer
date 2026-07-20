@@ -132,7 +132,7 @@ class ReconHuronRawPreflightTest(unittest.TestCase):
                     "artifact": {
                         "path": str(artifact),
                         "bytes": 3,
-                        "sha256": "a" * 64,
+                        "sha256": hashlib.sha256(artifact.read_bytes()).hexdigest(),
                     },
                     "source_url": "https://example.test/recon.h5",
                     "license": {
@@ -157,6 +157,7 @@ class ReconHuronRawPreflightTest(unittest.TestCase):
         )
         self.assertTrue(report["receipt"]["schema_and_registry_binding_valid"])
         self.assertTrue(report["receipt"]["license_snapshot_hash_matches"])
+        self.assertTrue(report["receipt"]["artifact_checksum_reverified"])
         self.assertTrue(report["passed"])
         self.assertFalse(report["output"]["created_or_modified"])
 

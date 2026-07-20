@@ -1,0 +1,119 @@
+{
+  "schema_version": "0.1.0",
+  "audit_id": "recon-huron-raw-pilot-acquisition-20260720",
+  "created_at_utc": "2026-07-20T08:51:33.555544+00:00",
+  "git": {
+    "branch": "agent/ubuntu-sim-handoff",
+    "commit": "2475574dc876cdfb9137660e57ab27254290d1b7",
+    "tracked_worktree_dirty": true
+  },
+  "registry": {
+    "path": "/home/yifei/codespace/visualnav-transformer/后续研究内容/data/dataset_registry.json",
+    "sha256": "c1e974805327b6fc05a59928e5c693dce61309fbc5c818a1b1580cda795b20aa"
+  },
+  "disk_budget": {
+    "authorized_gb_decimal": 350.0,
+    "authorized_bytes": 350000000000,
+    "payload_bytes_written": 53246384512,
+    "payload_gb_decimal": 53.246384512,
+    "fraction_used": 0.15213252717714285
+  },
+  "official_snapshots": [
+    {
+      "path": "results/research/data_acquisition/recon_huron_pilot_20260720/licenses/recon_dataset_page_20260720.html",
+      "bytes": 114226,
+      "sha256": "a08991604a3a86cecf26f4d5c96d8950e84d403c96f6771f915c09be757bfd98"
+    },
+    {
+      "path": "results/research/data_acquisition/recon_huron_pilot_20260720/licenses/recon_license_snapshot_20260720.md",
+      "bytes": 965,
+      "sha256": "17fee56c245257ab33b9bca4bfe04d43bffc43e9e84b58e8ff54b2e719532c48"
+    },
+    {
+      "path": "results/research/data_acquisition/recon_huron_pilot_20260720/licenses/huron_dataset_page_20260720.html",
+      "bytes": 146099,
+      "sha256": "4ca092ac3936b571af412bbcc72a0f351c615ca5fd0ca25fd9f396dff73a0507"
+    },
+    {
+      "path": "results/research/data_acquisition/recon_huron_pilot_20260720/licenses/huron_license_privacy_snapshot_20260720.md",
+      "bytes": 1185,
+      "sha256": "11c5ea2fdf0992167321472b455a67201dc431ea8143dbf770c1281c5a7eb234"
+    },
+    {
+      "path": "results/research/data_acquisition/recon_huron_pilot_20260720/source_metadata/huron_index_20260720.html",
+      "bytes": 7191,
+      "sha256": "3fad358754bd6f9d1f30bfb192ad09e1e81f2bd01de048f186ac803e33c858d7"
+    },
+    {
+      "path": "results/research/data_acquisition/recon_huron_pilot_20260720/source_metadata/recon_archive_headers_20260720.txt",
+      "bytes": 300,
+      "sha256": "715896f9bfe55d70a48a0e0ab27d71c1f1306ad003e5d1783a632a725f4fc3c7"
+    },
+    {
+      "path": "results/research/data_acquisition/recon_huron_pilot_20260720/source_metadata/huron_selected_bag_headers_20260720.txt",
+      "bytes": 236,
+      "sha256": "42af787be20b4198ab02038502ec9c21dd2b377d1e3ecf67c98ff1da55b96183"
+    }
+  ],
+  "recon": {
+    "archive_receipt": "results/research/data_acquisition/recon_huron_pilot_20260720/receipts/recon_recon_dataset_tar_gz_v2.json",
+    "archive_receipt_sha256": "19473954415d0f0ab03f5886f73d4c35af3e29fd39eccc0aceebe64af95d199a",
+    "archive_inventory": {
+      "path": "results/research/data_acquisition/recon_huron_pilot_20260720/source_metadata/recon_archive_members_20260720.txt",
+      "sha256": "f54c997b6b35c7c394bf9a793c07f8211e598ab1648d74323044332829bd8921",
+      "hdf5_member_count": 11836,
+      "hdf5_uncompressed_bytes": 76383437178
+    },
+    "selected_member_receipt": "results/research/data_acquisition/recon_huron_pilot_20260720/receipts/recon_selected_hdf5_member.json",
+    "selected_member_receipt_sha256": "1170b61ce1962513e5872b29f61e12b68f2fec08aeb361b37bf2df976c3d4cc2",
+    "selected_artifact": {
+      "path": "nomad_dataset/recon_raw/recon_release/jackal_2019-12-19-14-24-48_0_r00.hdf5",
+      "bytes": 143826,
+      "sha256": "d850e8cf3b6a3613d7fce54312f19109412edf816031791fdf0838febbcffbb6"
+    },
+    "preflight": "results/research/data_acquisition/recon_huron_pilot_20260720/preflight/recon.json",
+    "content_audit": "results/research/data_acquisition/recon_huron_pilot_20260720/content_audit/recon.json"
+  },
+  "huron_sacson": {
+    "artifact_receipt": "results/research/data_acquisition/recon_huron_pilot_20260720/receipts/huron_sacson_Dec-09-2022-bww8_00000010_v2.json",
+    "artifact_receipt_sha256": "0d735615cb5602aaf00f609d7cc924d4ad7dfc6387ec3f7d8d332c9f17fbf745",
+    "selected_artifact": {
+      "path": "nomad_dataset/huron_raw/Dec-09-2022-bww8/00000010.bag",
+      "bytes": 11044659,
+      "sha256": "71ac9844157bee7e90f9a6ab1d91af10ebad7e39073fd2885ccabc6d66034397"
+    },
+    "preflight": "results/research/data_acquisition/recon_huron_pilot_20260720/preflight/huron_sacson.json",
+    "content_audit": "results/research/data_acquisition/recon_huron_pilot_20260720/content_audit/huron_sacson.json"
+  },
+  "execution_counts": {
+    "official_artifact_downloads": 2,
+    "selected_raw_member_extractions": 1,
+    "semantic_conversions": 0,
+    "model_forward": 0,
+    "backward": 0,
+    "optimizer_steps": 0,
+    "training": 0,
+    "evaluation": 0,
+    "simulation": 0
+  },
+  "gates": {
+    "current_receipts_bind_current_registry": true,
+    "recon_receipt_artifact_reverified": true,
+    "huron_receipt_artifact_reverified": true,
+    "recon_raw_preflight_passed": true,
+    "huron_raw_preflight_passed": true,
+    "recon_content_audit_passed": true,
+    "huron_content_audit_passed": true,
+    "recon_member_lineage_matches_content_audit": true,
+    "write_budget_respected": true,
+    "no_semantic_conversion_or_model_execution": true
+  },
+  "blocking_gates": [],
+  "passed": true,
+  "remaining_blockers": [
+    "Semantic conversion of either pilot has not been authorized or executed.",
+    "Processed manifests, group-safe splits, dt/scale verification, and processor receipts do not exist yet.",
+    "These two raw pilots do not establish full-dataset completeness or a multi-dataset training result."
+  ],
+  "claim_boundary": "Official-page snapshot, raw-byte integrity, minimum content readability, and conversion readiness for one RECON HDF5 and one HuRoN bag only. No semantic conversion, model execution, training, evaluation, or simulation was performed."
+}

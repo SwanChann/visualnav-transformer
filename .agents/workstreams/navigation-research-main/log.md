@@ -1,5 +1,14 @@
 # Navigation Research Agent Log
 
+## 2026-07-20 — RECON/HuRoN minimum raw pilot acquisition
+
+- 按用户授权保存 RECON/HuRoN 官方数据页和许可/隐私快照；RECON 数据页明示 MIT/约 50 GB，HuRoN 页明示 MIT 与低分辨率隐私处理。
+- 下载 RECON 官方 archive 53,235,196,027 bytes，SHA-256 `65e32b99…`；完整 tar inventory 通过，共 11,836 个 HDF5 / 76,383,437,178 未压缩 bytes。仅保留内容验证通过的最小成员 143,826 bytes，SHA-256 `d850e8cf…`。
+- 从官方 HuRoN 目录选取 11,044,659-byte 最小 bag，SHA-256 `71ac9844…`；ROS1 index 可读，fisheye compressed image 和 odometry 各 198 条，图像解码和位姿 finite 检查通过。
+- 两份 current receipt 均绑定 2026-07-20 registry 与官方页快照；strict preflight 重新读取 artifact 本体并复核 bytes/SHA-256，两者无 blocker。receipt 工具支持 registry 演进时创建链接旧收据的新不可变版本，不覆盖历史文件。
+- 实际 raw payload 为 53.246385 GB，占 350 GB 上限 15.21%；原始数据目录已 Git ignore，不将 archive/bag/HDF5 纳入版本库。
+- 本轮仅下载两个官方 artifact 并提取一个 raw archive member；语义转换、model forward/backward、optimizer、训练、评测和仿真均为 0。`DATA-04` 仍等待隔离转换/manifest/split 的新授权。
+
 ## 2026-07-16 — RECON/HuRoN receipt preflight hardening
 
 - 最终静态边界审计发现 dry-run 对 receipt SHA 只检查长度，且没有拒绝模板或重新验证官方 source host / registry entry，可能把手填模板误作治理证据。

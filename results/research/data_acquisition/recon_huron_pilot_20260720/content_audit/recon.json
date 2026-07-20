@@ -1,0 +1,82 @@
+{
+  "schema_version": "0.1.0",
+  "audit_id": "recon-raw-pilot-content",
+  "created_at_utc": "2026-07-20T08:50:18.934222+00:00",
+  "dataset_id": "recon",
+  "artifact": {
+    "path": "/home/yifei/codespace/visualnav-transformer/nomad_dataset/recon_raw/recon_release/jackal_2019-12-19-14-24-48_0_r00.hdf5",
+    "bytes": 143826,
+    "sha256": "d850e8cf3b6a3613d7fce54312f19109412edf816031791fdf0838febbcffbb6"
+  },
+  "content": {
+    "required_nodes": [
+      "jackal/position",
+      "jackal/yaw",
+      "images/rgb_left"
+    ],
+    "missing_nodes": [],
+    "stream_shapes": {
+      "position": [
+        2,
+        3
+      ],
+      "yaw": [
+        2
+      ],
+      "rgb_left": [
+        2
+      ]
+    },
+    "stream_dtypes": {
+      "position": "float64",
+      "yaw": "float64",
+      "rgb_left": "|S28573"
+    },
+    "counts": {
+      "position": 2,
+      "yaw": 2,
+      "rgb_left": 2
+    },
+    "sample_indices": [
+      0,
+      1
+    ],
+    "decoded_images": [
+      {
+        "index": 0,
+        "format": "JPEG",
+        "mode": "RGB",
+        "size": [
+          640,
+          480
+        ],
+        "encoded_bytes": 28573
+      },
+      {
+        "index": 1,
+        "format": "JPEG",
+        "mode": "RGB",
+        "size": [
+          640,
+          480
+        ],
+        "encoded_bytes": 28296
+      }
+    ],
+    "finite_pose_samples": true,
+    "errors": [],
+    "passed": true
+  },
+  "execution_counts": {
+    "downloads": 0,
+    "conversions": 0,
+    "model_forward": 0,
+    "backward": 0,
+    "optimizer_steps": 0,
+    "training": 0,
+    "evaluation": 0,
+    "simulation": 0
+  },
+  "passed": true,
+  "claim_boundary": "Raw pilot content/readability audit only. It does not validate the full dataset, metric scale, collection-session completeness, conversion output, model behavior, training, evaluation, or simulation."
+}

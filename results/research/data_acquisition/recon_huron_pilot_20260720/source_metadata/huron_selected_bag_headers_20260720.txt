@@ -1,0 +1,10 @@
+HTTP/1.1 200 Connection established
+
+HTTP/2 200
+date: Mon, 20 Jul 2026 07:36:19 GMT
+server: Apache
+last-modified: Fri, 08 Dec 2023 22:29:54 GMT
+etag: "a88733-60c071f9bf222"
+accept-ranges: bytes
+content-length: 11044659
+vary: User-Agent

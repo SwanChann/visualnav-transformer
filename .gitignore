@@ -21,6 +21,12 @@ train/gnm_dataset/*
 /results/research/pretraining/train_step_gate_20260716/exact_resume_step2.pt
 # B0 checkpoints are local execution artifacts; JSON/Markdown receipts remain trackable.
 /results/research/pretraining/b0_go_stanford_v0.1/**/*.pt
+# Local dataset acquisition/conversion payloads. Small receipts and audits remain trackable.
+/nomad_dataset/_artifacts/recon_huron/
+/nomad_dataset/recon_raw/
+/nomad_dataset/huron_raw/
+/nomad_dataset/recon/
+/nomad_dataset/sacson/
 *.mp4
 *.gif
 

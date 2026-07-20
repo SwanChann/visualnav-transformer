@@ -87,6 +87,32 @@ class RegisterRawArtifactTest(unittest.TestCase):
         with self.assertRaises(FileExistsError):
             register(*args)
 
+    def test_registry_revision_creates_linked_receipt_without_overwrite(self):
+        first_registry = self._registry()
+        first_output = self.root / "receipt-v1.json"
+        register(
+            first_registry, "demo", self.artifact,
+            "https://example.test/pilot.bin", self.license,
+            "MIT", "tester", first_output,
+        )
+        payload = json.loads(first_registry.read_text(encoding="utf-8"))
+        payload["datasets"][0]["local_presence_status"] = "raw_pilot_present"
+        second_registry = self.root / "registry-v2.json"
+        second_registry.write_text(json.dumps(payload), encoding="utf-8")
+        second_output = self.root / "receipt-v2.json"
+        receipt = register(
+            second_registry, "demo", self.artifact,
+            "https://example.test/pilot.bin", self.license,
+            "MIT", "tester", second_output,
+        )
+        self.assertTrue(first_output.is_file())
+        self.assertTrue(second_output.is_file())
+        self.assertEqual(len(receipt["prior_receipts_same_artifact"]), 1)
+        self.assertEqual(
+            receipt["prior_receipts_same_artifact"][0]["path"],
+            first_output.as_posix(),
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

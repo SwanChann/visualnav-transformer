@@ -1,0 +1,38 @@
+{
+  "schema_version": "0.1.0",
+  "dataset_id": "recon",
+  "receipt_type": "raw_archive_member_extraction",
+  "created_at_utc": "2026-07-20T08:43:42.704399+00:00",
+  "operator": "swanchann",
+  "parent_archive_receipt": {
+    "path": "results/research/data_acquisition/recon_huron_pilot_20260720/receipts/recon_recon_dataset_tar_gz_v2.json",
+    "sha256": "19473954415d0f0ab03f5886f73d4c35af3e29fd39eccc0aceebe64af95d199a",
+    "archive": {
+      "path": "nomad_dataset/_artifacts/recon_huron/recon/recon_dataset.tar.gz",
+      "bytes": 53235196027,
+      "sha256": "65e32b9902bc9458b9a6da58257b53de8634261e41d256f0b840e7604988c299"
+    }
+  },
+  "archive_inventory": {
+    "path": "results/research/data_acquisition/recon_huron_pilot_20260720/source_metadata/recon_archive_members_20260720.txt",
+    "sha256": "f54c997b6b35c7c394bf9a793c07f8211e598ab1648d74323044332829bd8921"
+  },
+  "archive_member": "recon_release/jackal_2019-12-19-14-24-48_0_r00.hdf5",
+  "artifact": {
+    "path": "nomad_dataset/recon_raw/recon_release/jackal_2019-12-19-14-24-48_0_r00.hdf5",
+    "bytes": 143826,
+    "sha256": "d850e8cf3b6a3613d7fce54312f19109412edf816031791fdf0838febbcffbb6"
+  },
+  "extraction_status": "selected_raw_member_only",
+  "conversion_status": "not_started",
+  "execution_counts": {
+    "semantic_conversions": 0,
+    "model_forward": 0,
+    "backward": 0,
+    "optimizer_steps": 0,
+    "training": 0,
+    "evaluation": 0,
+    "simulation": 0
+  },
+  "claim_boundary": "Lineage and byte-integrity record for one raw archive member only. The parent archive identity is inherited from its immutable receipt; this record does not claim full-dataset extraction or semantic conversion."
+}

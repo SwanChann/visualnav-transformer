@@ -147,6 +147,7 @@ def discover_candidates(
 def validate_receipt(
     receipt_path: Path | None,
     license_snapshot_path: Path | None,
+    repo_root: Path,
     dataset_id: str,
     registry_sha256: str,
     registry_entry: Mapping[str, Any],
@@ -223,6 +224,26 @@ def validate_receipt(
             result["errors"].append(f"receipt field check failed: {name}")
     result["schema_and_registry_binding_valid"] = all(checks.values())
 
+    artifact_path_value = str(artifact.get("path", "")).strip()
+    if artifact_path_value:
+        artifact_path = Path(artifact_path_value)
+        if not artifact_path.is_absolute():
+            artifact_path = repo_root / artifact_path
+        result["artifact_resolved_path"] = str(artifact_path)
+        if artifact_path.is_file():
+            actual_bytes = artifact_path.stat().st_size
+            actual_sha256 = sha256_file(artifact_path)
+            result["artifact_actual_bytes"] = actual_bytes
+            result["artifact_actual_sha256"] = actual_sha256
+            result["artifact_checksum_reverified"] = (
+                actual_bytes == artifact.get("bytes")
+                and actual_sha256 == artifact.get("sha256")
+            )
+            if not result["artifact_checksum_reverified"]:
+                result["errors"].append("raw artifact checksum or byte count mismatch")
+        else:
+            result["errors"].append("receipt raw artifact is missing locally")
+
     if result["license_snapshot_present"]:
         if license_snapshot_path.stat().st_size == 0:
             result["errors"].append("license snapshot is empty")
@@ -273,6 +294,7 @@ def build_report(
     receipt = validate_receipt(
         receipt_path,
         license_snapshot_path,
+        repo_root,
         dataset_id,
         registry_sha256,
         entry,
@@ -300,6 +322,9 @@ def build_report(
         ),
         "license_snapshot_hash_matches_receipt": (
             receipt["license_snapshot_hash_matches"]
+        ),
+        "receipt_artifact_checksum_reverified": (
+            receipt["artifact_checksum_reverified"]
         ),
         "raw_file_sha256_captured": (
             bool(candidates)

@@ -55,6 +55,17 @@ materialized。后续获取前使用 `templates/recon_huron/` 的 receipt/checks
 snapshot 模板，并用 `scripts/research/data/preflight_recon_huron_raw.py` 生成只读 raw
 inventory 和计划转换命令。该 dry-run 不调用转换器；任何下载或转换仍需另行授权。
 
+2026-07-20 的获取轮已闭合 raw pilot：RECON 官方 archive 为
+53,235,196,027 bytes，完整目录含 11,836 个 HDF5，仅保留已解码验证的
+143,826-byte 最小成员；HuRoN 保留 11,044,659-byte bag，所需 fisheye
+compressed image 与 odometry topic 均可读。两者的官方页快照、receipt、SHA-256、
+raw 内容审计与 strict preflight 通过，合计 raw payload 53.246385 GB，低于
+350 GB 授权上限。权威证据为
+`results/research/data_acquisition/recon_huron_pilot_20260720/audit.{json,md}`。
+
+该结果仍不满足 Gate A：没有执行 HDF5/bag 语义转换，也没有 processed
+trajectory、dt/米制尺度验证、group-safe manifest/split 或处理器 receipt。
+
 ## Gate A
 
 只有同时满足以下条件，才把下一篇论文继续定位为 multi-dataset benchmark：

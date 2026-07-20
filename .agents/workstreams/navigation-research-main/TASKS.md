@@ -61,6 +61,11 @@ registry entry、官方 HTTPS host、license name/status、operator 与 snapshot
 同时匹配；模板或非官方 URL 会被拒绝。artifact 本体 checksum 是否重新读取仍被单独
 记录，不能由 receipt schema 通过来替代。
 
+2026-07-20 的 raw acquisition gate 已通过：一个 RECON HDF5 与一个 HuRoN
+bag 已按官方来源、许可快照、receipt/checksum、内容可读性和严格 preflight
+审计，总 payload 53.246385 GB / 350 GB。`DATA-04` 仍为 `blocked_external`，
+因为尚需新授权执行隔离转换、dt/尺度验证、processed manifest 和 group-safe split。
+
 `IMAGE-FORWARD` gate 已在 GPU 0 通过：随机初始化且不下载权重的共享
 EfficientNet-B0 image policy 共 8513117 个可训练参数，合成数据测试与真实 batch 的
 H0/H1 inference-only 前向均通过。当前可以实现 train loop，但 loss/train-step、

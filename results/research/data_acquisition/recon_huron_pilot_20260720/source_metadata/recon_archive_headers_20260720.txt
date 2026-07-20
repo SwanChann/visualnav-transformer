@@ -1,0 +1,12 @@
+HTTP/1.1 200 Connection established
+
+HTTP/2 200
+date: Mon, 20 Jul 2026 07:27:52 GMT
+server: Apache
+last-modified: Fri, 29 Oct 2021 21:51:06 GMT
+etag: "c6510a07b-5cf84d30660ef"
+accept-ranges: bytes
+content-length: 53235196027
+vary: User-Agent
+content-type: application/x-gzip
+content-encoding: x-gzip

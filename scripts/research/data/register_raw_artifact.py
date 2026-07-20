@@ -58,7 +58,15 @@ def git_provenance(cwd: Path) -> dict:
     return {"commit": commit if COMMIT_RE.fullmatch(commit) else None, "dirty": dirty}
 
 
-def check_existing_receipts(directory: Path, dataset_id: str, artifact_sha: str, registry_sha: str) -> None:
+def find_existing_receipts(directory: Path, dataset_id: str, artifact_sha: str) -> list[dict]:
+    """Return immutable historical receipts for the same artifact.
+
+    Dataset registry metadata is expected to evolve as local acquisition state is
+    recorded.  A new, separately named receipt may therefore bind the same bytes
+    to the new registry revision; prior receipts remain untouched and are linked
+    from the new receipt instead of being treated as an error.
+    """
+    matches = []
     for candidate in directory.glob("*.json") if directory.is_dir() else []:
         try:
             receipt = json.loads(candidate.read_text(encoding="utf-8"))
@@ -68,10 +76,14 @@ def check_existing_receipts(directory: Path, dataset_id: str, artifact_sha: str,
             continue
         if receipt.get("artifact", {}).get("sha256") != artifact_sha:
             continue
-        if receipt.get("registry_sha256") != registry_sha:
-            raise ValueError(
-                f"artifact already registered under a different registry hash: {candidate}"
-            )
+        matches.append(
+            {
+                "path": candidate.as_posix(),
+                "receipt_sha256": sha256_file(candidate),
+                "registry_sha256": receipt.get("registry_sha256"),
+            }
+        )
+    return sorted(matches, key=lambda item: item["path"])
 
 
 def register(
@@ -109,7 +121,7 @@ def register(
         raise FileExistsError(f"immutable receipt already exists: {output_path}")
     registry_sha = sha256_file(registry_path)
     artifact_sha = sha256_file(artifact_path)
-    check_existing_receipts(output_path.parent, dataset_id, artifact_sha, registry_sha)
+    prior_receipts = find_existing_receipts(output_path.parent, dataset_id, artifact_sha)
     receipt = {
         "schema_version": "0.1.0",
         "dataset_id": dataset_id,
@@ -134,6 +146,7 @@ def register(
         "git": git_provenance(registry_path.parent),
         "registered_at_utc": datetime.now(timezone.utc).isoformat(),
         "conversion_status": "not_started",
+        "prior_receipts_same_artifact": prior_receipts,
     }
     output_path.parent.mkdir(parents=True, exist_ok=True)
     temporary = output_path.with_suffix(output_path.suffix + ".tmp")
