@@ -86,7 +86,7 @@ tasks:
     objective: Materialize legally usable RECON and HuRoN pilots alongside Go Stanford.
     acceptance: Each domain has artifact receipt, license snapshot, manifest, and zero-leakage group-safe split.
     falsification: Fewer than three auditable processed domains forbids any cross-dataset claim.
-    evidence: [results/research/data_acquisition/recon_huron_pilot_20260720/audit.json]
+    evidence: [results/research/data_acquisition/recon_huron_pilot_20260720/audit.json, results/research/data_conversion/recon_huron_pilot_20260720/audit.json]
   - id: B0-SMOKE
     stage: B0
     status: blocked_external

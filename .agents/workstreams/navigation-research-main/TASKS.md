@@ -66,6 +66,12 @@ bag 已按官方来源、许可快照、receipt/checksum、内容可读性和严
 审计，总 payload 53.246385 GB / 350 GB。`DATA-04` 仍为 `blocked_external`，
 因为尚需新授权执行隔离转换、dt/尺度验证、processed manifest 和 group-safe split。
 
+后续 CONVERSION-PILOT 已闭合转换完整性：RECON 14 帧 / 1 canonical window、
+HuRoN 66 帧 / 53 windows，processed tree 与尺度审计通过；2 行 / 2 groups
+的 train-only manifest 泄漏审计 0 error / 0 warning。`DATA-04` 仍保持
+`blocked_external`：RECON 无逐帧 timestamp，两数据集的 collection policy/version 都未编码，
+且 pilot 无评测 holdout。这些不能由转换代码或默认值替代。
+
 `IMAGE-FORWARD` gate 已在 GPU 0 通过：随机初始化且不下载权重的共享
 EfficientNet-B0 image policy 共 8513117 个可训练参数，合成数据测试与真实 batch 的
 H0/H1 inference-only 前向均通过。当前可以实现 train loop，但 loss/train-step、

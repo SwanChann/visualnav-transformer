@@ -123,9 +123,17 @@ def build_rows(
     split_root: Path | None,
     registry_entry: dict[str, Any],
     processor_version: str,
+    nominal_dt_s: float | None = None,
+    metric_waypoint_spacing_m: float | None = None,
 ) -> list[dict[str, Any]]:
     if not dataset_root.is_dir():
         raise ManifestError(f"Dataset root does not exist: {dataset_root}")
+    for name, value in (
+        ("nominal_dt_s", nominal_dt_s),
+        ("metric_waypoint_spacing_m", metric_waypoint_spacing_m),
+    ):
+        if value is not None and value <= 0:
+            raise ManifestError(f"{name} override must be positive")
     splits = load_splits(split_root) if split_root is not None else {}
     rows: list[dict[str, Any]] = []
     for trajectory_dir in sorted(path for path in dataset_root.iterdir() if path.is_dir()):
@@ -147,8 +155,16 @@ def build_rows(
                 "environment": ";".join(registry_entry.get("environment", [])),
                 "num_frames": count_frames(trajectory_dir),
                 "has_traj_data": meta_path.is_file(),
-                "nominal_dt_s": registry_entry.get("nominal_dt_s") or "NA",
-                "metric_waypoint_spacing_m": registry_entry.get("metric_waypoint_spacing_m", "NA"),
+                "nominal_dt_s": (
+                    nominal_dt_s
+                    if nominal_dt_s is not None
+                    else registry_entry.get("nominal_dt_s") or "NA"
+                ),
+                "metric_waypoint_spacing_m": (
+                    metric_waypoint_spacing_m
+                    if metric_waypoint_spacing_m is not None
+                    else registry_entry.get("metric_waypoint_spacing_m", "NA")
+                ),
                 "position_unit": "meter",
                 "yaw_unit": "radian",
                 "license_id": registry_entry.get("license_spdx_or_name", "UNKNOWN"),
@@ -172,7 +188,7 @@ def write_manifest(path: Path, rows: list[dict[str, Any]], merge_existing: bool)
     combined.sort(key=lambda row: (row["dataset_id"], row["trajectory_id"]))
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=FIELDS)
+        writer = csv.DictWriter(handle, fieldnames=FIELDS, lineterminator="\n")
         writer.writeheader()
         writer.writerows(combined)
 
@@ -192,6 +208,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--registry", type=Path, required=True)
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--processor-version", default="preexisting_unknown")
+    parser.add_argument(
+        "--nominal-dt-s",
+        type=float,
+        help="pilot-specific dt override; provenance must live in the conversion receipt",
+    )
+    parser.add_argument(
+        "--metric-waypoint-spacing-m",
+        type=float,
+        help="pilot-specific metric spacing override; provenance must live in the conversion receipt",
+    )
     parser.add_argument("--merge-existing", action="store_true")
     return parser.parse_args()
 
@@ -206,6 +232,8 @@ def main() -> int:
             args.split_root,
             entry,
             args.processor_version,
+            args.nominal_dt_s,
+            args.metric_waypoint_spacing_m,
         )
         write_manifest(args.out, rows, args.merge_existing)
     except ManifestError as exc:

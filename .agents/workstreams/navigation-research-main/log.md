@@ -1,5 +1,15 @@
 # Navigation Research Agent Log
 
+## 2026-07-20 — RECON/HuRoN isolated CONVERSION-PILOT
+
+- 用户授权 10 GB 阶段上限、隔离转换、manifest/split 和小型证据 push，继续禁止模型执行、训练、评测与仿真。
+- 原 143,826-byte RECON HDF5 仅 2 帧，改正为“最小可解码”而不冒充 canonical-ready。从已校验 archive 完整小文件前缀中读取 1,711 个 HDF5，0 error；选中全局更小成员中第一个满足 14 帧的 934,600-byte 文件，SHA-256 `7cfb51e5…`。
+- 新增单 artifact、拒绝覆盖、原始 receipt 字节绑定的 converter。RECON 输出 14 帧 / 1 window，dt 0.253781 s 为运动学估计，中位步距 0.243780 m；HuRoN 4 Hz 同步 67 点、保留 66 帧 / 53 windows，record-time dt 0.287254 s，中位步距 0.203050 m。
+- 独立 processed audit 重算 tree SHA、解码全部 RGB、读取 position/yaw、核对连续帧、window、session、dt/尺度和执行边界，两个 conversion integrity 均通过。
+- 生成 2 行 / 2 leakage groups 的 train-only pilot manifest，group-safe audit 0 error / 0 warning。该 split 只用于接线计数，没有评测 holdout。
+- 保守峰值磁盘上界 1.275230 GB / 10 GB；临时候选已清理，仅保留 2 个 raw RECON HDF5、一个 HuRoN bag 与两个 processed pilot。
+- promotion 明确为 False：RECON 无逐帧 timestamp，两个 artifact 均无 collection policy/version。本轮 semantic conversion=2，model/backward/optimizer/training/evaluation/simulation=0。
+
 ## 2026-07-20 — RECON/HuRoN minimum raw pilot acquisition
 
 - 按用户授权保存 RECON/HuRoN 官方数据页和许可/隐私快照；RECON 数据页明示 MIT/约 50 GB，HuRoN 页明示 MIT 与低分辨率隐私处理。

@@ -1,0 +1,154 @@
+{
+  "schema_version": "0.1.0",
+  "audit_id": "recon-huron-conversion-pilot-20260720",
+  "created_at_utc": "2026-07-20T09:48:01.378045+00:00",
+  "git": {
+    "branch": "agent/ubuntu-sim-handoff",
+    "commit": "4ce5eff57a47c6c92df259d34f809e0673c1f9af",
+    "tracked_dirty": true
+  },
+  "registry": {
+    "path": "/home/yifei/codespace/visualnav-transformer/后续研究内容/data/dataset_registry.json",
+    "sha256": "7e1c7988c30ed4e5c4851342c006722dccd0ab7c4dfa4971e3d740b708bb54eb"
+  },
+  "disk_budget": {
+    "authorized_bytes": 10000000000,
+    "permanent_data_bytes": 1635369,
+    "evidence_bytes_before_summary": 500259,
+    "complete_prefix_count": 1711,
+    "complete_prefix_bytes": 978477735,
+    "exploratory_scans": {
+      "350000": {
+        "count": 100,
+        "bytes": 37366325
+      },
+      "700000": {
+        "count": 100,
+        "bytes": 72411677
+      },
+      "850000": {
+        "count": 100,
+        "bytes": 87240821
+      },
+      "950000": {
+        "count": 100,
+        "bytes": 97597893
+      }
+    },
+    "temporary_candidate_bytes_upper_bound": 1273094451,
+    "peak_stage_bytes_upper_bound": 1275230079,
+    "fraction_used_upper_bound": 0.1275230079
+  },
+  "selection": {
+    "report": "results/research/data_conversion/recon_huron_pilot_20260720/source_metadata/recon_candidate_selection.json",
+    "candidate_count": 1711,
+    "eligible_count": 2,
+    "selected": {
+      "relative_path": "recon_release/jackal_2019-09-17-16-09-02_3_r02.hdf5",
+      "bytes": 934600,
+      "inventory_bytes": 934600,
+      "counts": [
+        14,
+        14,
+        14
+      ],
+      "missing_nodes": [],
+      "eligible": true,
+      "sha256": "7cfb51e51aa5c3ea8310a783a8856f903cf714f99bbfac4e9b3fa78137438971"
+    }
+  },
+  "recon": {
+    "conversion_receipt": "results/research/data_conversion/recon_huron_pilot_20260720/receipts/recon_conversion.json",
+    "processed_audit": "results/research/data_conversion/recon_huron_pilot_20260720/processed_audit/recon.json",
+    "result": {
+      "trajectory_count": 1,
+      "trajectory_ids": [
+        "jackal_2019-09-17-16-09-02_3_r02"
+      ],
+      "frame_count": 14,
+      "canonical_window_count": 1,
+      "nominal_dt_s": 0.2537814255429789,
+      "nominal_dt_status": "kinematic_estimate_not_timestamp_validated",
+      "metric_waypoint_spacing_m_observed": 0.2437799913341394,
+      "policy_metadata_status": "not_present_in_selected_hdf5"
+    },
+    "promotion_ready": false
+  },
+  "huron_sacson": {
+    "conversion_receipt": "results/research/data_conversion/recon_huron_pilot_20260720/receipts/huron_sacson_conversion.json",
+    "processed_audit": "results/research/data_conversion/recon_huron_pilot_20260720/processed_audit/huron_sacson.json",
+    "result": {
+      "trajectory_count": 1,
+      "trajectory_ids": [
+        "Dec-09-2022-bww8_00000010_0"
+      ],
+      "synchronized_frame_count_before_filter": 67,
+      "frame_count": 66,
+      "canonical_window_count": 53,
+      "nominal_dt_s": 0.28725385665893555,
+      "nominal_dt_status": "measured_from_rosbag_record_time_after_sampling",
+      "metric_waypoint_spacing_m_observed": 0.20304962050501574,
+      "policy_metadata_status": "not_encoded_in_selected_bag"
+    },
+    "promotion_ready": false
+  },
+  "manifest": {
+    "path": "results/research/data_conversion/recon_huron_pilot_20260720/manifest/grouped_train_only.csv",
+    "audit": "results/research/data_conversion/recon_huron_pilot_20260720/manifest/audit.json",
+    "row_count": 2,
+    "split_counts": {
+      "train": 2
+    },
+    "note": "Pilot-only train assignment; no evaluation holdout is claimed or used."
+  },
+  "current_raw_receipts": [
+    {
+      "path": "results/research/data_conversion/recon_huron_pilot_20260720/receipts/recon_recon_dataset_tar_gz_v3.json",
+      "sha256": "b75e1b64fd1f3dfd7a55e4e2f28efebc1c71e990ad9f396bce70997057e6cff7",
+      "registry_sha256": "7e1c7988c30ed4e5c4851342c006722dccd0ab7c4dfa4971e3d740b708bb54eb",
+      "artifact": {
+        "path": "nomad_dataset/_artifacts/recon_huron/recon/recon_dataset.tar.gz",
+        "bytes": 53235196027,
+        "sha256": "65e32b9902bc9458b9a6da58257b53de8634261e41d256f0b840e7604988c299"
+      }
+    },
+    {
+      "path": "results/research/data_conversion/recon_huron_pilot_20260720/receipts/huron_sacson_Dec-09-2022-bww8_00000010_v3.json",
+      "sha256": "b86024c697ca875287e6f6e09358ac0499d29445694035479ecb1acb05669b25",
+      "registry_sha256": "7e1c7988c30ed4e5c4851342c006722dccd0ab7c4dfa4971e3d740b708bb54eb",
+      "artifact": {
+        "path": "nomad_dataset/huron_raw/Dec-09-2022-bww8/00000010.bag",
+        "bytes": 11044659,
+        "sha256": "71ac9844157bee7e90f9a6ab1d91af10ebad7e39073fd2885ccabc6d66034397"
+      }
+    }
+  ],
+  "execution_counts": {
+    "semantic_conversions": 2,
+    "model_forward": 0,
+    "backward": 0,
+    "optimizer_steps": 0,
+    "training": 0,
+    "evaluation": 0,
+    "simulation": 0
+  },
+  "gates": {
+    "recon_complete_prefix_selection_passed": true,
+    "recon_conversion_integrity_passed": true,
+    "huron_conversion_integrity_passed": true,
+    "group_safe_manifest_audit_passed": true,
+    "manifest_is_train_only_pilot": true,
+    "current_raw_receipts_bind_current_registry": true,
+    "postconversion_raw_revalidation_has_only_expected_output_root_blocker": true,
+    "stage_disk_cap_respected": true,
+    "no_model_training_evaluation_or_simulation": true
+  },
+  "blocking_gates": [],
+  "conversion_pilot_passed": true,
+  "promotion_blockers": [
+    "collection policy/version metadata is not encoded in the selected raw artifact",
+    "per-frame timestamps are absent from the selected RECON HDF5; dt is kinematically inferred"
+  ],
+  "promotion_ready": false,
+  "claim_boundary": "Two isolated processed pilots, integrity checks, and a train-only leakage-safe manifest. RECON dt remains inferred because per-frame timestamps are absent; collection policy/version metadata is absent. No model execution, training, evaluation, or simulation was performed."
+}

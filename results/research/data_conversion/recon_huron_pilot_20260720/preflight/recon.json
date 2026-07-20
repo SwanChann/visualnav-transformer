@@ -1,0 +1,111 @@
+{
+  "schema_version": "0.1.0",
+  "gate_id": "recon-raw-dry-run-preflight",
+  "created_at_utc": "2026-07-20T09:45:36.278101+00:00",
+  "dataset_id": "recon",
+  "git": {
+    "branch": "agent/ubuntu-sim-handoff",
+    "commit": "4ce5eff57a47c6c92df259d34f809e0673c1f9af",
+    "tracked_worktree_dirty": true,
+    "worktree_dirty_including_preserved_untracked": true
+  },
+  "preflight_script": {
+    "path": "scripts/research/data/preflight_recon_huron_raw.py",
+    "sha256": "2761695cae0dcbcb66a625e27973298705a6c140e038e019e84c4b8a3ace49f5"
+  },
+  "registry": {
+    "path": "/home/yifei/codespace/visualnav-transformer/后续研究内容/data/dataset_registry.json",
+    "sha256": "7e1c7988c30ed4e5c4851342c006722dccd0ab7c4dfa4971e3d740b708bb54eb",
+    "expected_local_root": "nomad_dataset/recon",
+    "raw_format": "HDF5",
+    "metric_waypoint_spacing_m_registry_record": 0.25
+  },
+  "input": {
+    "root": "/home/yifei/codespace/visualnav-transformer/nomad_dataset/recon_raw",
+    "scan_root": "/home/yifei/codespace/visualnav-transformer/nomad_dataset/recon_raw/recon_release",
+    "checksum_mode": "sha256",
+    "candidate_count": 2,
+    "total_bytes": 1078426,
+    "candidates": [
+      {
+        "relative_path": "recon_release/jackal_2019-09-17-16-09-02_3_r02.hdf5",
+        "bytes": 934600,
+        "mtime_ns": 1635532057000000000,
+        "planned_source_id": "jackal_2019-09-17-16-09-02_3_r02",
+        "sha256": "7cfb51e51aa5c3ea8310a783a8856f903cf714f99bbfac4e9b3fa78137438971"
+      },
+      {
+        "relative_path": "recon_release/jackal_2019-12-19-14-24-48_0_r00.hdf5",
+        "bytes": 143826,
+        "mtime_ns": 1635532178000000000,
+        "planned_source_id": "jackal_2019-12-19-14-24-48_0_r00",
+        "sha256": "d850e8cf3b6a3613d7fce54312f19109412edf816031791fdf0838febbcffbb6"
+      }
+    ],
+    "duplicate_planned_source_ids": []
+  },
+  "receipt": {
+    "path": "/home/yifei/codespace/visualnav-transformer/results/research/data_conversion/recon_huron_pilot_20260720/receipts/recon_recon_dataset_tar_gz_v3.json",
+    "present": true,
+    "schema_and_registry_binding_valid": true,
+    "license_snapshot_path": "/home/yifei/codespace/visualnav-transformer/results/research/data_acquisition/recon_huron_pilot_20260720/licenses/recon_dataset_page_20260720.html",
+    "license_snapshot_present": true,
+    "license_snapshot_hash_matches": true,
+    "artifact_checksum_reverified": true,
+    "errors": [],
+    "artifact_resolved_path": "/home/yifei/codespace/visualnav-transformer/nomad_dataset/_artifacts/recon_huron/recon/recon_dataset.tar.gz",
+    "artifact_actual_bytes": 53235196027,
+    "artifact_actual_sha256": "65e32b9902bc9458b9a6da58257b53de8634261e41d256f0b840e7604988c299",
+    "license_snapshot_sha256": "a08991604a3a86cecf26f4d5c96d8950e84d403c96f6771f915c09be757bfd98"
+  },
+  "processor": {
+    "path": "train/process_recon.py",
+    "sha256": "3e254b7e0c7658ffc2665a95c5f9524e7e5dbcd582e1b9d21de6d73a2ba34c4e",
+    "config_path": null,
+    "config_sha256": null,
+    "working_directory": "/home/yifei/codespace/visualnav-transformer/train",
+    "planned_command": [
+      "python",
+      "process_recon.py",
+      "--input-dir",
+      "/home/yifei/codespace/visualnav-transformer/nomad_dataset/recon_raw",
+      "--output-dir",
+      "/home/yifei/codespace/visualnav-transformer/nomad_dataset/recon"
+    ],
+    "executed": false
+  },
+  "output": {
+    "processed_root": "/home/yifei/codespace/visualnav-transformer/nomad_dataset/recon",
+    "created_or_modified": false
+  },
+  "execution_counts": {
+    "downloads": 0,
+    "conversions": 0,
+    "model_forward": 0,
+    "backward": 0,
+    "optimizer_steps": 0,
+    "training": 0,
+    "evaluation": 0,
+    "simulation": 0
+  },
+  "gates": {
+    "input_root_present": true,
+    "expected_raw_layout_present": true,
+    "raw_candidates_present": true,
+    "planned_source_ids_unique": true,
+    "processor_present": true,
+    "processor_config_present_or_not_required": true,
+    "raw_artifact_receipt_schema_binding_valid": true,
+    "license_snapshot_hash_matches_receipt": true,
+    "receipt_artifact_checksum_reverified": true,
+    "raw_file_sha256_captured": true,
+    "processed_output_root_safe": false,
+    "conversion_execution_count_is_zero": true,
+    "model_training_evaluation_count_is_zero": true
+  },
+  "blocking_gates": [
+    "processed_output_root_safe"
+  ],
+  "passed": false,
+  "claim_boundary": "Dry-run inventory and conversion-command rendering only. Raw candidate presence and hashes do not validate payload semantics, physical scale, timestamps, session grouping, conversion correctness, or model behavior."
+}

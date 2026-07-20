@@ -115,9 +115,13 @@ class NavDataContractsTest(unittest.TestCase):
                 None,
                 self.registry()["demo"],
                 "test-v1",
+                nominal_dt_s=0.3,
+                metric_waypoint_spacing_m=0.25,
             )
             self.assertEqual(rows[0]["split"], "unassigned")
             self.assertEqual(rows[0]["source_session"], "session_0")
+            self.assertEqual(rows[0]["nominal_dt_s"], 0.3)
+            self.assertEqual(rows[0]["metric_waypoint_spacing_m"], 0.25)
             report = audit.audit_rows(rows, {"recon": self.registry()["demo"]}, False)
             codes = {item["code"] for item in report["errors"]}
             self.assertIn("invalid_or_unassigned_split", codes)

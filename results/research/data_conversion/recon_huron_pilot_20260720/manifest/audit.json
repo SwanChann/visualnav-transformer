@@ -1,0 +1,18 @@
+{
+  "manifest_version": "0.1.0",
+  "row_count": 2,
+  "dataset_counts": {
+    "huron_sacson": 1,
+    "recon": 1
+  },
+  "split_counts": {
+    "train": 2
+  },
+  "error_count": 0,
+  "warning_count": 0,
+  "error_occurrence_count": 0,
+  "warning_occurrence_count": 0,
+  "errors": [],
+  "warnings": [],
+  "passed": true
+}

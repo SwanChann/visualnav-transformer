@@ -1,0 +1,100 @@
+{
+  "schema_version": "0.1.0",
+  "audit_id": "recon-converted-pilot",
+  "dataset_id": "recon",
+  "dataset_root": "/home/yifei/codespace/visualnav-transformer/nomad_dataset/recon",
+  "conversion_receipt": {
+    "path": "/home/yifei/codespace/visualnav-transformer/results/research/data_conversion/recon_huron_pilot_20260720/receipts/recon_conversion.json",
+    "sha256": "48ce5eb3c2c698cc7beccd90297e03d546e1e04f3305ddd7fbd2afca1da0a6d4"
+  },
+  "registry": {
+    "path": "/home/yifei/codespace/visualnav-transformer/后续研究内容/data/dataset_registry.json",
+    "metric_waypoint_spacing_m": 0.25
+  },
+  "output": {
+    "bytes": 382802,
+    "tree_sha256": "1634bbdb5ee8653728318408f02242682e9660a11e68d8e7dd55c69c23ae05be",
+    "trajectory_count": 1,
+    "frame_count": 14,
+    "canonical_window_count": 1
+  },
+  "timing": {
+    "per_frame_timestamp_validated": false,
+    "nominal_dt_s": 0.2537814255429789,
+    "status": "kinematic_estimate_not_timestamp_validated"
+  },
+  "scale": {
+    "registry_metric_waypoint_spacing_m": 0.25,
+    "observed_median_step_m": 0.2437799913341394,
+    "relative_error": 0.024880034663442352
+  },
+  "policy_metadata_available": false,
+  "source_sessions": [
+    "jackal_2019-09-17-16-09-02_3_r02"
+  ],
+  "trajectories": [
+    {
+      "trajectory_id": "jackal_2019-09-17-16-09-02_3_r02",
+      "frame_count": 14,
+      "canonical_window_count": 1,
+      "image_shapes": [
+        [
+          "RGB",
+          640,
+          480
+        ]
+      ],
+      "nominal_dt_s": 0.2537814255429789,
+      "nominal_dt_status": "kinematic_estimate_not_timestamp_validated",
+      "timestamp": {
+        "per_frame_timestamp_present": false,
+        "status": "not_present_in_selected_hdf5"
+      },
+      "policy_metadata": {
+        "rollout_number": 2,
+        "source_bag_names": [
+          "/media/gkahn/jackalHugeHDD/09-17-2019/jackal_2019-09-17-16-09-02_3.bag"
+        ],
+        "collection_policy_version": null,
+        "status": "not_present_in_selected_hdf5"
+      },
+      "spatial": {
+        "step_count": 13,
+        "median_step_m": 0.2437799913341394,
+        "mean_step_m": 0.2374810751342131,
+        "min_step_m": 0.10848519529135073,
+        "max_step_m": 0.2831684067835231,
+        "path_length_m": 3.0872539767447704
+      },
+      "source_session": "jackal_2019-09-17-16-09-02_3_r02",
+      "errors": [],
+      "passed": true
+    }
+  ],
+  "gates": {
+    "conversion_receipt_output_root_matches": true,
+    "conversion_receipt_tree_sha256_matches": true,
+    "all_trajectories_content_valid": true,
+    "canonical_windows_present": true,
+    "source_session_identity_valid": true,
+    "metric_spacing_within_50pct_of_registry_record": true,
+    "execution_boundary_preserved": true
+  },
+  "blocking_gates": [],
+  "passed": true,
+  "promotion_blockers": [
+    "per-frame timestamps are absent from the selected RECON HDF5; dt is kinematically inferred",
+    "collection policy/version metadata is not encoded in the selected raw artifact"
+  ],
+  "promotion_ready": false,
+  "execution_counts": {
+    "raw_artifact_conversions": 1,
+    "model_forward": 0,
+    "backward": 0,
+    "optimizer_steps": 0,
+    "training": 0,
+    "evaluation": 0,
+    "simulation": 0
+  },
+  "claim_boundary": "Independent processed-pilot integrity and provenance audit only. A passing conversion gate does not erase explicitly listed timestamp/policy blockers or establish model, training, evaluation, or simulation results."
+}

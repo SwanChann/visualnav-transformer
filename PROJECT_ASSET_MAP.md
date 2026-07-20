@@ -16,7 +16,7 @@
 | TinyNavBrain IMAGE-FORWARD | GPU 0 inference-only 通过；未 backward/训练 | `scripts/research/models/tinynavbrain_image_policy.py`、`results/research/data_pilot/go_stanford_live_20260715/image_forward_readiness.md` |
 | TinyNavBrain TRAIN-STEP | 两步集成与 exact-resume 通过；不是 B0 | `scripts/research/pretraining/train_step_runtime.py`、`results/research/pretraining/train_step_gate_20260716/readiness.md` |
 | TinyNavBrain Go Stanford B0 | H0/H1 各 200-step plumbing smoke 与 exact-resume 通过；无评测/效果主张 | `results/research/pretraining/b0_go_stanford_v0.1/b0_audit.md` |
-| RECON/HuRoN raw DATA-PILOT | 官方快照、原始 artifact、receipt、checksum、最小内容审计和零转换 preflight 通过；尚未 processed/manifest/split | `results/research/data_acquisition/recon_huron_pilot_20260720/audit.md` |
+| RECON/HuRoN CONVERSION-PILOT | 两个隔离 processed pilot、receipt、内容/尺度审计和 train-only group-safe manifest 通过；RECON 逐帧时间戳与两者 policy/version 缺失，未晋级 | `results/research/data_conversion/recon_huron_pilot_20260720/audit.md` |
 | RECON/HuRoN acquisition dry-run | receipt/checksum/license 模板、严格本体复核和零转换 preflight 已实现 | `scripts/research/data/preflight_recon_huron_raw.py`、`后续研究内容/data/templates/recon_huron/` |
 | 多数据集训练 | 未执行，外部阻塞 | `后续研究内容/external_execution/02_training_run_order.md` |
 | 目标设备/协议化真机 | 未执行，外部阻塞 | `后续研究内容/external_execution/03_sim_robot_promotion.md` |
@@ -96,5 +96,5 @@ U09 v0.3 共 60 个计划/记录：25 success、35 failure、0 crash、0 infrast
 - 文本协议的内容身份按 UTF-8、LF 规范化后计算 SHA-256，以消除 Windows CRLF checkout 差异；checkpoint、数据和其他二进制资产仍按原始字节计算。
 - stabilizer-on 跨方法轨迹相同，不构成五个独立策略的导航证据。
 - 当前 counts 与相关性仅为 seeded-stochastic、描述性结果，不支持稳定排名、显著优越或真机泛化主张。
-- Ubuntu 范围已完成；4090 已取得并审计一个 RECON HDF5 与一个 HuRoN bag raw pilot，原始 payload/许可快照/receipt 已闭合，但 processed trajectory、dt/尺度验证、manifest/split 和多数据集训练仍缺失。目标设备持续 timing、协议化重复真机 outcome 和隐私/同意也未闭合；RA-L 当前可写但不可提交。
+- Ubuntu 范围已完成；4090 已完成 RECON/HuRoN 最小隔离转换和 train-only group-safe manifest。转换完整性通过不等于数据晋级：RECON 没有逐帧时间戳，dt 只能运动学推断；两个 raw artifact 都没有 collection policy/version。尚未授权模型执行或训练，也没有评测 holdout。目标设备 timing、协议化真机 outcome 和隐私/同意仍未闭合；RA-L 可写但不可提交。
 - 完整数据集只驻留 4090；Go Stanford 已在 4090 完成 3696 轨迹 / 198126 图片的内容级审计，但 raw receipt、per-frame timestamp 和 processor version 仍缺失。真实数据接线、训练和跨数据集离线评估不得分配给 Windows/Ubuntu。环境职责以 `ENVIRONMENT.md` 为准。

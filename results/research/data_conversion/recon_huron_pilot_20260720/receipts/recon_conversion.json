@@ -1,0 +1,135 @@
+{
+  "schema_version": "0.1.0",
+  "receipt_type": "isolated_processed_pilot_conversion",
+  "created_at_utc": "2026-07-20T09:42:32.546554+00:00",
+  "dataset_id": "recon",
+  "raw_artifact": {
+    "path": "/home/yifei/codespace/visualnav-transformer/nomad_dataset/recon_raw/recon_release/jackal_2019-09-17-16-09-02_3_r02.hdf5",
+    "bytes": 934600,
+    "sha256": "7cfb51e51aa5c3ea8310a783a8856f903cf714f99bbfac4e9b3fa78137438971"
+  },
+  "raw_receipt": {
+    "path": "/home/yifei/codespace/visualnav-transformer/results/research/data_conversion/recon_huron_pilot_20260720/receipts/recon_canonical_ready_hdf5_member.json",
+    "sha256": "56ec9e93358723653896fc4fccd2c299b716f4b382adf751d2fb296f31eecc8e"
+  },
+  "processor": {
+    "path": "/home/yifei/codespace/visualnav-transformer/scripts/research/data/convert_recon_huron_pilot.py",
+    "sha256": "05831a8b94f03ea47dd72d166cea52cbbe1881764f2923acb8ef6d4a05ac92b1",
+    "legacy_reference": "train/process_recon.py"
+  },
+  "parameters": {
+    "min_frames": 14,
+    "canonical_window_frames": 14,
+    "sample_rate_hz": null,
+    "budget_bytes": 10000000000
+  },
+  "result": {
+    "trajectory_count": 1,
+    "trajectory_ids": [
+      "jackal_2019-09-17-16-09-02_3_r02"
+    ],
+    "frame_count": 14,
+    "canonical_window_count": 1,
+    "nominal_dt_s": 0.2537814255429789,
+    "nominal_dt_status": "kinematic_estimate_not_timestamp_validated",
+    "metric_waypoint_spacing_m_observed": 0.2437799913341394,
+    "policy_metadata_status": "not_present_in_selected_hdf5"
+  },
+  "output": {
+    "root": "/home/yifei/codespace/visualnav-transformer/nomad_dataset/recon",
+    "bytes": 382802,
+    "tree_sha256": "1634bbdb5ee8653728318408f02242682e9660a11e68d8e7dd55c69c23ae05be",
+    "files": [
+      {
+        "path": "jackal_2019-09-17-16-09-02_3_r02/0.jpg",
+        "bytes": 28605,
+        "sha256": "c35563afaf624757b16514c4c19d9c85d392bb58bc663feb8e523a6e404d95cc"
+      },
+      {
+        "path": "jackal_2019-09-17-16-09-02_3_r02/1.jpg",
+        "bytes": 28395,
+        "sha256": "f7c3150b35236a7daea06f41de9bba4fc20e58b2d8d4fa7b2213c910c06a7e98"
+      },
+      {
+        "path": "jackal_2019-09-17-16-09-02_3_r02/10.jpg",
+        "bytes": 26358,
+        "sha256": "65f7a8cff15fbc3fb26ad65d96bb9ccbdf5a7a185df63831315b091884e26465"
+      },
+      {
+        "path": "jackal_2019-09-17-16-09-02_3_r02/11.jpg",
+        "bytes": 26407,
+        "sha256": "76ff36098aa7a09fcc06743e01c04af48ab8ebe09a2147041dfa8be778967521"
+      },
+      {
+        "path": "jackal_2019-09-17-16-09-02_3_r02/12.jpg",
+        "bytes": 26622,
+        "sha256": "29edde2d3272ff4ca935bf1b8a467cb02e6b1f26640a7c6e5d91634a57adeaea"
+      },
+      {
+        "path": "jackal_2019-09-17-16-09-02_3_r02/13.jpg",
+        "bytes": 25343,
+        "sha256": "2db485f6c662ec202284bcc8143b613d575dbfb6a7fa689cd8fb5114639f6d57"
+      },
+      {
+        "path": "jackal_2019-09-17-16-09-02_3_r02/2.jpg",
+        "bytes": 28375,
+        "sha256": "19b507712adbce0f8a419d1cb0b46767d21c23c18445d8eaa3c84331d88cc4e8"
+      },
+      {
+        "path": "jackal_2019-09-17-16-09-02_3_r02/3.jpg",
+        "bytes": 27602,
+        "sha256": "6dc135cc2244ca7f0c0f9bacd8574e1309d6e92b9ae75b8f60b4bcf235a13b1f"
+      },
+      {
+        "path": "jackal_2019-09-17-16-09-02_3_r02/4.jpg",
+        "bytes": 27499,
+        "sha256": "ec46ad57841da709c28c8c931eed61a0f64c712374a801ad45ffaa4a78918dc0"
+      },
+      {
+        "path": "jackal_2019-09-17-16-09-02_3_r02/5.jpg",
+        "bytes": 27273,
+        "sha256": "e8f7f93bd4db9fa5f98bfa97e706c2727081c070fe57ced6ff088573ddf5eb8a"
+      },
+      {
+        "path": "jackal_2019-09-17-16-09-02_3_r02/6.jpg",
+        "bytes": 27392,
+        "sha256": "bd1055392dfcd6d4eb9aaf009d10744bed332c036058e1b81bbe67da9204cf6b"
+      },
+      {
+        "path": "jackal_2019-09-17-16-09-02_3_r02/7.jpg",
+        "bytes": 27416,
+        "sha256": "59c1746b2151c998acd6b7a43753c4a3b22173d4ece173471f7b7da01df81a62"
+      },
+      {
+        "path": "jackal_2019-09-17-16-09-02_3_r02/8.jpg",
+        "bytes": 26952,
+        "sha256": "537602097cc191af4bcbebf5fe48bee256b9d687b5bdc2a03d4c38875af0239a"
+      },
+      {
+        "path": "jackal_2019-09-17-16-09-02_3_r02/9.jpg",
+        "bytes": 26201,
+        "sha256": "4dc06a76fe7540a272bb2d17af9a4fa058223287de301ae1dbc7a93e82adb143"
+      },
+      {
+        "path": "jackal_2019-09-17-16-09-02_3_r02/source_metadata.json",
+        "bytes": 1826,
+        "sha256": "750ac4e73afcb8dc620693c3b44abebe14fc42b08f17fed573383f18d7bf0d7a"
+      },
+      {
+        "path": "jackal_2019-09-17-16-09-02_3_r02/traj_data.pkl",
+        "bytes": 536,
+        "sha256": "5924185dd8819db556adfa217b4e5412f928562d5aa669384ba3622f90698364"
+      }
+    ]
+  },
+  "execution_counts": {
+    "raw_artifact_conversions": 1,
+    "model_forward": 0,
+    "backward": 0,
+    "optimizer_steps": 0,
+    "training": 0,
+    "evaluation": 0,
+    "simulation": 0
+  },
+  "claim_boundary": "One isolated processed pilot only. Timing/scale fields retain their measured or inferred status; missing policy metadata remains missing. No model execution, training, evaluation, or simulation was performed."
+}

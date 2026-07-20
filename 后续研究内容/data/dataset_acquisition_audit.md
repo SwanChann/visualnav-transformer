@@ -66,6 +66,25 @@ raw 内容审计与 strict preflight 通过，合计 raw payload 53.246385 GB，
 该结果仍不满足 Gate A：没有执行 HDF5/bag 语义转换，也没有 processed
 trajectory、dt/米制尺度验证、group-safe manifest/split 或处理器 receipt。
 
+### 2026-07-20 CONVERSION-PILOT
+
+后续授权的隔离转换已完成。RECON 先审计 archive 中全部不大于
+979,778 bytes 的 1,711 个 HDF5，0 读取错误，最小满足 14-frame canonical
+window 的成员为 934,600 bytes。它转换为 14 帧 / 1 window，中位步距
+0.243780 m，与注册值 0.25 m 的相对差 2.49%。HuRoN bag 以 rosbag record
+time 为权威时钟，4 Hz 同步 67 点并保留 66 帧完整前向段 / 53 windows；
+中位步距 0.203050 m，与 0.255 m 注册值相差 20.37%。
+
+两个 processed tree 的逐文件 SHA-256、RGB 解码、position/yaw finite、连续帧号、
+canonical window、source session 和尺度门通过。联合 manifest 只有 2 行 / 2
+leakage groups，两者均为 pilot-only train 分配，0 error / 0 warning；它不是评测
+holdout。保守峰值磁盘上界 1.275230 GB / 10 GB。证据为
+`results/research/data_conversion/recon_huron_pilot_20260720/audit.{json,md}`。
+
+晋级仍阻塞：RECON HDF5 没有逐帧 timestamp，0.253781 s dt 是位移/线速度运动学
+估计；RECON 和 HuRoN 的选定 artifact 都未编码 collection policy/version，不允许用默认
+值补造。因此 conversion integrity 通过，但 `promotion_ready=false`，不解锁训练或评测。
+
 ## Gate A
 
 只有同时满足以下条件，才把下一篇论文继续定位为 multi-dataset benchmark：
