@@ -1,6 +1,6 @@
 # Navigation Research Task Queue
 
-状态：`ready` / `in_progress` / `blocked_external` / `done` / `stopped`。
+状态：`ready` / `in_progress` / `blocked_external` / `unknown_no_receipt` / `done` / `stopped`。
 
 ## 已完成
 
@@ -22,6 +22,7 @@
 | ENV-01 | done | 冻结 Windows、Ubuntu、4090 的职责、数据驻留和跨环境交付链 | `ENVIRONMENT.md`、`PROJECT_ASSET_MAP.md` |
 | HANDOFF-4090 | done | 导出 4090 pre-training 执行交接，明确先 snapshot、后授权数据/训练 | `.agents/handoffs/visualnav-transformer/pretraining-4090/2026-07-15-1641/handoff.md` |
 | AUDIT-4090-01 | done | 复核 4090 数据、checkpoint、环境与阶段边界 | `results/research/4090_progress_audit/20260729/` |
+| SYNC-ENV-01 | done | 回收 4090 远端进展并统一 Windows、Ubuntu、4090 的状态口径、主链 gate 和回执合同 | `PROJECT_PROGRESS.md`；集成后当前研究基础设施 83/83 tests、3/3 validators 与 compileall 通过 |
 
 ## 当前真实阻塞项
 
@@ -29,7 +30,7 @@
 |---|---:|---|---|---|---|
 | ENV-4090-GPU | P0 | blocked_external | 4090 主机 | 恢复 NVIDIA device nodes 与 driver communication | `nvidia-smi` 通过，`/dev/nvidia*` 存在，`nomad_train` 中 PyTorch 可见两张 GPU |
 | DATA-04 | P0 | blocked_external | 4090 | 将 RECON/HuRoN pilot 晋级为可训练/评测数据 | 时间戳、collection policy/version 与独立 holdout 决策可审计，或明确接受其限制 |
-| EXP-01 | P0 | blocked_external | 4090 | 真实 adapter 接线、B0 smoke、多数据集 baseline 与 TinyNavBrain 训练及离线门 | 多 seed、固定预算、完整日志、失败记录、模型与数据 provenance |
+| EXP-01 | P0 | blocked_external | 4090 | 在 GPU 与数据晋级门闭合后执行多数据集 baseline、TinyNavBrain H1 与离线门 | 多 seed、固定预算、完整日志、失败记录、模型与数据 provenance |
 | SIM-01 | P0 | blocked_external | Ubuntu | 对通过离线门的 checkpoint 执行新的非饱和闭环仿真 | 冻结 scenes/seeds/bridge，结果不饱和，原始 rollout 可审计 |
 | DEVICE-01 | P0 | blocked_external | 待指定目标设备 | 指定目标设备的 sustained deadline/miss timing | 明确设备、热身、持续时长、deadline、miss rate、功耗/温度口径 |
 | EXP-03 | P0 | blocked_external | 待指定真机环境 | 协议化重复真机闭环验证 | 安全协议、原始日志、人工 outcome、成功率/效率/失败模式 |
@@ -103,13 +104,15 @@ CUDA 执行必须等待 `ENV-4090-GPU` 闭合。快照位于
 
 ## 执行顺序
 
-Windows 静态实现与 Ubuntu U00–U18 均已完成。4090 必须先检出包含 `HANDOFF-4090` 的冻结 Git SHA，后续顺序是：
+Windows 静态实现与 Ubuntu U00–U18 均已完成；4090 snapshot、Go Stanford 单域 gates 与
+RECON/HuRoN conversion pilots 也已有可审计回执。当前顺序是：
 
-`4090 环境/数据 snapshot → DATA-PILOT → B0 smoke → baseline/H1 → 4090 离线门 → Ubuntu 仿真门 → 目标设备/真机 → Windows 论文冻结`
+`恢复 4090 GPU live gate → 解决 RECON/HuRoN 晋级限制/holdout → 多数据集 baseline/H1 → 4090 离线门 → Ubuntu 仿真门 → 目标设备/真机 → Windows 论文冻结`
 
 当前论文可继续写作和内部审稿，但仍为 **submission NO-GO**。不能用更多同类仿真替代目标设备和真机硬门。
 
 Pre-training 的细粒度依赖、验收证据和否证条件以
-`scripts/research/pretraining/pretraining_backlog_v0.1.yaml` 为准。静态基础设施完成后，
-`DATA-PILOT`、`B0-SMOKE`、`BASELINE-MATRIX`、`H1-TRAIN` 仍需用户分别授权外部数据与训练执行。
+`scripts/research/pretraining/pretraining_backlog_v0.1.yaml` 为准。`DATA-PILOT` 与单域
+`B0-SMOKE` 已执行并按其证据边界收口；`BASELINE-MATRIX`、`H1-TRAIN` 和离线评测仍未执行，
+只能在 GPU live gate、数据晋级门和相应授权闭合后开始。
 完整数据集只驻留 4090；Ubuntu 不承担新的跨数据集离线评估，Windows 不承担真实数据验证或训练。

@@ -75,7 +75,7 @@ def load_prerequisites(config: Mapping[str, Any], repo_root: Path) -> dict[str, 
     reports: dict[str, Any] = {}
     for name, receipt in config["prerequisites"].items():
         path = repo_root / receipt["path"]
-        if file_sha256(path) != receipt["sha256"]:
+        if canonical_text_sha256(path) != receipt["sha256"]:
             raise B0RunnerError(f"prerequisite hash mismatch: {name}")
         reports[name] = json.loads(path.read_text(encoding="utf-8"))
     if not reports["data_audit"].get("passed"):

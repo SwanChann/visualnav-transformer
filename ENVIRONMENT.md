@@ -8,7 +8,7 @@
 
 | 环境 | 已验证条件 | 当前职责 | 明确不做 | 当前状态 |
 |---|---|---|---|---|
-| Windows 原项目目录 | 论文、证据包、Git 治理、资产地图、静态 pre-training 合同与单元测试已存在；完整 NoMaD 训练依赖不齐；无训练数据 | 唯一人工/Git/论文集成入口；维护协议、任务、代码审查、小型结果和论文；形成供其他环境执行的冻结 commit/config | 不保存数据集；不做真实数据 adapter 验证、训练、跨数据集离线评估、仿真或真机 | 静态实现与测试完成；跨环境执行只认包含 4090 交接包的冻结 Git SHA |
+| Windows 原项目目录 | 论文、证据包、Git 治理、资产地图、静态 pre-training 合同与单元测试已存在；完整 NoMaD 训练依赖不齐；无训练数据 | 唯一人工/Git/论文集成入口；维护统一进度、协议、代码审查、小型回执和论文 | 不保存数据集；不做真实数据 adapter 验证、训练、跨数据集离线评估、仿真或真机 | 已快进吸收 4090 审计基线 `9fb58e7`；当前研究基础设施 83/83 tests、3/3 validators 与 compileall 通过 |
 | Ubuntu 自有电脑 | U00–U18、U09 v0.3、U10 v5 的离线/仿真执行与审计已完成 | 接收通过 4090 `OFFLINE-GATE` 的少量候选 checkpoint；执行新的非饱和闭环 `SIM-GATE`；返回原始 rollout、统计与日志 | 不重复 U00–U18；不保存训练数据；不做多数据集训练或需要完整数据的 LODO/corruption 离线评估 | 历史授权范围完成；等待 4090 晋级 checkpoint |
 | 远程 RTX 4090 服务器 | 已核验 `agent/ubuntu-sim-handoff`、历史 2x RTX 4090、`nomad_train`、Go Stanford 全量内容与冻结 `nomad.pth`；GPU 0 IMAGE-FORWARD、两步 TRAIN-STEP/exact-resume 和 Go Stanford B0 smoke 通过；RECON/HuRoN raw/processed pilots 已审计 | 数据盘点与合规登记、真实 dataset adapter 接线、manifest/split/leakage、B0 smoke、baseline/H0/H1 训练、IID/mixed/LODO/corruption 离线评估、显存与吞吐测量 | 不直接改论文结论；不把 forward/两步集成/static/smoke、loss 下降或单 seed 当方法结果；不绕过 Windows 权威入口 | Phase 0、Go Stanford 单域 pilot/image forward/两步 plumbing/B0 与 RECON/HuRoN CONVERSION-PILOT 完成；2026-07-29 live gate 因 `/dev/nvidia*` 缺失而失败，且外部 metadata/holdout 阻塞尚未闭合 |
 
@@ -33,6 +33,7 @@ Windows 冻结代码/协议/配置
 - 同日 CONVERSION-PILOT 在 10 GB 上限内的保守峰值上界为 1.275230 GB。RECON 完整小文件前缀 1711 个中选出最小 14-frame canonical-ready HDF5，HuRoN 保留 66-frame 前向段；转换内容、尺度和 train-only leakage audit 通过。RECON 逐帧时间戳不存在，两者 collection policy/version 未编码，因此 `promotion_ready=false`。
 - 2026-07-29 只读复核确认数据与 7 个本地测试 checkpoint 仍存在，B0 checkpoint/receipt audit 及两个 processed-pilot audit 重跑通过；但 `nvidia-smi` 无法与驱动通信、`/dev/nvidia*` 不存在、PyTorch CUDA 不可用且可见设备数为 0。历史 GPU 收据仍证明当时执行，不证明当前 GPU 可用；恢复 device nodes/driver communication 前禁止新的 CUDA 执行。权威快照见 `results/research/4090_progress_audit/20260729/`。
 - 目标设备与真机执行位置尚未确定，不能默认归入 Ubuntu 或 4090。
+- 三端统一状态、gate 和回执字段以 `PROJECT_PROGRESS.md` 为准。
 
 ## 2. Windows 环境历史体检
 
@@ -44,7 +45,7 @@ Windows 冻结代码/协议/配置
 
 - `base` 环境是 Python 3.12.3，缺 `torch`，并且 `numpy==2.2.6` 与已有 `matplotlib/h5py` 二进制包不兼容。
 - `RPF` 环境能 import `torch/timm/opencv`，但缺 `diffusers`、`diffusion_policy`、`efficientnet_pytorch`、`vit_pytorch`、`pybullet`、`mujoco` 等关键包。
-- `prp` 环境最接近 RA-L 离线/仿真需求：有 `torch 2.4.1`、CUDA、`mujoco`、`onnxruntime`，但仍缺 `diffusers`、`diffusion_policy`、`efficientnet_pytorch`、`vit_pytorch`、`pybullet`、`lmdb`、`h5py` 等。
+- `prp` 环境最接近 RA-L 离线/仿真需求：有 `torch 2.4.1`、CUDA、`mujoco`、`onnxruntime`；2026-07-29 由本机缓存离线补齐 `h5py 3.11.0`/HDF5 1.12.1，仍缺 `diffusers`、`diffusion_policy`、`efficientnet_pytorch`、`vit_pytorch`、`pybullet`、`lmdb` 等。
 - `cv` 环境有 NumPy/MKL DLL import 问题，不适合作为本项目环境。
 - `part_hoe` 环境有 torch/opencv，但缺 NoMaD/diffusion 关键依赖。
 - `vlm-test` 环境缺 torch/opencv/matplotlib/yaml 等基础依赖。
@@ -202,8 +203,8 @@ python -c "import rospy, rosbag, geometry_msgs, sensor_msgs, std_msgs; print('RO
 
 Windows 当前只需：
 
-1. 完成现有静态基础设施、环境职责文档和 handoff 的 diff 审核。
-2. 获得用户授权后 commit/push，给 4090 一个明确的冻结 Git SHA。
-3. 在 4090/Ubuntu 返回结果后做证据审查、资产地图和论文更新。
+1. 维护 `PROJECT_PROGRESS.md` 与 `PROJECT_ASSET_MAP.md` 的统一入口。
+2. 接收 4090 GPU live gate 修复回执，并登记用户对 RECON/HuRoN 晋级限制的决定。
+3. 只有后续多数据集离线门通过后，才向 Ubuntu 交付晋级 checkpoint 并更新论文。
 
 `diffusion_policy` 未安装在 Windows 仍是事实，但不是当前 blocker；真实训练环境应在 4090 核验和修复。除非职责再次改变，不在 Windows 新建完整训练/仿真环境。

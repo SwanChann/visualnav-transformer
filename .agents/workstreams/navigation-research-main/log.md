@@ -1,5 +1,32 @@
 # Navigation Research Agent Log
 
+## 2026-07-29 — Windows 远端回收与三环境进度统一
+
+- 经用户授权执行 `git fetch --all --prune`，发现同名 GitHub 远端分支比 Windows 本地
+  `ffa3533` 前进 12 个提交，最新为 `9fb58e7`；先审查 4090 审计、数据 pilot、TinyNavBrain
+  gates 与提交范围，再以 fast-forward 吸收，未覆盖 U09 v0.3 或 U10 v5。
+- 4090 不再标记为 `unknown_no_receipt`：权威仓库已有 Phase 0、Go Stanford DATA-PILOT、
+  IMAGE-FORWARD、两步 TRAIN-STEP、单域 B0 smoke、RECON/HuRoN acquisition/conversion
+  pilot 和 2026-07-29 只读 live audit 回执。
+- 当前 P0 阻塞改为两项：恢复 NVIDIA device nodes/driver communication；为 RECON/HuRoN
+  补齐或明确接受逐帧时间戳、collection policy/version 与独立 holdout 限制。多数据集
+  baseline/H1、离线门、Ubuntu 新仿真门和论文冻结仍未执行。
+- 新建 `PROJECT_PROGRESS.md`，统一三端职责、状态、G0–G9 主链和回执合同；
+  `PROJECT_ASSET_MAP.md` 继续作为原项目目录中的唯一人工总入口。
+- Windows 本轮只执行 Git 集成、文档核对与本地静态/合成测试；未下载数据，未运行服务器
+  forward/backward、optimizer、训练、评测、仿真或真机。
+- 集成后发现 B0 四份前置 JSON 仍按工作区原始换行计算，Linux 收据在 Windows CRLF
+  checkout 下误报 hash drift；validator 与 dry-run loader 改为项目既有的 UTF-8/LF
+  canonical text hash。该修复不改 frozen config、历史 receipt 或执行结果。
+- `prp` 使用本机 conda 缓存离线补齐 `h5py 3.11.0`/HDF5 1.12.1；未访问外部包源，
+  `h5py`、NumPy 1.26.4 与 OpenCV 4.10.0 导入通过。
+- 当前研究基础设施的 83 个不同测试全部通过：pretraining 28、training-plan 7、
+  models 9、data 27、policy backend 5、benchmark validator 7；backlog、B0 config、
+  TinyNav plan 三个 validator 与 `compileall scripts/research` 通过。
+- 历史 `scripts/analysis` 另有 20/24 通过；4 个在导入期受 Windows `prp` 缺
+  `diffusers`/`efficientnet_pytorch` 阻塞。既定职责不要求 Windows 成为完整 NoMaD
+  训练/仿真环境，因此保留为环境边界，不把它们记为本轮功能失败或继续扩装依赖。
+
 ## 2026-07-29 — 4090 progress and live-state audit
 
 - 在 `agent/ubuntu-sim-handoff@c956a91` 上重建 Git、环境、数据、checkpoint、receipt
@@ -119,7 +146,6 @@
 - grouped-v2 manifest 覆盖 3696/3696；其 SHA-256 为 `b9ea199f...`，split SHA-256 为 `f10c2570...`，processed dataset tree SHA-256 为 `2ca863b8...`。修正 registry 旧图片数 201822 为实际 198126。
 - 保留证据边界：0.12 m 仅在 manifest/registry/loader 合同中一致，不是独立物理标定；processed copy 没有 raw artifact receipt、可观测 per-frame timestamp 或 pinned processor version。
 - 因用户本轮明确不处理 RECON/HuRoN，完整 `DATA-PILOT` 仍为 external blocked，不允许 cross-dataset claim，也不解锁 B0-SMOKE。
-
 ## 2026-07-15 — 三环境职责冻结与 Windows 收口
 
 - 用户确认完整数据集只存放在远程 RTX 4090 服务器；Windows/Ubuntu 均不保存训练数据副本。

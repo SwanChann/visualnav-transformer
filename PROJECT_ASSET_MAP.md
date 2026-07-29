@@ -87,8 +87,9 @@ U09 v0.3 共 60 个计划/记录：25 success、35 failure、0 crash、0 infrast
 |---|---|
 | 当前任务队列 | `.agents/workstreams/navigation-research-main/TASKS.md` |
 | 4090 当前状态 | `results/research/4090_progress_audit/20260729/` |
+| 三环境统一进度 | `PROJECT_PROGRESS.md`；统一状态、主链 gate、回执合同和人类控制点 |
 | 三环境职责与执行链 | `ENVIRONMENT.md`；Windows 主控、4090 数据/训练/离线、Ubuntu 晋级仿真 |
-| 4090 pre-training 交接 | `.agents/handoffs/visualnav-transformer/pretraining-4090/2026-07-15-1641/handoff.md`；先 live snapshot，数据获取与训练仍需另行授权 |
+| 4090 pre-training 历史交接 | `.agents/handoffs/visualnav-transformer/pretraining-4090/2026-07-15-1641/handoff.md`；早期 gates 已部分闭合，当前状态以 2026-07-29 audit 与 `PROJECT_PROGRESS.md` 为准 |
 | 工作日志 | `.agents/workstreams/navigation-research-main/log.md` |
 | 当前交接 | `.agents/workstreams/navigation-research-main/handoff.md` |
 | 旧证据索引 | `results/evidence_index.md`（只覆盖早期 Tier A；以本文件为总入口） |

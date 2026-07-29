@@ -85,7 +85,7 @@ def validate_b0_config(payload: Mapping[str, Any], repo_root: Path | None = None
                 report_path = repo_root / receipt.get("path", "")
                 if not report_path.is_file():
                     errors.append(f"missing prerequisite report: {name}")
-                elif hashlib.sha256(report_path.read_bytes()).hexdigest() != receipt.get("sha256"):
+                elif canonical_text_sha256(report_path) != receipt.get("sha256"):
                     errors.append(f"prerequisite report hash mismatch: {name}")
 
     if data.get("dataset_id") != "go_stanford" or data.get("split") != "train":
