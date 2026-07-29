@@ -63,6 +63,7 @@ U09 v0.3 共 60 个计划/记录：25 success、35 failure、0 crash、0 infrast
 | policy backend 探索 | `scripts/research/policy_backend/`、`后续研究内容/05_policy后端与小模型研究.md` |
 | TinyNavBrain 合同/scaffold/image policy/训练计划 | `后续研究内容/model/`、`scripts/research/models/`、`scripts/research/training_plans/` |
 | Pre-training backlog/本地合同测试 | `scripts/research/pretraining/`；仅静态基础设施，不是训练结果 |
+| 具身导航 Agent/单卡 4090/真机可行性调研 | `后续研究内容/07_具身导航Agent方向与单卡4090真机可行性调研.md`；当前结论为 CONDITIONAL-GO |
 | 后续研究总览 | `后续研究内容/README.md`、`01_后续研究总览.md` 至 `04_RA-L后续研究投稿规划.md` |
 | 外部执行 runbook | `后续研究内容/external_execution/` |
 

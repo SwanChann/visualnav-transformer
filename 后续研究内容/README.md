@@ -57,6 +57,8 @@ nomad_dataset/go_stanford
 - [02_导航策略大脑方向.md](02_导航策略大脑方向.md)：TinyNavBrain 的问题定义、模型结构、训练目标和对比边界。
 - [03_单卡4090训练路线.md](03_单卡4090训练路线.md)：多数据集获取、benchmark 协议、4090 训练阶段和止损条件。
 - [04_RA-L后续研究投稿规划.md](04_RA-L后续研究投稿规划.md)：面向下一篇 RA-L 的贡献、实验、图表、里程碑与 go/no-go 标准。
+- [06_毕业论文后工作进展详解.md](06_毕业论文后工作进展详解.md)：用非缩写式名称解释毕业论文之后已完成的实验审计、数据接线、训练基础设施和仍未完成的科学结果。
+- [07_具身导航Agent方向与单卡4090真机可行性调研.md](07_具身导航Agent方向与单卡4090真机可行性调研.md)：判断 NoMaD 在 2026 年的角色、单卡 RTX 4090 与 Lite3 真机的分层可行性，并提出可证伪的异步 Agent 研究方向。
 - [references/后续研究文献矩阵.md](references/后续研究文献矩阵.md)：核验后的核心文献与本文差异。
 - [data/dataset_acquisition_audit.md](data/dataset_acquisition_audit.md)：候选数据集的官方来源、许可、格式、获取优先级和 Gate A。
 - [data/dataset_registry.json](data/dataset_registry.json)：机器可读数据集注册表；未知许可默认阻塞。
