@@ -1,6 +1,6 @@
 # 项目资产地图
 
-> 统一入口，更新于 2026-07-20。活跃分支：`agent/ubuntu-sim-handoff`；精确基线须在执行时核对完整 `HEAD` 与 upstream SHA，避免在提交内容中维护不可自洽的自身 commit hash。
+> 统一入口，更新于 2026-07-29。活跃分支：`agent/ubuntu-sim-handoff`；精确基线须在执行时核对完整 `HEAD` 与 upstream SHA，避免在提交内容中维护不可自洽的自身 commit hash。
 
 ## 1. 当前结果一览
 
@@ -12,6 +12,7 @@
 | 受控统计与关联分析 | 完成 | U09 v0.3 下的 `analysis/` |
 | 论文 Table III 与 3 张 PDF | 完成 | `投稿冲刺/workspace/controlled_results/` |
 | RA-L 写作包 | 可继续写作；投稿 NO-GO | `投稿冲刺/workspace/`、`后续研究内容/paper/` |
+| 4090 当前进度审计 | 既有收据复核通过；当前 GPU live gate 失败 | `results/research/4090_progress_audit/20260729/` |
 | 4090 Go Stanford live DATA-PILOT | 内容/adapter/DataLoader 通过；仅单域，未运行模型 | `results/research/data_pilot/go_stanford_live_20260715/` |
 | TinyNavBrain IMAGE-FORWARD | GPU 0 inference-only 通过；未 backward/训练 | `scripts/research/models/tinynavbrain_image_policy.py`、`results/research/data_pilot/go_stanford_live_20260715/image_forward_readiness.md` |
 | TinyNavBrain TRAIN-STEP | 两步集成与 exact-resume 通过；不是 B0 | `scripts/research/pretraining/train_step_runtime.py`、`results/research/pretraining/train_step_gate_20260716/readiness.md` |
@@ -85,6 +86,7 @@ U09 v0.3 共 60 个计划/记录：25 success、35 failure、0 crash、0 infrast
 | 资产 | 位置 |
 |---|---|
 | 当前任务队列 | `.agents/workstreams/navigation-research-main/TASKS.md` |
+| 4090 当前状态 | `results/research/4090_progress_audit/20260729/` |
 | 三环境职责与执行链 | `ENVIRONMENT.md`；Windows 主控、4090 数据/训练/离线、Ubuntu 晋级仿真 |
 | 4090 pre-training 交接 | `.agents/handoffs/visualnav-transformer/pretraining-4090/2026-07-15-1641/handoff.md`；先 live snapshot，数据获取与训练仍需另行授权 |
 | 工作日志 | `.agents/workstreams/navigation-research-main/log.md` |
@@ -96,5 +98,5 @@ U09 v0.3 共 60 个计划/记录：25 success、35 failure、0 crash、0 infrast
 - 文本协议的内容身份按 UTF-8、LF 规范化后计算 SHA-256，以消除 Windows CRLF checkout 差异；checkpoint、数据和其他二进制资产仍按原始字节计算。
 - stabilizer-on 跨方法轨迹相同，不构成五个独立策略的导航证据。
 - 当前 counts 与相关性仅为 seeded-stochastic、描述性结果，不支持稳定排名、显著优越或真机泛化主张。
-- Ubuntu 范围已完成；4090 已完成 RECON/HuRoN 最小隔离转换和 train-only group-safe manifest。转换完整性通过不等于数据晋级：RECON 没有逐帧时间戳，dt 只能运动学推断；两个 raw artifact 都没有 collection policy/version。尚未授权模型执行或训练，也没有评测 holdout。目标设备 timing、协议化真机 outcome 和隐私/同意仍未闭合；RA-L 可写但不可提交。
+- Ubuntu 范围已完成；4090 已完成 Go Stanford 单域 B0 plumbing smoke，以及 RECON/HuRoN 最小隔离转换和 train-only group-safe manifest。转换完整性通过不等于数据晋级：RECON 没有逐帧时间戳，dt 只能运动学推断；两个 raw artifact 都没有 collection policy/version，也没有评测 holdout。2026-07-29 live snapshot 发现 NVIDIA 模块已加载但 `/dev/nvidia*` 缺失，当前 CUDA 执行暂时 NO-GO。目标设备 timing、协议化真机 outcome 和隐私/同意仍未闭合；RA-L 可写但不可提交。
 - 完整数据集只驻留 4090；Go Stanford 已在 4090 完成 3696 轨迹 / 198126 图片的内容级审计，但 raw receipt、per-frame timestamp 和 processor version 仍缺失。真实数据接线、训练和跨数据集离线评估不得分配给 Windows/Ubuntu。环境职责以 `ENVIRONMENT.md` 为准。

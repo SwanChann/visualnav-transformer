@@ -1,5 +1,25 @@
 # Navigation Research Agent Log
 
+## 2026-07-29 — 4090 progress and live-state audit
+
+- 在 `agent/ubuntu-sim-handoff@c956a91` 上重建 Git、环境、数据、checkpoint、receipt
+  和任务事实；审计开始时 tracked worktree 为 clean，upstream 与 HEAD 一致。
+- 保留并排除 3,800 个未跟踪路径：其中 3,697 个属于 `nomad_dataset`，另有 W&B、
+  历史结果、训练辅助文件和个人文档；本轮不清理、不覆盖、不暂存这些内容。
+- 只读重跑 B0 audit：H0/H1 合计 400 optimizer steps / 800 backward 的历史收据、
+  6 个本地 checkpoint、exact-resume、GradScaler、retention 与 SHA gate 全部通过。
+- 只读重跑 RECON 和 HuRoN processed audit，转换完整性继续通过；
+  `promotion_ready=false`，因为 RECON 缺逐帧时间戳且两个数据源缺 collection
+  policy/version，pilot 仍无独立评测 holdout。
+- 发现新的 live blocker：NVIDIA 580.173.02 模块已加载，但 `/dev/nvidia*` 不存在，
+  `nvidia-smi` 无法通信，`nomad_train` 的 PyTorch 2.4.1+cu121 报告 CUDA 不可用和
+  0 visible devices。历史 GPU receipts 仍有效，但恢复 device nodes/driver 前不执行
+  新的 CUDA 工作。
+- 当前磁盘 3.7 TiB、已用 3.0 TiB、剩余 576 GiB（84%）；Go Stanford、53.235 GB
+  RECON archive、11.045 MB HuRoN bag、processed pilots 和 7 个测试 checkpoint 均仍在。
+- 本轮未运行模型 forward/backward、optimizer、训练、评测、仿真、转换或下载。
+  权威报告：`results/research/4090_progress_audit/20260729/`。
+
 ## 2026-07-20 — RECON/HuRoN isolated CONVERSION-PILOT
 
 - 用户授权 10 GB 阶段上限、隔离转换、manifest/split 和小型证据 push，继续禁止模型执行、训练、评测与仿真。

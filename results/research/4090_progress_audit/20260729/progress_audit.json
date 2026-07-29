@@ -1,0 +1,120 @@
+{
+  "schema_version": "0.1.0",
+  "audit_id": "rtx4090-progress-20260729",
+  "created_at": "2026-07-29T17:26:29+08:00",
+  "claim_boundary": "Read-only progress and live-state audit. Historical forward/training receipts are preserved but no model, training, evaluation, simulation, conversion, or download was executed by this audit.",
+  "git": {
+    "branch": "agent/ubuntu-sim-handoff",
+    "audited_head_before_report_commit": "c956a91fa347822a747d50bd55d9b2b1a77f608a",
+    "upstream_before_report_commit": "c956a91fa347822a747d50bd55d9b2b1a77f608a",
+    "tracked_dirty_before_report": false,
+    "preserved_untracked_count": 3800,
+    "untracked_staged": false
+  },
+  "environment": {
+    "kernel": "6.8.0-124-generic",
+    "conda_env": "nomad_train",
+    "python": "3.8.5",
+    "torch": "2.4.1+cu121",
+    "torchvision": "0.19.1+cu121",
+    "torch_cuda": "12.1",
+    "filesystem": {
+      "total": "3.7T",
+      "used": "3.0T",
+      "available": "576G",
+      "use_percent": 84
+    },
+    "gpu_live": {
+      "ready": false,
+      "nvidia_smi_passed": false,
+      "device_nodes_present": false,
+      "kernel_module_version": "580.173.02",
+      "torch_cuda_available": false,
+      "torch_visible_devices": 0,
+      "blocker": "NVIDIA modules are loaded but /dev/nvidia* is absent and nvidia-smi cannot communicate with the driver."
+    }
+  },
+  "data": {
+    "go_stanford": {
+      "present": true,
+      "disk_usage": "1.1G",
+      "historically_audited_trajectories": 3696,
+      "historically_audited_images": 198126,
+      "canonical_train_samples": 131950,
+      "frozen_subset_samples": 6598,
+      "full_decode_repeated_in_this_audit": false
+    },
+    "recon": {
+      "raw_archive_present": true,
+      "raw_archive_bytes": 53235196027,
+      "recorded_sha256": "65e32b9902bc9458b9a6da58257b53de8634261e41d256f0b840e7604988c299",
+      "processed_audit_rerun_passed": true,
+      "promotion_ready": false,
+      "frames": 14,
+      "canonical_windows": 1,
+      "blockers": [
+        "per-frame timestamps absent; dt is kinematically inferred",
+        "collection policy/version metadata absent"
+      ]
+    },
+    "huron_sacson": {
+      "raw_bag_present": true,
+      "raw_bag_bytes": 11044659,
+      "recorded_sha256": "71ac9844157bee7e90f9a6ab1d91af10ebad7e39073fd2885ccabc6d66034397",
+      "processed_audit_rerun_passed": true,
+      "promotion_ready": false,
+      "frames": 66,
+      "canonical_windows": 53,
+      "blockers": [
+        "collection policy/version metadata absent"
+      ]
+    }
+  },
+  "checkpoints": {
+    "train_step_gate": {
+      "local_files": 1,
+      "bytes": 102542746
+    },
+    "b0": {
+      "local_files": 6,
+      "bytes": 807960660,
+      "audit_rerun_passed": true,
+      "optimizer_steps": 400,
+      "backward_calls": 800,
+      "evaluation_performed": false
+    },
+    "historical_train_logs_disk_usage": "142G",
+    "historical_train_logs_fully_provenanced": false
+  },
+  "stage_status": {
+    "phase0_snapshot": "done_historical",
+    "go_stanford_data_pilot": "done",
+    "image_forward": "done_interface_only",
+    "train_step": "done_integration_only",
+    "b0_smoke": "done_plumbing_only",
+    "recon_huron_acquisition": "done",
+    "recon_huron_conversion_pilot": "done_not_promoted",
+    "multi_dataset_baseline": "not_executed",
+    "h1_training": "not_executed",
+    "offline_gate": "not_executed",
+    "promoted_simulation": "not_executed",
+    "protocolized_real_robot": "not_executed"
+  },
+  "execution_counts_this_audit": {
+    "download": 0,
+    "conversion": 0,
+    "model_forward": 0,
+    "backward": 0,
+    "optimizer_steps": 0,
+    "training": 0,
+    "evaluation": 0,
+    "simulation": 0,
+    "checkpoint_writes": 0
+  },
+  "promotion": {
+    "repository_progress_snapshot_publishable": true,
+    "new_gpu_execution_ready": false,
+    "multi_dataset_training_ready": false,
+    "ral_submission_ready": false
+  }
+}

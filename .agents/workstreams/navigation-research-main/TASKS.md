@@ -21,12 +21,14 @@
 | TRAIN-INFRA-02 | done | 建立可执行、可否证的 pre-training backlog 与 200-step smoke 配置 | `scripts/research/pretraining/pretraining_backlog_v0.1.yaml`、`smoke_config_v0.1.yaml` |
 | ENV-01 | done | 冻结 Windows、Ubuntu、4090 的职责、数据驻留和跨环境交付链 | `ENVIRONMENT.md`、`PROJECT_ASSET_MAP.md` |
 | HANDOFF-4090 | done | 导出 4090 pre-training 执行交接，明确先 snapshot、后授权数据/训练 | `.agents/handoffs/visualnav-transformer/pretraining-4090/2026-07-15-1641/handoff.md` |
+| AUDIT-4090-01 | done | 复核 4090 数据、checkpoint、环境与阶段边界 | `results/research/4090_progress_audit/20260729/` |
 
 ## 当前真实阻塞项
 
 | ID | 优先级 | 状态 | 执行环境 | 任务 | 验收标准 |
 |---|---:|---|---|---|---|
-| DATA-04 | P0 | blocked_external | 4090 | 盘点并合规登记 RECON/HuRoN；数据不离开 4090 | 原始 artifact、许可快照、receipt、group-safe manifest 均可审计 |
+| ENV-4090-GPU | P0 | blocked_external | 4090 主机 | 恢复 NVIDIA device nodes 与 driver communication | `nvidia-smi` 通过，`/dev/nvidia*` 存在，`nomad_train` 中 PyTorch 可见两张 GPU |
+| DATA-04 | P0 | blocked_external | 4090 | 将 RECON/HuRoN pilot 晋级为可训练/评测数据 | 时间戳、collection policy/version 与独立 holdout 决策可审计，或明确接受其限制 |
 | EXP-01 | P0 | blocked_external | 4090 | 真实 adapter 接线、B0 smoke、多数据集 baseline 与 TinyNavBrain 训练及离线门 | 多 seed、固定预算、完整日志、失败记录、模型与数据 provenance |
 | SIM-01 | P0 | blocked_external | Ubuntu | 对通过离线门的 checkpoint 执行新的非饱和闭环仿真 | 冻结 scenes/seeds/bridge，结果不饱和，原始 rollout 可审计 |
 | DEVICE-01 | P0 | blocked_external | 待指定目标设备 | 指定目标设备的 sustained deadline/miss timing | 明确设备、热身、持续时长、deadline、miss rate、功耗/温度口径 |
@@ -91,6 +93,13 @@ config/runner dry-run 通过且 forward/backward/optimizer 均为 0；执行仍�
 optimizer steps，预算、finite、GradScaler no-skip、step-100 exact-resume、checkpoint
 retention/receipt 均通过。它只关闭单域训练 plumbing smoke，不是收敛或效果证据；
 RECON/HuRoN、多数据集 baseline/H1 与离线门均未执行，故 `EXP-01` 仍为外部阻塞。
+
+2026-07-29 只读进度复核确认 B0 六份 checkpoint、TRAIN-STEP 一份 checkpoint、
+RECON/HuRoN raw 与 processed pilot 仍存在；B0 receipt/checkpoint audit 和两个 processed
+audit 重跑通过。当前新增环境阻塞：NVIDIA 模块已加载，但 `/dev/nvidia*` 不存在，
+`nvidia-smi` 失败且 PyTorch 可见 GPU 数为 0。历史 4090 执行收据不受影响，但新的
+CUDA 执行必须等待 `ENV-4090-GPU` 闭合。快照位于
+`results/research/4090_progress_audit/20260729/`。
 
 ## 执行顺序
 
